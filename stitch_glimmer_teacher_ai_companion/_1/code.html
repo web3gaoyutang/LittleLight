@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>今日 - 微光老师</title>
+<!-- Google Fonts: Manrope -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-primary-fixed-variant": "#3530b6",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#271900",
+                        "on-tertiary-container": "#f2eeff",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#c7c4d6",
+                        "on-surface-variant": "#464554",
+                        "surface-container-low": "#f4f4f2",
+                        "on-secondary-fixed-variant": "#5f4100",
+                        "inverse-primary": "#c2c1ff",
+                        "secondary-fixed-dim": "#f5bd58",
+                        "background": "#f9f9f7",
+                        "on-secondary": "#ffffff",
+                        "surface-container-high": "#e8e8e6",
+                        "surface": "#f9f9f7",
+                        "secondary-fixed": "#ffdeaa",
+                        "primary-fixed-dim": "#c2c1ff",
+                        "error": "#ba1a1a",
+                        "outline": "#777585",
+                        "surface-variant": "#e2e3e1",
+                        "inverse-surface": "#2f3130",
+                        "surface-dim": "#dadad8",
+                        "tertiary-fixed": "#e2dfff",
+                        "tertiary-container": "#696997",
+                        "inverse-on-surface": "#f1f1ef",
+                        "on-surface": "#1a1c1b",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#ffc55f",
+                        "on-tertiary-fixed": "#171640",
+                        "on-tertiary-fixed-variant": "#43426e",
+                        "on-primary-fixed": "#0b006b",
+                        "surface-container-highest": "#e2e3e1",
+                        "on-background": "#1a1c1b",
+                        "tertiary": "#51517d",
+                        "primary": "#4441c4",
+                        "primary-fixed": "#e2dfff",
+                        "secondary": "#7d5700",
+                        "primary-container": "#5d5cde",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#c3c2f6",
+                        "on-secondary-container": "#755100",
+                        "surface-bright": "#f9f9f7",
+                        "on-primary-container": "#f1eeff",
+                        "surface-tint": "#4e4cce",
+                        "surface-container": "#eeeeec",
+                        "on-error-container": "#93000a"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "md": "16px",
+                        "sm": "12px",
+                        "2xl": "48px",
+                        "gutter": "20px",
+                        "margin-mobile": "16px",
+                        "xs": "8px",
+                        "margin-desktop": "40px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "lg": "24px"
+                    },
+                    fontFamily: {
+                        "caption": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "headline-lg-mobile": ["Manrope"],
+                        "body-lg": ["Manrope"],
+                        "display-lg": ["Manrope"],
+                        "label-md": ["Manrope"],
+                        "title-lg": ["Manrope"],
+                        "body-md": ["Manrope"],
+                        "headline-md": ["Manrope"]
+                    },
+                    fontSize: {
+                        "caption": ["12px", { lineHeight: "16px", fontWeight: "400" }],
+                        "headline-lg": ["32px", { lineHeight: "44px", letterSpacing: "-0.01em", fontWeight: "700" }],
+                        "headline-lg-mobile": ["28px", { lineHeight: "38px", fontWeight: "700" }],
+                        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+                        "display-lg": ["48px", { lineHeight: "60px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "500" }],
+                        "title-lg": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .lucide {
+            stroke-width: 1.5;
+        }
+        /* Custom scrollbar hide for horizontal lists if needed */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar Component -->
+<header class="fixed top-0 z-50 flex justify-between items-center w-full px-margin-mobile h-16 bg-surface/80 backdrop-blur-md dark:bg-on-background/80 shadow-sm md:px-margin-desktop transition-all duration-300">
+<div class="flex items-center gap-sm">
+<!-- Leading Avatar -->
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container-high border border-outline-variant/30 flex-shrink-0">
+<img alt="Teacher Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of an approachable teacher in a soft lit modern classroom setting. The lighting is high-key and bright, evoking a modern light-mode aesthetic. The color palette incorporates subtle warm grays and deep blacks for contrast, avoiding any harsh greens. The mood is serene, empathetic, and professional." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfrvwK692JuYnz3eur5bfR6ib_vc35a4EhQ1PRLVzskL-AjBZX3eL_RO40CPaFjTOCMLD3PZqJKtJcpO9y8HnS4Mry2z-2fe0IqPaQtAHEZX_lXaU_ytAt9Yugx4-CNBS3il728usGGetfjmuf9W0tM08VvQZGFgOlYWxP1vIhJonNtft8keubUtdazq43v7967Uej_QlO6fEreG0UpUUV9lAsxcVLkmWY095sDxdRh0HuKKm8zdw8gzuwFDyYm5j2HJ0LVHqvbZqx"/>
+</div>
+<!-- Headline -->
+<h1 class="font-title-lg text-title-lg font-semibold text-primary dark:text-primary-fixed">微光老师</h1>
+</div>
+<!-- Trailing Icon -->
+<button aria-label="Notifications" class="w-10 h-10 rounded-full flex items-center justify-center text-primary dark:text-primary-fixed-dim hover:bg-surface-container-low transition-colors duration-200 active:scale-95">
+<i class="w-6 h-6" data-lucide="bell"></i>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-20 px-margin-mobile md:px-margin-desktop max-w-[1440px] mx-auto flex flex-col gap-lg">
+<!-- Top Section: AI Greeting & Status Card (Twilight Purple) -->
+<section class="relative bg-gradient-to-br from-primary-container to-[#7a78ef] text-on-primary-container rounded-xl p-lg overflow-hidden shadow-[0_12px_40px_rgba(93,92,222,0.15)] flex flex-col justify-end min-h-[140px]">
+<!-- Subtle atmospheric background effect instead of heavy image to maintain minimalism -->
+<div class="absolute top-[-50%] right-[-20%] w-[150%] h-[150%] bg-gradient-to-br from-white/15 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+<div class="relative z-10">
+<div class="flex items-center gap-xs mb-1 opacity-90">
+<i class="w-4 h-4" data-lucide="sun"></i>
+<span class="font-label-md text-label-md uppercase tracking-wider">今日洞察</span>
+</div>
+<h2 class="font-headline-md text-headline-md mb-xs drop-shadow-sm">早上好，微光老师</h2>
+<p class="font-body-md text-body-md opacity-90 max-w-[85%] drop-shadow-sm">深呼吸，今天有 3 节课等待您的指引。您总是能带来安定的力量。</p>
+</div>
+</section>
+<!-- Stats Grid (Bento Style) -->
+<section class="grid grid-cols-3 gap-sm">
+<!-- Stat 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-sm shadow-[0_8px_30px_rgba(93,92,222,0.06)] flex flex-col items-center justify-center text-center gap-base transition-transform hover:-translate-y-0.5 duration-300">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-transparent bg-clip-text bg-gradient-to-r from-primary to-[#6b69eb]">3</span>
+<span class="font-label-md text-label-md text-on-surface-variant">今日课程</span>
+</div>
+<!-- Stat 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-sm shadow-[0_8px_30px_rgba(93,92,222,0.06)] flex flex-col items-center justify-center text-center gap-base relative transition-transform hover:-translate-y-0.5 duration-300">
+<!-- Red dot indicator for unread -->
+<div class="absolute top-3 right-4 w-2 h-2 bg-error rounded-full shadow-[0_0_8px_rgba(186,26,26,0.4)]"></div>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">5</span>
+<span class="font-label-md text-label-md text-on-surface-variant">待办提醒</span>
+</div>
+<!-- Stat 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-sm shadow-[0_8px_30px_rgba(93,92,222,0.06)] flex flex-col items-center justify-center text-center gap-base transition-transform hover:-translate-y-0.5 duration-300">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">2</span>
+<span class="font-label-md text-label-md text-on-surface-variant">家长跟进</span>
+</div>
+</section>
+<!-- Action Grid -->
+<section class="grid grid-cols-2 gap-sm">
+<!-- Action 1: AI Praise (Heal Action Styling) -->
+<button class="bg-gradient-to-br from-secondary-container to-[#ffd68a] text-on-secondary-container rounded-xl p-md flex flex-col items-center justify-center gap-xs shadow-[0_12px_40px_rgba(255,197,95,0.15)] hover:brightness-105 transition-all active:scale-95 group">
+<div class="w-10 h-10 rounded-full bg-white/40 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform shadow-sm">
+<i class="w-6 h-6" data-lucide="sparkles"></i>
+</div>
+<span class="font-label-md text-label-md font-bold">AI 智能表扬</span>
+</button>
+<!-- Action 2: Record -->
+<button class="bg-surface-container-lowest text-on-surface rounded-xl p-md flex flex-col items-center justify-center gap-xs shadow-[0_8px_30px_rgba(93,92,222,0.06)] hover:bg-surface-container-low transition-all active:scale-95 group">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-primary flex items-center justify-center mb-1 group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<i class="w-6 h-6" data-lucide="message-circle"></i>
+</div>
+<span class="font-label-md text-label-md">记录点滴</span>
+</button>
+<!-- Action 3: Add Reminder -->
+<button class="bg-surface-container-lowest text-on-surface rounded-xl p-md flex flex-col items-center justify-center gap-xs shadow-[0_8px_30px_rgba(93,92,222,0.06)] hover:bg-surface-container-low transition-all active:scale-95 group">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-primary flex items-center justify-center mb-1 group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<i class="w-6 h-6" data-lucide="alarm-clock"></i>
+</div>
+<span class="font-label-md text-label-md">添加提醒</span>
+</button>
+<!-- Action 4: Relax -->
+<button class="bg-surface-container-lowest text-on-surface rounded-xl p-md flex flex-col items-center justify-center gap-xs shadow-[0_8px_30px_rgba(93,92,222,0.06)] hover:bg-surface-container-low transition-all active:scale-95 group">
+<div class="w-10 h-10 rounded-full bg-surface-container-high text-primary flex items-center justify-center mb-1 group-hover:bg-primary-container group-hover:text-on-primary-container transition-colors">
+<i class="w-6 h-6" data-lucide="headphones"></i>
+</div>
+<span class="font-label-md text-label-md">5分钟疗愈</span>
+</button>
+</section>
+<!-- Next Class Card (Prominent) -->
+<section class="mt-xs">
+<h3 class="font-title-lg text-title-lg text-on-background mb-sm px-xs">近期日程</h3>
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0_8px_30px_rgba(93,92,222,0.08)] border border-outline-variant/10 relative overflow-hidden flex flex-col gap-md transition-transform hover:-translate-y-1 duration-300">
+<!-- Decorative left border -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-[#6b69eb]"></div>
+<div class="flex justify-between items-start">
+<div>
+<div class="inline-flex items-center gap-xs bg-primary/10 text-primary px-2 py-1 rounded-md mb-2">
+<div class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(68,65,196,0.6)]"></div>
+<span class="font-caption text-caption font-bold">即将开始 · 10分钟后</span>
+</div>
+<h4 class="font-headline-md text-headline-md text-on-surface">高二(3)班 - 心理健康</h4>
+</div>
+<button aria-label="More options" class="text-outline hover:text-primary transition-colors">
+<i class="w-5 h-5" data-lucide="more-vertical"></i>
+</button>
+</div>
+<div class="flex flex-col gap-2 text-on-surface-variant font-body-md text-body-md">
+<div class="flex items-center gap-sm">
+<i class="w-4 h-4 opacity-70" data-lucide="clock"></i>
+<span>09:30 - 10:15</span>
+</div>
+<div class="flex items-center gap-sm">
+<i class="w-4 h-4 opacity-70" data-lucide="map-pin"></i>
+<span>教学楼B座 402室</span>
+</div>
+</div>
+<button class="w-full bg-gradient-to-r from-primary to-[#6b69eb] text-on-primary rounded-lg py-3 font-label-md text-label-md font-bold shadow-[0_8px_20px_rgba(93,92,222,0.2)] hover:opacity-95 transition-all active:scale-[0.98]">
+                    查看课件
+                </button>
+</div>
+</section>
+<!-- Follow-up List -->
+<section class="mt-xs pb-6">
+<div class="flex justify-between items-end mb-sm px-xs">
+<h3 class="font-title-lg text-title-lg text-on-background">需要关注的家长</h3>
+<button class="font-label-md text-label-md text-primary hover:underline">查看全部</button>
+</div>
+<div class="flex flex-col gap-sm">
+<!-- List Item 1 (High Priority - Error Color used instead of green for priority) -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0_8px_30px_rgba(93,92,222,0.06)] flex items-center gap-md hover:bg-surface-container-low/50 transition-colors">
+<div class="w-12 h-12 rounded-full bg-gradient-to-br from-surface-container-high to-surface-container-highest flex items-center justify-center text-on-surface-variant font-title-lg font-bold flex-shrink-0 shadow-sm">
+                        李
+                    </div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-xs mb-0.5">
+<span class="font-title-lg text-title-lg text-on-surface truncate">李明宇 妈妈</span>
+<span class="bg-error-container text-on-error-container text-[10px] px-1.5 py-0.5 rounded font-bold tracking-wide flex-shrink-0 shadow-sm">高优</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant truncate">关于近期情绪波动的沟通...</p>
+</div>
+<button class="w-8 h-8 rounded-full border border-outline-variant/40 text-primary flex items-center justify-center hover:bg-primary/10 transition-colors flex-shrink-0">
+<i class="w-4 h-4" data-lucide="phone"></i>
+</button>
+</div>
+<!-- List Item 2 (Normal Priority) -->
+<div class="bg-surface-container-lowest rounded-xl p-md shadow-[0_8px_30px_rgba(93,92,222,0.06)] flex items-center gap-md hover:bg-surface-container-low/50 transition-colors">
+<div class="w-12 h-12 rounded-full bg-gradient-to-br from-surface-container-high to-surface-container-highest flex items-center justify-center text-on-surface-variant font-title-lg font-bold flex-shrink-0 shadow-sm">
+                        张
+                    </div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-xs mb-0.5">
+<span class="font-title-lg text-title-lg text-on-surface truncate">张梓涵 爸爸</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant truncate">上周课后反馈跟进</p>
+</div>
+<button class="w-8 h-8 rounded-full border border-outline-variant/40 text-primary flex items-center justify-center hover:bg-primary/10 transition-colors flex-shrink-0">
+<i class="w-4 h-4" data-lucide="message-square"></i>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar Component - Rendered on Mobile -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-4 py-2 pb-safe bg-gradient-to-t from-surface to-surface-container-lowest/90 backdrop-blur-md dark:from-on-background dark:to-on-background/90 rounded-t-xl z-50 shadow-[0_-8px_30px_rgba(93,92,222,0.06)] pb-[env(safe-area-inset-bottom,16px)] border-t border-white/20">
+<!-- Active Tab: 首页 (Home) -->
+<button class="flex flex-col items-center justify-center text-primary-container bg-primary/10 rounded-xl px-4 py-1.5 min-w-[64px] active:scale-90 transition-transform duration-150">
+<i class="w-6 h-6 mb-1 text-primary" data-lucide="home"></i>
+<span class="font-caption text-caption font-bold text-primary">首页</span>
+</button>
+<!-- Inactive Tab: 疗愈 -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all duration-200 active:scale-90 min-w-[64px] py-1.5">
+<i class="w-6 h-6 mb-1" data-lucide="sparkles"></i>
+<span class="font-caption text-caption">疗愈</span>
+</button>
+<!-- Inactive Tab: 私聊 -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all duration-200 active:scale-90 min-w-[64px] py-1.5">
+<i class="w-6 h-6 mb-1" data-lucide="message-circle"></i>
+<span class="font-caption text-caption">私聊</span>
+</button>
+<!-- Inactive Tab: 日程 -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all duration-200 active:scale-90 min-w-[64px] py-1.5 relative">
+<!-- Indicator dot -->
+<div class="absolute top-1.5 right-4 w-1.5 h-1.5 bg-error rounded-full shadow-[0_0_6px_rgba(186,26,26,0.5)]"></div>
+<i class="w-6 h-6 mb-1" data-lucide="calendar"></i>
+<span class="font-caption text-caption">日程</span>
+</button>
+<!-- Inactive Tab: 我的 -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-all duration-200 active:scale-90 min-w-[64px] py-1.5">
+<i class="w-6 h-6 mb-1" data-lucide="user"></i>
+<span class="font-caption text-caption">我的</span>
+</button>
+</nav>
+<!-- SideNav structure for desktop -->
+<div class="hidden md:flex fixed left-0 top-16 bottom-0 w-64 bg-surface border-r border-outline-variant/20 p-4 flex-col gap-2 z-40">
+<!-- Desktop Nav Items mapped from BottomNavBar -->
+<button class="flex items-center gap-3 text-primary bg-primary/10 rounded-xl px-4 py-3 active:scale-[0.98] transition-transform font-label-md font-bold">
+<i class="w-5 h-5" data-lucide="home"></i>
+            首页
+        </button>
+<button class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low rounded-xl px-4 py-3 active:scale-[0.98] transition-transform font-label-md">
+<i class="w-5 h-5" data-lucide="sparkles"></i>
+            疗愈
+        </button>
+<button class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low rounded-xl px-4 py-3 active:scale-[0.98] transition-transform font-label-md">
+<i class="w-5 h-5" data-lucide="message-circle"></i>
+            私聊
+        </button>
+<button class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low rounded-xl px-4 py-3 active:scale-[0.98] transition-transform font-label-md">
+<i class="w-5 h-5" data-lucide="calendar"></i>
+            日程
+        </button>
+<button class="flex items-center gap-3 text-on-surface-variant hover:bg-surface-container-low rounded-xl px-4 py-3 active:scale-[0.98] transition-transform font-label-md">
+<i class="w-5 h-5" data-lucide="user"></i>
+            我的
+        </button>
+</div>
+<!-- Adjust main content margin for desktop nav -->
+<style>
+        @media (min-width: 768px) {
+            main {
+                margin-left: 16rem; /* 64 * 0.25rem */
+                max-width: calc(100% - 16rem);
+            }
+        }
+    </style>
+<script>
+    lucide.createIcons();
+</script>
+</body></html>

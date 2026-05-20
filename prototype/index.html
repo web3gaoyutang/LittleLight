@@ -1,0 +1,1888 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>微光老师 H5 原型</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f8f4;
+      --panel: #ffffff;
+      --panel-soft: #fbfcf8;
+      --ink: #24302f;
+      --muted: #6c7774;
+      --line: #e4e9e3;
+      --green: #4f8a7b;
+      --green-dark: #2f6e62;
+      --coral: #e78262;
+      --gold: #d7a84f;
+      --blue: #6276ad;
+      --pink: #d87895;
+      --shadow: 0 16px 38px rgba(44, 64, 55, 0.12);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background:
+        linear-gradient(90deg, rgba(79, 138, 123, 0.06) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(79, 138, 123, 0.05) 1px, transparent 1px),
+        #edf3ec;
+      background-size: 34px 34px;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .stage {
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .phone-shell {
+      width: min(430px, 100%);
+      height: min(900px, calc(100svh - 48px));
+      min-height: 720px;
+      border: 1px solid rgba(36, 48, 47, 0.12);
+      border-radius: 8px;
+      background: #101716;
+      padding: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .app {
+      position: relative;
+      height: 100%;
+      overflow: hidden;
+      border-radius: 8px;
+      background: var(--bg);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 18px 10px;
+      background: rgba(246, 248, 244, 0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(228, 233, 227, 0.72);
+    }
+
+    .topbar-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .eyebrow {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 22px;
+      line-height: 1.2;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    h2 {
+      font-size: 17px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 15px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .icon-btn {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 6px 14px rgba(57, 75, 66, 0.06);
+    }
+
+    .icon-btn svg,
+    .tab-btn svg,
+    .mini-action svg,
+    .text-btn svg,
+    .chip svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+
+    .notice-dot {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      border: 2px solid var(--panel);
+      border-radius: 999px;
+      background: var(--coral);
+    }
+
+    .content {
+      height: calc(100% - 69px);
+      overflow-y: auto;
+      padding: 14px 16px calc(92px + var(--safe-bottom));
+      scrollbar-width: none;
+    }
+
+    .content::-webkit-scrollbar {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .page {
+      display: none;
+      animation: fadeIn 180ms ease;
+    }
+
+    .page.active {
+      display: grid;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 8px 22px rgba(60, 79, 70, 0.06);
+    }
+
+    .card.soft {
+      background: var(--panel-soft);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .small {
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .body-text {
+      font-size: 14px;
+      line-height: 1.65;
+      color: #3c4846;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .between {
+      justify-content: space-between;
+    }
+
+    .wrap {
+      flex-wrap: wrap;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      color: #fff;
+      font-weight: 700;
+      border-radius: 8px;
+      background: var(--green);
+    }
+
+    .avatar.coral {
+      background: var(--coral);
+    }
+
+    .avatar.blue {
+      background: var(--blue);
+    }
+
+    .avatar.gold {
+      background: var(--gold);
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    .chip-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip,
+    .mood-chip,
+    .seg-btn,
+    .day-chip {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex: 0 0 auto;
+      padding: 8px 11px;
+      color: var(--ink);
+      background: #f3f6f1;
+      border: 1px solid #dfe7df;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .chip.active,
+    .mood-chip.active,
+    .seg-btn.active,
+    .day-chip.active {
+      color: #fff;
+      border-color: var(--green);
+      background: var(--green);
+    }
+
+    .mini-action-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mini-action {
+      min-height: 72px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 7px;
+      padding: 10px 6px;
+      color: var(--ink);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .mini-action span {
+      max-width: 100%;
+      font-size: 12px;
+      line-height: 1.15;
+      text-align: center;
+      white-space: normal;
+    }
+
+    .mini-action.primary {
+      color: #fff;
+      border-color: var(--green);
+      background: var(--green);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .stat {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .stat strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 10px;
+    }
+
+    .timeline-item {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .time {
+      color: var(--green-dark);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      padding: 4px 7px;
+      color: var(--green-dark);
+      background: #eaf4ef;
+      border-radius: 6px;
+      font-size: 11px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .tag.coral {
+      color: #9f4d39;
+      background: #fff0e9;
+    }
+
+    .tag.blue {
+      color: #415383;
+      background: #edf1ff;
+    }
+
+    .tag.gold {
+      color: #806126;
+      background: #fff6dc;
+    }
+
+    .text-btn,
+    .primary-btn,
+    .ghost-btn {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 13px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 650;
+      line-height: 1.15;
+    }
+
+    .primary-btn {
+      width: 100%;
+      color: #fff;
+      background: var(--green);
+    }
+
+    .primary-btn.coral {
+      background: var(--coral);
+    }
+
+    .ghost-btn,
+    .text-btn {
+      color: var(--ink);
+      background: #f3f6f1;
+      border: 1px solid var(--line);
+    }
+
+    .text-btn {
+      min-height: 34px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      color: #4f5a57;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid #dfe7df;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    input,
+    select {
+      height: 42px;
+      padding: 0 11px;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+      padding: 11px;
+      line-height: 1.55;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(79, 138, 123, 0.12);
+    }
+
+    .ai-output {
+      display: none;
+      margin-top: 10px;
+      padding: 12px;
+      border: 1px solid #dce8e2;
+      border-radius: 8px;
+      background: #f8fcf9;
+    }
+
+    .ai-output.visible {
+      display: block;
+    }
+
+    .breath-zone {
+      display: grid;
+      place-items: center;
+      gap: 14px;
+      padding: 10px 0 4px;
+    }
+
+    .breath-circle {
+      width: 142px;
+      height: 142px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.28), transparent 32%),
+        conic-gradient(from 120deg, var(--green), var(--blue), var(--coral), var(--green));
+      box-shadow: 0 16px 34px rgba(79, 138, 123, 0.18);
+      transform: scale(0.94);
+      transition: transform 400ms ease;
+    }
+
+    .breath-circle.active {
+      animation: breathe 4.8s ease-in-out infinite;
+    }
+
+    .breath-circle strong {
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    @keyframes breathe {
+      0%,
+      100% {
+        transform: scale(0.88);
+      }
+
+      50% {
+        transform: scale(1);
+      }
+    }
+
+    .sound-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .sound-card {
+      display: grid;
+      gap: 9px;
+      min-height: 112px;
+      padding: 12px;
+      text-align: left;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .sound-card.active {
+      border-color: rgba(79, 138, 123, 0.55);
+      background: #f3faf6;
+      box-shadow: 0 8px 20px rgba(79, 138, 123, 0.1);
+    }
+
+    .sound-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .wave {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 18px;
+    }
+
+    .wave i {
+      width: 4px;
+      height: 8px;
+      border-radius: 99px;
+      background: #b9c7c1;
+    }
+
+    .sound-card.active .wave i {
+      background: var(--green);
+      animation: wave 900ms ease-in-out infinite;
+    }
+
+    .sound-card.active .wave i:nth-child(2) {
+      animation-delay: 120ms;
+    }
+
+    .sound-card.active .wave i:nth-child(3) {
+      animation-delay: 240ms;
+    }
+
+    @keyframes wave {
+      0%,
+      100% {
+        height: 7px;
+      }
+
+      50% {
+        height: 18px;
+      }
+    }
+
+    .tidy-board {
+      display: grid;
+      gap: 10px;
+    }
+
+    .tidy-items {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .tidy-item {
+      min-height: 48px;
+      padding: 9px;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    .tidy-item.done {
+      color: var(--muted);
+      background: #f0f5f1;
+      text-decoration: line-through;
+    }
+
+    .progress {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: #e5ebe5;
+    }
+
+    .progress span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: var(--green);
+      transition: width 240ms ease;
+    }
+
+    .parent-card {
+      display: grid;
+      grid-template-columns: 42px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .risk {
+      width: 8px;
+      height: 32px;
+      border-radius: 99px;
+      background: var(--green);
+    }
+
+    .risk.mid {
+      background: var(--gold);
+    }
+
+    .risk.high {
+      background: var(--coral);
+    }
+
+    .reply-grid {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .reply-card {
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .reply-card h3 {
+      margin-bottom: 7px;
+      color: var(--green-dark);
+    }
+
+    .calendar-strip {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .date-cell {
+      min-height: 54px;
+      display: grid;
+      place-items: center;
+      gap: 3px;
+      padding: 7px 2px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .date-cell strong {
+      font-size: 15px;
+      line-height: 1;
+    }
+
+    .date-cell span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .date-cell.active {
+      color: #fff;
+      border-color: var(--green);
+      background: var(--green);
+    }
+
+    .date-cell.active span {
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .course-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .course-card {
+      display: grid;
+      grid-template-columns: 6px 1fr;
+      gap: 10px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .course-mark {
+      border-radius: 99px;
+      background: var(--green);
+    }
+
+    .course-mark.coral {
+      background: var(--coral);
+    }
+
+    .course-mark.blue {
+      background: var(--blue);
+    }
+
+    .course-mark.gold {
+      background: var(--gold);
+    }
+
+    .profile-card {
+      color: #fff;
+      background: #314642;
+      border-color: #314642;
+    }
+
+    .quota {
+      display: grid;
+      gap: 8px;
+    }
+
+    .settings-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 46px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .switch {
+      width: 48px;
+      height: 28px;
+      padding: 3px;
+      border-radius: 999px;
+      background: #dce4dc;
+      transition: background 180ms ease;
+    }
+
+    .switch span {
+      display: block;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #fff;
+      transition: transform 180ms ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    .switch.active {
+      background: var(--green);
+    }
+
+    .switch.active span {
+      transform: translateX(20px);
+    }
+
+    .bottom-nav {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 8;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 4px;
+      padding: 8px 10px calc(8px + var(--safe-bottom));
+      background: rgba(255, 255, 255, 0.95);
+      border-top: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+    }
+
+    .tab-btn {
+      min-width: 0;
+      min-height: 54px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 4px;
+      color: var(--muted);
+      background: transparent;
+      border-radius: 8px;
+      font-size: 11px;
+      line-height: 1;
+    }
+
+    .tab-btn.active {
+      color: var(--green-dark);
+      background: #eef6f1;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      align-items: flex-end;
+      background: rgba(21, 29, 27, 0.42);
+    }
+
+    .modal-backdrop.visible {
+      display: flex;
+    }
+
+    .sheet {
+      width: 100%;
+      padding: 16px;
+      background: var(--bg);
+      border-radius: 8px 8px 0 0;
+      box-shadow: 0 -16px 34px rgba(0, 0, 0, 0.18);
+    }
+
+    .toast {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: calc(84px + var(--safe-bottom));
+      z-index: 30;
+      display: none;
+      padding: 12px 14px;
+      color: #fff;
+      background: rgba(36, 48, 47, 0.92);
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .toast.visible {
+      display: block;
+      animation: fadeIn 180ms ease;
+    }
+
+    .empty {
+      padding: 18px 12px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed #ccd7d0;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    @media (max-width: 520px) {
+      body {
+        background: var(--bg);
+      }
+
+      .stage {
+        padding: 0;
+        display: block;
+      }
+
+      .phone-shell {
+        width: 100%;
+        height: 100svh;
+        min-height: 100svh;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        background: var(--bg);
+        box-shadow: none;
+      }
+
+      .app {
+        border-radius: 0;
+      }
+
+      .mini-action-grid {
+        grid-template-columns: repeat(4, minmax(64px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <main class="phone-shell" aria-label="微光老师 H5 原型">
+      <div class="app">
+        <header class="topbar">
+          <button class="icon-btn" type="button" title="校历">
+            <i data-lucide="calendar-days"></i>
+          </button>
+          <div class="topbar-text">
+            <span class="eyebrow" id="topEyebrow">周一 第 12 周</span>
+            <h1 id="pageTitle">早安，林老师</h1>
+          </div>
+          <button class="icon-btn" type="button" title="提醒" id="openReminderFromBell">
+            <i data-lucide="bell"></i>
+            <span class="notice-dot" aria-hidden="true"></span>
+          </button>
+        </header>
+
+        <div class="content">
+          <section class="page active stack" id="page-home" data-title="早安，林老师" data-eyebrow="周一 第 12 周">
+            <article class="card soft stack">
+              <div class="section-head">
+                <div>
+                  <h2>今天状态</h2>
+                  <p class="small muted">5 月 17 日，下午还有 2 节课</p>
+                </div>
+                <span class="tag gold">低打扰</span>
+              </div>
+              <div class="chip-row" aria-label="情绪选择">
+                <button class="mood-chip active" type="button" data-mood="tired">有点累</button>
+                <button class="mood-chip" type="button" data-mood="calm">还平稳</button>
+                <button class="mood-chip" type="button" data-mood="wronged">有点委屈</button>
+                <button class="mood-chip" type="button" data-mood="happy">被治愈了</button>
+              </div>
+              <p class="body-text" id="moodMessage">今天先别急着把所有事都扛好。你已经处理完上午的课和一轮家长消息，可以给自己留三分钟空白。</p>
+            </article>
+
+            <div class="stats-grid">
+              <div class="stat">
+                <strong>5</strong>
+                <span>今日课程</span>
+              </div>
+              <div class="stat">
+                <strong id="todoCount">4</strong>
+                <span>待办提醒</span>
+              </div>
+              <div class="stat">
+                <strong>2</strong>
+                <span>家长跟进</span>
+              </div>
+            </div>
+
+            <div class="mini-action-grid">
+              <button class="mini-action primary" type="button" data-action="praise">
+                <i data-lucide="sparkles"></i>
+                <span>AI 夸夸</span>
+              </button>
+              <button class="mini-action" type="button" data-action="record">
+                <i data-lucide="message-square-plus"></i>
+                <span>记录沟通</span>
+              </button>
+              <button class="mini-action" type="button" data-action="reminder">
+                <i data-lucide="alarm-plus"></i>
+                <span>加提醒</span>
+              </button>
+              <button class="mini-action" type="button" data-action="sound">
+                <i data-lucide="headphones"></i>
+                <span>放松</span>
+              </button>
+            </div>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>下一节课</h2>
+                <span class="tag blue">14:10</span>
+              </div>
+              <div class="row">
+                <div class="avatar">语</div>
+                <div>
+                  <h3>三年级 2 班 语文</h3>
+                  <p class="small muted">第 3 单元复习，教室 302</p>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>今日安排</h2>
+                <button class="text-btn" type="button" data-switch-tab="schedule">
+                  <i data-lucide="layout-list"></i>
+                  课表
+                </button>
+              </div>
+              <div class="timeline" id="todayReminderList">
+                <div class="timeline-item">
+                  <div class="time">09:50</div>
+                  <div>
+                    <h3>批改听写本</h3>
+                    <p class="small muted">下节语文课前完成</p>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="time">12:30</div>
+                  <div>
+                    <h3>午休值班</h3>
+                    <p class="small muted">三楼走廊，低打扰提醒</p>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="time">17:20</div>
+                  <div>
+                    <h3>回访陈一然家长</h3>
+                    <p class="small muted">同步作业节奏和情绪状态</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>待跟进家长</h2>
+                <span class="tag coral">2 条</span>
+              </div>
+              <div class="stack">
+                <div class="parent-card">
+                  <div class="avatar coral">陈</div>
+                  <div>
+                    <h3>陈一然妈妈</h3>
+                    <p class="small muted">作业连续 3 次未交，语气需委婉</p>
+                  </div>
+                  <div class="risk high" title="高风险"></div>
+                </div>
+                <div class="parent-card">
+                  <div class="avatar blue">许</div>
+                  <div>
+                    <h3>许嘉木爸爸</h3>
+                    <p class="small muted">月考后反馈，关注学习方法</p>
+                  </div>
+                  <div class="risk mid" title="中风险"></div>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="page stack" id="page-heal" data-title="疗愈空间" data-eyebrow="课间 5 分钟">
+            <article class="card">
+              <div class="section-head">
+                <div>
+                  <h2>呼吸休息</h2>
+                  <p class="small muted">吸气 4 秒，停留 1 秒，呼气 5 秒</p>
+                </div>
+                <button class="text-btn" type="button" id="breathToggle">
+                  <i data-lucide="play"></i>
+                  开始
+                </button>
+              </div>
+              <div class="breath-zone">
+                <div class="breath-circle" id="breathCircle">
+                  <strong id="breathText">慢一点</strong>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>声音</h2>
+                <span class="tag">专注</span>
+              </div>
+              <div class="sound-grid">
+                <button class="sound-card" type="button" data-sound="rain">
+                  <div class="sound-top">
+                    <h3>雨声</h3>
+                    <i data-lucide="cloud-rain"></i>
+                  </div>
+                  <p class="small muted">午休与放空</p>
+                  <div class="wave" aria-hidden="true"><i></i><i></i><i></i></div>
+                </button>
+                <button class="sound-card" type="button" data-sound="lofi">
+                  <div class="sound-top">
+                    <h3>Lo-fi</h3>
+                    <i data-lucide="radio"></i>
+                  </div>
+                  <p class="small muted">批改作业</p>
+                  <div class="wave" aria-hidden="true"><i></i><i></i><i></i></div>
+                </button>
+                <button class="sound-card" type="button" data-sound="classroom">
+                  <div class="sound-top">
+                    <h3>教室环境音</h3>
+                    <i data-lucide="school"></i>
+                  </div>
+                  <p class="small muted">轻专注</p>
+                  <div class="wave" aria-hidden="true"><i></i><i></i><i></i></div>
+                </button>
+                <button class="sound-card" type="button" data-sound="piano">
+                  <div class="sound-top">
+                    <h3>钢琴</h3>
+                    <i data-lucide="music-2"></i>
+                  </div>
+                  <p class="small muted">放学后</p>
+                  <div class="wave" aria-hidden="true"><i></i><i></i><i></i></div>
+                </button>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>AI 夸夸</h2>
+                <span class="tag blue">温柔前辈</span>
+              </div>
+              <div class="chip-row" id="personaGroup">
+                <button class="seg-btn active" type="button" data-persona="senior">温柔前辈</button>
+                <button class="seg-btn" type="button" data-persona="director">知心主任</button>
+                <button class="seg-btn" type="button" data-persona="friend">清醒闺蜜</button>
+              </div>
+              <div class="form-grid" style="margin-top: 10px;">
+                <textarea id="praiseInput" placeholder="今天发生了什么？"></textarea>
+                <button class="primary-btn" type="button" id="generatePraise">
+                  <i data-lucide="sparkles"></i>
+                  生成一句抱抱
+                </button>
+              </div>
+              <div class="ai-output visible" id="praiseOutput">
+                <p class="body-text">能坚持站在讲台上的人，本身就已经很厉害。今天先把自己照顾好，剩下的事情可以一件一件来。</p>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>树洞</h2>
+                <span class="tag coral">仅自己可见</span>
+              </div>
+              <div class="form-grid">
+                <textarea id="treeInput" placeholder="写一点今天的心情"></textarea>
+                <button class="ghost-btn" type="button" id="treeSend">
+                  <i data-lucide="send"></i>
+                  放进树洞
+                </button>
+              </div>
+              <div class="ai-output" id="treeOutput"></div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <div>
+                  <h2>课桌整理</h2>
+                  <p class="small muted">点掉桌面上的小负担</p>
+                </div>
+                <button class="text-btn" type="button" id="tidyReset">
+                  <i data-lucide="rotate-ccw"></i>
+                  重置
+                </button>
+              </div>
+              <div class="tidy-board">
+                <div class="progress"><span id="tidyProgress"></span></div>
+                <div class="tidy-items">
+                  <button class="tidy-item" type="button">待批改卷</button>
+                  <button class="tidy-item" type="button">会议通知</button>
+                  <button class="tidy-item" type="button">家长留言</button>
+                  <button class="tidy-item" type="button">讲义草稿</button>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="page stack" id="page-comm" data-title="家校沟通" data-eyebrow="记录与 AI 回复">
+            <article class="card">
+              <div class="section-head">
+                <h2>家长档案</h2>
+                <button class="text-btn" type="button">
+                  <i data-lucide="user-plus"></i>
+                  新增
+                </button>
+              </div>
+              <div class="stack">
+                <div class="parent-card">
+                  <div class="avatar coral">陈</div>
+                  <div>
+                    <h3>陈一然妈妈</h3>
+                    <p class="small muted">比较敏感，沟通需委婉</p>
+                  </div>
+                  <span class="tag coral">高</span>
+                </div>
+                <div class="parent-card">
+                  <div class="avatar blue">许</div>
+                  <div>
+                    <h3>许嘉木爸爸</h3>
+                    <p class="small muted">关注学习方法，反馈积极</p>
+                  </div>
+                  <span class="tag gold">中</span>
+                </div>
+                <div class="parent-card">
+                  <div class="avatar">周</div>
+                  <div>
+                    <h3>周清然妈妈</h3>
+                    <p class="small muted">关注情绪，适合定期同步</p>
+                  </div>
+                  <span class="tag">低</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>AI 家长回复</h2>
+                <span class="tag blue">Pro</span>
+              </div>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="studentIssue">学生情况</label>
+                  <textarea id="studentIssue">学生连续三天没交语文作业，家长比较敏感，希望语气温和一点。</textarea>
+                </div>
+                <div class="field">
+                  <label for="parentStyle">家长风格</label>
+                  <select id="parentStyle">
+                    <option>比较敏感</option>
+                    <option>容易焦虑</option>
+                    <option>沟通积极</option>
+                    <option>关注成绩</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="replyTone">期望语气</label>
+                  <select id="replyTone">
+                    <option>温和</option>
+                    <option>正式</option>
+                    <option>简短</option>
+                    <option>强硬但礼貌</option>
+                  </select>
+                </div>
+                <button class="primary-btn coral" type="button" id="generateReply">
+                  <i data-lucide="wand-sparkles"></i>
+                  生成回复
+                </button>
+              </div>
+              <div class="reply-grid" id="replyOutput">
+                <div class="reply-card">
+                  <h3>温和版</h3>
+                  <p class="body-text">您好，想和您同步一下孩子这几天的语文作业情况。最近连续几次作业都没有按时提交，我这边担心孩子是不是遇到了时间安排或理解上的困难。您方便时可以和孩子一起看一下具体原因，我们也一起帮他把节奏调整回来。</p>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>沟通记录</h2>
+                <button class="text-btn" type="button" id="saveRecord">
+                  <i data-lucide="save"></i>
+                  保存
+                </button>
+              </div>
+              <div class="timeline" id="recordList">
+                <div class="timeline-item">
+                  <div class="time">昨天</div>
+                  <div>
+                    <h3>陈一然妈妈</h3>
+                    <p class="small muted">同步作业完成情况，约定一周后回访</p>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="time">周五</div>
+                  <div>
+                    <h3>周清然妈妈</h3>
+                    <p class="small muted">孩子最近上课更主动，建议继续鼓励</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="page stack" id="page-schedule" data-title="课表提醒" data-eyebrow="周课表与待办">
+            <article class="card">
+              <div class="section-head">
+                <h2>本周</h2>
+                <button class="text-btn" type="button" data-action="reminder">
+                  <i data-lucide="alarm-plus"></i>
+                  加提醒
+                </button>
+              </div>
+              <div class="calendar-strip">
+                <button class="date-cell" type="button" data-day="mon"><span>一</span><strong>13</strong></button>
+                <button class="date-cell" type="button" data-day="tue"><span>二</span><strong>14</strong></button>
+                <button class="date-cell" type="button" data-day="wed"><span>三</span><strong>15</strong></button>
+                <button class="date-cell" type="button" data-day="thu"><span>四</span><strong>16</strong></button>
+                <button class="date-cell active" type="button" data-day="fri"><span>五</span><strong>17</strong></button>
+                <button class="date-cell" type="button" data-day="sat"><span>六</span><strong>18</strong></button>
+                <button class="date-cell" type="button" data-day="sun"><span>日</span><strong>19</strong></button>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>课程</h2>
+                <span class="tag" id="courseDayTag">周五</span>
+              </div>
+              <div class="course-list" id="courseList"></div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>备忘</h2>
+                <span class="tag gold">4 条</span>
+              </div>
+              <div class="timeline">
+                <div class="timeline-item">
+                  <div class="time">今天</div>
+                  <div>
+                    <h3>整理家长会提纲</h3>
+                    <p class="small muted">晚自习前确认重点学生名单</p>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="time">明天</div>
+                  <div>
+                    <h3>公开课材料</h3>
+                    <p class="small muted">上传教案与课件</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="page stack" id="page-profile" data-title="我的" data-eyebrow="教师工作陪伴">
+            <article class="card profile-card">
+              <div class="row between">
+                <div class="row">
+                  <div class="avatar gold">林</div>
+                  <div>
+                    <h2>林老师</h2>
+                    <p class="small" style="color: rgba(255,255,255,0.76);">小学语文，三年级班主任</p>
+                  </div>
+                </div>
+                <span class="tag gold">Pro 试用</span>
+              </div>
+            </article>
+
+            <article class="card quota">
+              <div class="section-head">
+                <h2>AI 用量</h2>
+                <span class="small muted">本周 18/50</span>
+              </div>
+              <div class="progress"><span style="width: 36%;"></span></div>
+              <div class="stats-grid">
+                <div class="stat">
+                  <strong>9</strong>
+                  <span>家长回复</span>
+                </div>
+                <div class="stat">
+                  <strong>6</strong>
+                  <span>AI 夸夸</span>
+                </div>
+                <div class="stat">
+                  <strong>3</strong>
+                  <span>沟通总结</span>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>偏好</h2>
+              </div>
+              <div class="settings-list">
+                <div class="setting-row">
+                  <div>
+                    <h3>低打扰提醒</h3>
+                    <p class="small muted">仅提醒重要事务</p>
+                  </div>
+                  <button class="switch active" type="button" aria-label="低打扰提醒"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <h3>树洞匿名</h3>
+                    <p class="small muted">默认隐藏个人信息</p>
+                  </div>
+                  <button class="switch active" type="button" aria-label="树洞匿名"><span></span></button>
+                </div>
+                <div class="setting-row">
+                  <div>
+                    <h3>云同步</h3>
+                    <p class="small muted">课表与沟通记录备份</p>
+                  </div>
+                  <button class="switch" type="button" aria-label="云同步"><span></span></button>
+                </div>
+              </div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>会员权益</h2>
+                <span class="tag blue">29 元/月</span>
+              </div>
+              <div class="stack">
+                <div class="row between">
+                  <p class="body-text">AI 家长沟通、无限记录、云同步、高级提醒</p>
+                </div>
+                <button class="primary-btn" type="button">
+                  <i data-lucide="badge-check"></i>
+                  开通 Pro
+                </button>
+              </div>
+            </article>
+          </section>
+        </div>
+
+        <nav class="bottom-nav" aria-label="底部导航">
+          <button class="tab-btn active" type="button" data-tab="home">
+            <i data-lucide="sun-medium"></i>
+            <span>今日</span>
+          </button>
+          <button class="tab-btn" type="button" data-tab="heal">
+            <i data-lucide="leaf"></i>
+            <span>疗愈</span>
+          </button>
+          <button class="tab-btn" type="button" data-tab="comm">
+            <i data-lucide="messages-square"></i>
+            <span>沟通</span>
+          </button>
+          <button class="tab-btn" type="button" data-tab="schedule">
+            <i data-lucide="calendar-clock"></i>
+            <span>课表</span>
+          </button>
+          <button class="tab-btn" type="button" data-tab="profile">
+            <i data-lucide="user-round"></i>
+            <span>我的</span>
+          </button>
+        </nav>
+
+        <div class="modal-backdrop" id="reminderModal" role="dialog" aria-modal="true" aria-label="新增提醒">
+          <div class="sheet stack">
+            <div class="section-head">
+              <h2>新增提醒</h2>
+              <button class="icon-btn" type="button" id="closeReminder" title="关闭">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label for="reminderTitle">事项</label>
+                <input id="reminderTitle" value="月考后沟通许嘉木爸爸">
+              </div>
+              <div class="row">
+                <div class="field" style="flex: 1;">
+                  <label for="reminderTime">时间</label>
+                  <input id="reminderTime" type="time" value="17:20">
+                </div>
+                <div class="field" style="flex: 1;">
+                  <label for="reminderType">分类</label>
+                  <select id="reminderType">
+                    <option>回访</option>
+                    <option>会议</option>
+                    <option>教研</option>
+                    <option>活动</option>
+                  </select>
+                </div>
+              </div>
+              <button class="primary-btn" type="button" id="saveReminder">
+                <i data-lucide="check"></i>
+                保存提醒
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="toast" id="toast" role="status"></div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const $ = (selector, scope = document) => scope.querySelector(selector);
+    const $$ = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
+
+    const moodCopy = {
+      tired: "今天先别急着把所有事都扛好。你已经处理完上午的课和一轮家长消息，可以给自己留三分钟空白。",
+      calm: "现在的稳定很珍贵。把节奏保持在你能承受的范围里，今天就已经很好。",
+      wronged: "被误解的时候会很难受，这不代表你做得不够好。先把委屈放在这里，不用立刻证明什么。",
+      happy: "那些小小的回应值得被记住。孩子递来的糖、一次主动举手，都是你工作的回声。"
+    };
+
+    const courses = {
+      mon: [
+        ["08:10", "三年级 2 班 语文", "第 3 单元导入", "green"],
+        ["10:20", "教研组会", "听评课安排", "blue"],
+        ["14:10", "三年级 1 班 语文", "阅读训练", "coral"]
+      ],
+      tue: [
+        ["08:10", "三年级 1 班 语文", "习作讲评", "coral"],
+        ["13:30", "班会", "值日与纪律", "gold"]
+      ],
+      wed: [
+        ["09:00", "三年级 2 班 语文", "词语复习", "green"],
+        ["15:00", "家长会准备", "重点学生名单", "blue"]
+      ],
+      thu: [
+        ["08:10", "公开课", "阅读策略", "gold"],
+        ["10:20", "三年级 1 班 语文", "课内练习", "coral"]
+      ],
+      fri: [
+        ["08:10", "晨读", "古诗背诵", "gold"],
+        ["09:50", "三年级 2 班 语文", "单元复习", "green"],
+        ["14:10", "三年级 2 班 语文", "错题订正", "blue"],
+        ["16:20", "班主任例会", "周末安全提醒", "coral"]
+      ],
+      sat: [],
+      sun: []
+    };
+
+    const dayNames = {
+      mon: "周一",
+      tue: "周二",
+      wed: "周三",
+      thu: "周四",
+      fri: "周五",
+      sat: "周六",
+      sun: "周日"
+    };
+
+    let audioContext;
+    let soundNode;
+    let soundGain;
+    let toastTimer;
+
+    function initIcons() {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    function switchTab(tabName) {
+      $$(".page").forEach(page => page.classList.remove("active"));
+      $(`#page-${tabName}`).classList.add("active");
+      $$(".tab-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.tab === tabName));
+      const activePage = $(`#page-${tabName}`);
+      $("#pageTitle").textContent = activePage.dataset.title;
+      $("#topEyebrow").textContent = activePage.dataset.eyebrow;
+      $(".content").scrollTop = 0;
+    }
+
+    function showToast(message) {
+      const toast = $("#toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 2200);
+    }
+
+    function openReminder() {
+      $("#reminderModal").classList.add("visible");
+    }
+
+    function closeReminder() {
+      $("#reminderModal").classList.remove("visible");
+    }
+
+    function runAction(action) {
+      if (action === "praise") {
+        switchTab("heal");
+        setTimeout(() => $("#praiseInput").focus(), 80);
+      }
+      if (action === "record") {
+        switchTab("comm");
+      }
+      if (action === "reminder") {
+        openReminder();
+      }
+      if (action === "sound") {
+        switchTab("heal");
+      }
+    }
+
+    function generatePraise() {
+      const text = $("#praiseInput").value.trim() || "今天有点累，但还在努力把班里的事情处理好。";
+      const persona = $(".seg-btn.active", $("#personaGroup")).dataset.persona;
+      const lead = {
+        senior: "我知道你不是脆弱，你只是已经撑了很久。",
+        director: "从一个更长的职业周期看，今天的你已经完成了很重要的稳定工作。",
+        friend: "先说结论，你今天真的很可以。"
+      }[persona];
+      const detail = text.length > 26 ? text.slice(0, 26) + "..." : text;
+      $("#praiseOutput").innerHTML = `<p class="body-text">${lead} 你提到「${detail}」，这不是小事。先把老师这个身份放下一会儿，喝口水，慢慢回来。</p>`;
+      $("#praiseOutput").classList.add("visible");
+      showToast("已生成一条温柔回应");
+    }
+
+    function generateReply() {
+      const issue = $("#studentIssue").value.trim() || "学生最近作业完成不稳定";
+      const style = $("#parentStyle").value;
+      const tone = $("#replyTone").value;
+      const versions = [
+        ["温和版", `您好，想和您同步一下孩子最近的情况。${issue}。我这边更希望先了解原因，再一起帮孩子把节奏调整回来。考虑到您比较${style.replace("比较", "")}，我们可以先从今晚确认作业内容和完成时间开始。`],
+        ["正式版", `您好，关于孩子近期学习情况和您沟通一下。${issue}，这可能会影响后续课堂衔接。建议今天一起确认具体原因，我也会在课堂上继续关注孩子状态。`],
+        ["简短版", `您好，和您同步一下：${issue}。麻烦今晚一起看下原因，我们配合帮孩子把节奏调整回来。`],
+        ["强硬但礼貌版", `您好，需要和您明确同步一下：${issue}。如果持续出现，会影响后续学习效果。建议今晚完成原因确认，并从明天开始固定检查提交情况。`]
+      ];
+      const preferred = versions.find(item => item[0].startsWith(tone)) || versions[0];
+      const sorted = [preferred, ...versions.filter(item => item !== preferred)];
+      $("#replyOutput").innerHTML = sorted.map(([title, copy]) => `
+        <div class="reply-card">
+          <h3>${title}</h3>
+          <p class="body-text">${copy}</p>
+        </div>
+      `).join("");
+      showToast("已生成 4 个沟通版本");
+    }
+
+    function saveRecord() {
+      const issue = $("#studentIssue").value.trim() || "沟通记录";
+      const item = document.createElement("div");
+      item.className = "timeline-item";
+      item.innerHTML = `
+        <div class="time">刚刚</div>
+        <div>
+          <h3>陈一然妈妈</h3>
+          <p class="small muted">${issue.slice(0, 32)}，已生成沟通话术</p>
+        </div>
+      `;
+      $("#recordList").prepend(item);
+      showToast("已保存到沟通记录");
+    }
+
+    function renderCourses(day) {
+      $("#courseDayTag").textContent = dayNames[day];
+      const list = $("#courseList");
+      const data = courses[day] || [];
+      if (!data.length) {
+        list.innerHTML = `<div class="empty">今天没有课程安排，可以留给自己一点空白。</div>`;
+        return;
+      }
+      list.innerHTML = data.map(([time, title, note, color]) => `
+        <div class="course-card">
+          <div class="course-mark ${color === "green" ? "" : color}"></div>
+          <div>
+            <div class="row between">
+              <h3>${title}</h3>
+              <span class="time">${time}</span>
+            </div>
+            <p class="small muted">${note}</p>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function saveReminder() {
+      const title = $("#reminderTitle").value.trim() || "新的提醒";
+      const time = $("#reminderTime").value || "17:20";
+      const item = document.createElement("div");
+      item.className = "timeline-item";
+      item.innerHTML = `
+        <div class="time">${time}</div>
+        <div>
+          <h3>${title}</h3>
+          <p class="small muted">${$("#reminderType").value}，低打扰提醒</p>
+        </div>
+      `;
+      $("#todayReminderList").append(item);
+      $("#todoCount").textContent = String(Number($("#todoCount").textContent) + 1);
+      closeReminder();
+      showToast("提醒已加入今日安排");
+    }
+
+    function treeSend() {
+      const text = $("#treeInput").value.trim();
+      if (!text) {
+        showToast("先写一点心情");
+        return;
+      }
+      $("#treeOutput").innerHTML = `<p class="body-text">树洞接住了这句话。你不需要马上变好，也不需要把每一种情绪都解释清楚。它可以先安静地放在这里。</p>`;
+      $("#treeOutput").classList.add("visible");
+      $("#treeInput").value = "";
+    }
+
+    function updateTidyProgress() {
+      const items = $$(".tidy-item");
+      const done = items.filter(item => item.classList.contains("done")).length;
+      $("#tidyProgress").style.width = `${done / items.length * 100}%`;
+      if (done === items.length) {
+        showToast("课桌清爽度 100%");
+      }
+    }
+
+    function stopSound() {
+      if (soundNode) {
+        try {
+          soundNode.stop();
+        } catch (error) {
+          soundNode.disconnect();
+        }
+        soundNode = null;
+      }
+      if (soundGain) {
+        soundGain.disconnect();
+        soundGain = null;
+      }
+    }
+
+    function playSound(type) {
+      stopSound();
+      try {
+        audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+        soundGain = audioContext.createGain();
+        soundGain.gain.value = 0.025;
+        soundGain.connect(audioContext.destination);
+
+        if (type === "rain" || type === "classroom") {
+          const bufferSize = audioContext.sampleRate * 2;
+          const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+          const output = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i += 1) {
+            output[i] = (Math.random() * 2 - 1) * (type === "rain" ? 0.7 : 0.28);
+          }
+          soundNode = audioContext.createBufferSource();
+          soundNode.buffer = buffer;
+          soundNode.loop = true;
+        } else {
+          soundNode = audioContext.createOscillator();
+          soundNode.frequency.value = type === "piano" ? 261.63 : 196;
+          soundNode.type = type === "piano" ? "sine" : "triangle";
+        }
+        soundNode.connect(soundGain);
+        soundNode.start();
+      } catch (error) {
+        showToast("当前浏览器限制了音频播放，已切换为视觉播放状态");
+      }
+    }
+
+    function toggleSound(card) {
+      const isActive = card.classList.contains("active");
+      $$(".sound-card").forEach(item => item.classList.remove("active"));
+      stopSound();
+      if (!isActive) {
+        card.classList.add("active");
+        playSound(card.dataset.sound);
+        showToast(`${$("h3", card).textContent}正在播放`);
+      }
+    }
+
+    function bindEvents() {
+      $$(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+      });
+
+      $$("[data-switch-tab]").forEach(btn => {
+        btn.addEventListener("click", () => switchTab(btn.dataset.switchTab));
+      });
+
+      $$("[data-action]").forEach(btn => {
+        btn.addEventListener("click", () => runAction(btn.dataset.action));
+      });
+
+      $$(".mood-chip").forEach(btn => {
+        btn.addEventListener("click", () => {
+          $$(".mood-chip").forEach(item => item.classList.remove("active"));
+          btn.classList.add("active");
+          $("#moodMessage").textContent = moodCopy[btn.dataset.mood];
+        });
+      });
+
+      $$(".seg-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          $$(".seg-btn").forEach(item => item.classList.remove("active"));
+          btn.classList.add("active");
+        });
+      });
+
+      $("#generatePraise").addEventListener("click", generatePraise);
+      $("#generateReply").addEventListener("click", generateReply);
+      $("#saveRecord").addEventListener("click", saveRecord);
+      $("#openReminderFromBell").addEventListener("click", openReminder);
+      $("#closeReminder").addEventListener("click", closeReminder);
+      $("#saveReminder").addEventListener("click", saveReminder);
+      $("#treeSend").addEventListener("click", treeSend);
+
+      $("#reminderModal").addEventListener("click", event => {
+        if (event.target.id === "reminderModal") {
+          closeReminder();
+        }
+      });
+
+      $("#breathToggle").addEventListener("click", () => {
+        const circle = $("#breathCircle");
+        const active = circle.classList.toggle("active");
+        $("#breathToggle").innerHTML = active
+          ? `<i data-lucide="pause"></i> 呼吸中`
+          : `<i data-lucide="play"></i> 开始`;
+        $("#breathText").textContent = active ? "跟着我" : "慢一点";
+        initIcons();
+      });
+
+      $$(".sound-card").forEach(card => {
+        card.addEventListener("click", () => toggleSound(card));
+      });
+
+      $$(".tidy-item").forEach(item => {
+        item.addEventListener("click", () => {
+          item.classList.toggle("done");
+          updateTidyProgress();
+        });
+      });
+
+      $("#tidyReset").addEventListener("click", () => {
+        $$(".tidy-item").forEach(item => item.classList.remove("done"));
+        updateTidyProgress();
+      });
+
+      $$(".date-cell").forEach(cell => {
+        cell.addEventListener("click", () => {
+          $$(".date-cell").forEach(item => item.classList.remove("active"));
+          cell.classList.add("active");
+          renderCourses(cell.dataset.day);
+        });
+      });
+
+      $$(".switch").forEach(button => {
+        button.addEventListener("click", () => button.classList.toggle("active"));
+      });
+    }
+
+    initIcons();
+    bindEvents();
+    renderCourses("fri");
+    updateTidyProgress();
+  </script>
+</body>
+</html>

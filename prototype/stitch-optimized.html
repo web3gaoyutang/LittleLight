@@ -1,0 +1,2053 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>微光老师 · Stitch 优化版 H5 原型</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      --background: #f9f9f7;
+      --surface: #ffffff;
+      --surface-low: #f4f4f2;
+      --surface-mid: #eeeeec;
+      --surface-high: #e8e8e6;
+      --text: #1a1c1b;
+      --text-soft: #464554;
+      --muted: #777585;
+      --line: #e5e5e0;
+      --line-purple: #ebebfa;
+      --primary: #4441c4;
+      --primary-bright: #5d5cde;
+      --primary-soft: #e2dfff;
+      --primary-pale: #f1eeff;
+      --tertiary: #696997;
+      --gold: #d9a441;
+      --gold-soft: #ffdeaa;
+      --danger: #ba1a1a;
+      --danger-soft: #ffdad6;
+      --shadow: 0 12px 34px rgba(93, 92, 222, 0.08);
+      --shadow-soft: 0 4px 20px rgba(93, 92, 222, 0.04);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--background);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      color: var(--text);
+      font-family: Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 8% -10%, rgba(93, 92, 222, 0.11), transparent 28%),
+        radial-gradient(circle at 105% 30%, rgba(217, 164, 65, 0.12), transparent 28%),
+        var(--background);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 24px;
+      line-height: 32px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-size: 20px;
+      line-height: 28px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 16px;
+      line-height: 24px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .app-frame {
+      min-height: 100svh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100svh;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding: 24px 18px;
+      background: rgba(255, 255, 255, 0.72);
+      border-right: 1px solid rgba(199, 196, 214, 0.36);
+      backdrop-filter: blur(20px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 48px;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-bright));
+      box-shadow: 0 10px 24px rgba(93, 92, 222, 0.24);
+    }
+
+    .brand-name {
+      display: grid;
+      gap: 2px;
+    }
+
+    .brand-name strong {
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .caption {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 500;
+    }
+
+    .side-nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      color: var(--text-soft);
+      background: transparent;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 20px;
+      transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .nav-btn:hover {
+      background: var(--surface-low);
+      transform: translateY(-1px);
+    }
+
+    .nav-btn.active {
+      color: var(--primary);
+      background: rgba(93, 92, 222, 0.1);
+    }
+
+    .nav-btn svg,
+    .icon-btn svg,
+    .quick-action svg,
+    .text-btn svg,
+    .primary-btn svg,
+    .ghost-btn svg,
+    .chip svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 1.8;
+    }
+
+    .side-card {
+      margin-top: auto;
+      padding: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(199, 196, 214, 0.34);
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(93, 92, 222, 0.1), rgba(255, 222, 170, 0.22));
+    }
+
+    .side-card p {
+      margin-top: 8px;
+      color: var(--text-soft);
+      font-size: 13px;
+      line-height: 20px;
+    }
+
+    .main {
+      min-width: 0;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 72px;
+      padding: 14px clamp(16px, 4vw, 42px);
+      background: rgba(249, 249, 247, 0.82);
+      border-bottom: 1px solid rgba(199, 196, 214, 0.28);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar-left {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      color: #fff;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--primary-bright), var(--tertiary));
+      box-shadow: 0 8px 20px rgba(93, 92, 222, 0.16);
+      font-weight: 800;
+    }
+
+    .avatar.gold {
+      color: #5f4100;
+      background: linear-gradient(135deg, var(--gold-soft), #fff2ca);
+    }
+
+    .avatar.soft {
+      color: var(--primary);
+      background: linear-gradient(135deg, var(--primary-pale), #fff);
+      border: 1px solid rgba(199, 196, 214, 0.45);
+      box-shadow: none;
+    }
+
+    .top-title {
+      min-width: 0;
+    }
+
+    .eyebrow {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 600;
+    }
+
+    .top-title h1 {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      position: relative;
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      background: var(--surface);
+      border: 1px solid rgba(199, 196, 214, 0.42);
+      border-radius: 12px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .dot {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      border: 2px solid #fff;
+      border-radius: 99px;
+      background: var(--danger);
+      box-shadow: 0 0 8px rgba(186, 26, 26, 0.32);
+    }
+
+    .content {
+      width: min(1160px, 100%);
+      margin: 0 auto;
+      padding: 24px clamp(16px, 4vw, 42px) 104px;
+    }
+
+    .page {
+      display: none;
+      gap: 24px;
+      animation: pageIn 180ms ease;
+    }
+
+    .page.active {
+      display: grid;
+    }
+
+    @keyframes pageIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      padding: 18px;
+      background: var(--surface);
+      border: 1px solid rgba(199, 196, 214, 0.32);
+      border-radius: 16px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .card.pad-lg {
+      padding: 24px;
+    }
+
+    .hero {
+      min-height: 230px;
+      display: grid;
+      align-content: end;
+      gap: 18px;
+      color: #fff;
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 80% 16%, rgba(255, 255, 255, 0.22), transparent 24%),
+        radial-gradient(circle at 18% 80%, rgba(255, 197, 95, 0.22), transparent 28%),
+        linear-gradient(135deg, var(--primary), var(--primary-bright) 56%, #7a78ef);
+      box-shadow: 0 20px 48px rgba(93, 92, 222, 0.2);
+    }
+
+    .hero h2 {
+      font-size: clamp(26px, 3.2vw, 38px);
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      max-width: 560px;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 16px;
+      line-height: 26px;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .section-head.tight {
+      margin-bottom: 8px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .body {
+      color: var(--text-soft);
+      font-size: 14px;
+      line-height: 23px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .between {
+      justify-content: space-between;
+    }
+
+    .wrap {
+      flex-wrap: wrap;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat {
+      min-height: 118px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 6px;
+      padding: 14px;
+      text-align: center;
+      background: var(--surface);
+      border: 1px solid rgba(199, 196, 214, 0.3);
+      border-radius: 16px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--primary);
+      font-size: 32px;
+      line-height: 38px;
+      font-weight: 800;
+    }
+
+    .stat span {
+      color: var(--text-soft);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .quick-action {
+      min-height: 112px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 10px;
+      padding: 14px 10px;
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid rgba(199, 196, 214, 0.3);
+      border-radius: 16px;
+      box-shadow: var(--shadow-soft);
+      transition: transform 160ms ease, border 160ms ease, box-shadow 160ms ease;
+    }
+
+    .quick-action:hover {
+      transform: translateY(-2px);
+      border-color: rgba(93, 92, 222, 0.28);
+      box-shadow: var(--shadow);
+    }
+
+    .quick-action.primary {
+      color: #5f4100;
+      background: linear-gradient(135deg, var(--gold-soft), #ffd98a);
+      border-color: rgba(217, 164, 65, 0.32);
+      box-shadow: 0 12px 36px rgba(217, 164, 65, 0.16);
+    }
+
+    .quick-icon {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      background: rgba(93, 92, 222, 0.09);
+      border-radius: 999px;
+    }
+
+    .quick-action.primary .quick-icon {
+      color: #5f4100;
+      background: rgba(255, 255, 255, 0.38);
+    }
+
+    .quick-action span {
+      max-width: 100%;
+      text-align: center;
+      font-size: 13px;
+      line-height: 18px;
+      font-weight: 800;
+    }
+
+    .primary-btn,
+    .ghost-btn,
+    .text-btn {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .primary-btn {
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--primary-bright));
+      box-shadow: 0 10px 22px rgba(93, 92, 222, 0.18);
+    }
+
+    .primary-btn.gold {
+      color: #5f4100;
+      background: linear-gradient(135deg, var(--gold-soft), #ffd98a);
+      box-shadow: 0 10px 22px rgba(217, 164, 65, 0.18);
+    }
+
+    .ghost-btn {
+      color: var(--primary);
+      background: rgba(93, 92, 222, 0.08);
+      border: 1px solid rgba(93, 92, 222, 0.12);
+    }
+
+    .hero .ghost-btn {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.26);
+      box-shadow: none;
+    }
+
+    .text-btn {
+      min-height: 36px;
+      padding: 8px 11px;
+      color: var(--primary);
+      background: var(--surface-low);
+      border: 1px solid rgba(199, 196, 214, 0.3);
+      font-size: 12px;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 3px;
+      scrollbar-width: none;
+    }
+
+    .chip-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      flex: 0 0 auto;
+      padding: 8px 11px;
+      color: var(--text-soft);
+      background: var(--surface-low);
+      border: 1px solid rgba(199, 196, 214, 0.3);
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .chip.active {
+      color: #fff;
+      background: var(--primary-bright);
+      border-color: var(--primary-bright);
+      box-shadow: 0 8px 18px rgba(93, 92, 222, 0.18);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 4px 8px;
+      color: var(--primary);
+      background: rgba(93, 92, 222, 0.09);
+      border: 1px solid rgba(93, 92, 222, 0.08);
+      border-radius: 999px;
+      font-size: 11px;
+      line-height: 14px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .tag.gold {
+      color: #755100;
+      background: var(--gold-soft);
+      border-color: rgba(217, 164, 65, 0.2);
+    }
+
+    .tag.danger {
+      color: #93000a;
+      background: var(--danger-soft);
+      border-color: rgba(186, 26, 26, 0.12);
+    }
+
+    .schedule-card,
+    .parent-card,
+    .record-card {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      background: linear-gradient(135deg, #fff, rgba(244, 244, 242, 0.58));
+      border: 1px solid rgba(199, 196, 214, 0.3);
+      border-radius: 14px;
+    }
+
+    .schedule-card.active {
+      border-color: rgba(93, 92, 222, 0.26);
+      background: linear-gradient(135deg, #fff, rgba(93, 92, 222, 0.07));
+      box-shadow: var(--shadow);
+    }
+
+    .time {
+      color: var(--primary);
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 800;
+    }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 14px;
+      padding-left: 24px;
+    }
+
+    .timeline::before {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 12px;
+      bottom: 14px;
+      width: 1px;
+      background: linear-gradient(var(--line-purple), rgba(93, 92, 222, 0.34), var(--line));
+    }
+
+    .timeline-item {
+      position: relative;
+    }
+
+    .timeline-item::before {
+      content: "";
+      position: absolute;
+      left: -22px;
+      top: 18px;
+      width: 10px;
+      height: 10px;
+      border: 2px solid #fff;
+      border-radius: 999px;
+      background: var(--surface-high);
+      box-shadow: 0 0 0 5px var(--background);
+    }
+
+    .timeline-item.active::before {
+      background: var(--primary);
+      box-shadow: 0 0 0 5px var(--background), 0 0 16px rgba(93, 92, 222, 0.52);
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label {
+      color: var(--text-soft);
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 800;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(199, 196, 214, 0.46);
+      border-radius: 12px;
+      outline: none;
+      transition: box-shadow 160ms ease, border 160ms ease;
+    }
+
+    input,
+    select {
+      height: 44px;
+      padding: 0 12px;
+    }
+
+    textarea {
+      min-height: 106px;
+      padding: 12px;
+      resize: vertical;
+      line-height: 24px;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--primary-bright);
+      box-shadow: 0 0 0 4px rgba(93, 92, 222, 0.12);
+    }
+
+    .ai-result {
+      display: none;
+      padding: 14px;
+      color: var(--text-soft);
+      background: linear-gradient(135deg, rgba(241, 238, 255, 0.8), rgba(255, 255, 255, 0.9));
+      border: 1px solid rgba(93, 92, 222, 0.12);
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 24px;
+    }
+
+    .ai-result.visible {
+      display: block;
+    }
+
+    .sound-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .sound-card {
+      min-height: 142px;
+      display: grid;
+      align-content: space-between;
+      gap: 12px;
+      padding: 14px;
+      color: var(--text);
+      text-align: left;
+      background: var(--surface);
+      border: 1px solid rgba(199, 196, 214, 0.32);
+      border-radius: 16px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .sound-card.active {
+      border-color: rgba(93, 92, 222, 0.28);
+      background: linear-gradient(135deg, #fff, rgba(93, 92, 222, 0.08));
+      box-shadow: var(--shadow);
+    }
+
+    .sound-icon {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      color: var(--primary);
+      background: rgba(93, 92, 222, 0.09);
+      border-radius: 999px;
+    }
+
+    .sound-wave {
+      display: flex;
+      gap: 3px;
+      align-items: end;
+      height: 18px;
+    }
+
+    .sound-wave i {
+      width: 4px;
+      height: 7px;
+      background: rgba(93, 92, 222, 0.24);
+      border-radius: 99px;
+    }
+
+    .sound-card.active .sound-wave i {
+      background: var(--primary-bright);
+      animation: wave 880ms ease-in-out infinite;
+    }
+
+    .sound-card.active .sound-wave i:nth-child(2) {
+      animation-delay: 120ms;
+    }
+
+    .sound-card.active .sound-wave i:nth-child(3) {
+      animation-delay: 240ms;
+    }
+
+    @keyframes wave {
+      0%,
+      100% {
+        height: 7px;
+      }
+
+      50% {
+        height: 18px;
+      }
+    }
+
+    .breath-card {
+      min-height: 360px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(93, 92, 222, 0.12), transparent 45%),
+        var(--surface);
+    }
+
+    .breath-core {
+      position: relative;
+      width: min(260px, 64vw);
+      height: min(260px, 64vw);
+      display: grid;
+      place-items: center;
+    }
+
+    .breath-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: rgba(93, 92, 222, 0.14);
+      transform: scale(0.66);
+      opacity: 0.62;
+    }
+
+    .breath-ring:nth-child(2) {
+      inset: 28px;
+      background: rgba(93, 92, 222, 0.2);
+    }
+
+    .breath-ring:nth-child(3) {
+      inset: 56px;
+      background: rgba(93, 92, 222, 0.26);
+    }
+
+    .breath-core.active .breath-ring {
+      animation: breathe 7.2s ease-in-out infinite;
+    }
+
+    .breath-core.active .breath-ring:nth-child(2) {
+      animation-delay: -1.6s;
+    }
+
+    .breath-core.active .breath-ring:nth-child(3) {
+      animation-delay: -3.2s;
+    }
+
+    @keyframes breathe {
+      0%,
+      100% {
+        transform: scale(0.68);
+        opacity: 0.66;
+      }
+
+      50% {
+        transform: scale(1);
+        opacity: 0.2;
+      }
+    }
+
+    .breath-center {
+      z-index: 1;
+      width: 108px;
+      height: 108px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #8f8cff, var(--primary-bright) 44%, var(--primary));
+      box-shadow: 0 16px 34px rgba(93, 92, 222, 0.24);
+    }
+
+    .day-strip {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .day {
+      min-height: 68px;
+      display: grid;
+      place-items: center;
+      gap: 4px;
+      padding: 8px 4px;
+      color: var(--text-soft);
+      background: linear-gradient(180deg, #fff, var(--surface-low));
+      border: 1px solid rgba(199, 196, 214, 0.32);
+      border-radius: 14px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .day span {
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 700;
+    }
+
+    .day strong {
+      font-size: 20px;
+      line-height: 24px;
+      font-weight: 800;
+    }
+
+    .day.active {
+      color: #fff;
+      background: linear-gradient(180deg, var(--primary), var(--primary-bright));
+      box-shadow: 0 12px 24px rgba(93, 92, 222, 0.22);
+    }
+
+    .profile-hero {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .profile-avatar {
+      position: relative;
+      width: 86px;
+      height: 86px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      border: 3px solid #fff;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--primary-bright), var(--tertiary));
+      box-shadow: 0 12px 30px rgba(93, 92, 222, 0.15);
+      font-size: 28px;
+      font-weight: 800;
+    }
+
+    .verified {
+      position: absolute;
+      right: -2px;
+      bottom: 2px;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      color: #755100;
+      background: var(--gold-soft);
+      border: 2px solid var(--surface);
+      border-radius: 999px;
+    }
+
+    .settings {
+      overflow: hidden;
+      padding: 0;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 64px;
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(229, 229, 224, 0.9);
+      background: #fff;
+    }
+
+    .setting-row:last-child {
+      border-bottom: 0;
+    }
+
+    .switch {
+      width: 48px;
+      height: 28px;
+      flex: 0 0 auto;
+      padding: 3px;
+      border-radius: 999px;
+      background: var(--surface-high);
+      transition: background 180ms ease;
+    }
+
+    .switch span {
+      display: block;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+      transition: transform 180ms ease;
+    }
+
+    .switch.active {
+      background: var(--primary-bright);
+    }
+
+    .switch.active span {
+      transform: translateX(20px);
+    }
+
+    .bottom-nav {
+      display: none;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(26, 28, 27, 0.38);
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-backdrop.visible {
+      display: flex;
+    }
+
+    .sheet {
+      width: min(540px, 100%);
+      display: grid;
+      gap: 16px;
+      padding: 20px;
+      background: var(--background);
+      border: 1px solid rgba(235, 235, 250, 0.86);
+      border-radius: 16px;
+      box-shadow: 0 24px 64px rgba(26, 28, 27, 0.2);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: 18px;
+      z-index: 90;
+      display: none;
+      max-width: min(520px, calc(100vw - 32px));
+      transform: translateX(-50%);
+      padding: 12px 16px;
+      color: #fff;
+      background: #2d2c33;
+      border-radius: 12px;
+      box-shadow: 0 14px 34px rgba(26, 28, 27, 0.22);
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 700;
+    }
+
+    .toast.visible {
+      display: block;
+      animation: toastIn 160ms ease;
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+    }
+
+    .empty {
+      padding: 24px;
+      color: var(--muted);
+      text-align: center;
+      background: #fff;
+      border: 1px dashed rgba(199, 196, 214, 0.72);
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 22px;
+    }
+
+    @media (max-width: 980px) {
+      .app-frame {
+        display: block;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .topbar {
+        min-height: 66px;
+        padding: 12px 16px;
+      }
+
+      .content {
+        padding: 18px 16px calc(92px + var(--safe-bottom));
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .quick-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 9px;
+      }
+
+      .quick-action {
+        min-height: 84px;
+        padding: 10px 6px;
+      }
+
+      .quick-icon {
+        width: 36px;
+        height: 36px;
+      }
+
+      .quick-action span {
+        font-size: 12px;
+        line-height: 16px;
+      }
+
+      .sound-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .profile-hero {
+        grid-template-columns: auto 1fr;
+      }
+
+      .profile-hero .text-btn {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+
+      .bottom-nav {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 50;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 4px;
+        padding: 8px 10px calc(8px + var(--safe-bottom));
+        background: rgba(255, 255, 255, 0.94);
+        border-top: 1px solid rgba(199, 196, 214, 0.36);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -8px 30px rgba(93, 92, 222, 0.08);
+        backdrop-filter: blur(18px);
+      }
+
+      .bottom-nav .nav-btn {
+        min-height: 54px;
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: 4px;
+        padding: 6px;
+        border-radius: 12px;
+        font-size: 11px;
+        line-height: 14px;
+      }
+
+      .bottom-nav .nav-btn svg {
+        width: 21px;
+        height: 21px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      h1 {
+        font-size: 22px;
+        line-height: 28px;
+      }
+
+      .hero {
+        min-height: 218px;
+        padding: 20px;
+      }
+
+      .hero p {
+        font-size: 14px;
+        line-height: 23px;
+      }
+
+      .stats {
+        gap: 8px;
+      }
+
+      .stat {
+        min-height: 96px;
+        padding: 10px 6px;
+      }
+
+      .stat strong {
+        font-size: 28px;
+        line-height: 34px;
+      }
+
+      .stat span {
+        font-size: 12px;
+      }
+
+      .day-strip {
+        gap: 6px;
+      }
+
+      .day {
+        min-height: 58px;
+        border-radius: 12px;
+      }
+
+      .day strong {
+        font-size: 18px;
+      }
+
+      .top-actions .icon-btn:first-child {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-frame">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark"><i data-lucide="sparkles"></i></div>
+        <div class="brand-name">
+          <strong>微光老师</strong>
+          <span class="caption">AI Teacher Companion</span>
+        </div>
+      </div>
+
+      <nav class="side-nav" aria-label="桌面导航">
+        <button class="nav-btn active" type="button" data-tab="home"><i data-lucide="home"></i>首页</button>
+        <button class="nav-btn" type="button" data-tab="heal"><i data-lucide="sparkles"></i>疗愈</button>
+        <button class="nav-btn" type="button" data-tab="comm"><i data-lucide="message-circle"></i>沟通</button>
+        <button class="nav-btn" type="button" data-tab="schedule"><i data-lucide="calendar-days"></i>日程</button>
+        <button class="nav-btn" type="button" data-tab="profile"><i data-lucide="user-round"></i>我的</button>
+      </nav>
+
+      <div class="side-card">
+        <span class="tag gold">今日微光</span>
+        <p>把任务排成队，情绪先放在安全的地方。今天不需要完美，只需要稳稳地走完。</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="avatar">林</div>
+          <div class="top-title">
+            <span class="eyebrow" id="topEyebrow">周三 第 12 周 · 今日洞察</span>
+            <h1 id="pageTitle">早上好，林老师</h1>
+          </div>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn" type="button" title="搜索"><i data-lucide="search"></i></button>
+          <button class="icon-btn" type="button" title="通知" data-open-reminder><i data-lucide="bell"></i><span class="dot"></span></button>
+        </div>
+      </header>
+
+      <div class="content">
+        <section class="page active" id="page-home" data-title="早上好，林老师" data-eyebrow="周三 第 12 周 · 今日洞察">
+          <div class="grid-2">
+            <div class="stack">
+              <article class="card hero pad-lg">
+                <div>
+                  <div class="hero-top"><i data-lucide="sun"></i><span>今日洞察</span></div>
+                  <h2>深呼吸，今天有 3 节课等待您的指引。</h2>
+                  <p>您总是能在混乱的消息和课程之间，给孩子们带来安定的力量。今天也请把一点点微光留给自己。</p>
+                </div>
+                <div class="hero-actions">
+                  <button class="primary-btn gold" type="button" data-action="praise"><i data-lucide="sparkles"></i>AI 夸夸</button>
+                  <button class="ghost-btn" type="button" data-action="sound"><i data-lucide="headphones"></i>5 分钟疗愈</button>
+                </div>
+              </article>
+
+              <div class="stats">
+                <div class="stat"><strong>3</strong><span>今日课程</span></div>
+                <div class="stat"><strong id="todoCount">5</strong><span>待办提醒</span></div>
+                <div class="stat"><strong>2</strong><span>家长跟进</span></div>
+              </div>
+
+              <div class="quick-grid">
+                <button class="quick-action primary" type="button" data-action="praise">
+                  <div class="quick-icon"><i data-lucide="sparkles"></i></div>
+                  <span>AI 智能表扬</span>
+                </button>
+                <button class="quick-action" type="button" data-action="record">
+                  <div class="quick-icon"><i data-lucide="message-circle"></i></div>
+                  <span>记录点滴</span>
+                </button>
+                <button class="quick-action" type="button" data-action="reminder">
+                  <div class="quick-icon"><i data-lucide="alarm-clock-plus"></i></div>
+                  <span>添加提醒</span>
+                </button>
+                <button class="quick-action" type="button" data-action="sound">
+                  <div class="quick-icon"><i data-lucide="headphones"></i></div>
+                  <span>5分钟疗愈</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="stack">
+              <article class="card">
+                <div class="section-head">
+                  <div>
+                    <h2>近期日程</h2>
+                    <p class="caption">下一节课 10 分钟后开始</p>
+                  </div>
+                  <span class="tag">即将开始</span>
+                </div>
+                <div class="schedule-card active">
+                  <div class="row between">
+                    <div>
+                      <h3>高二(3)班 · 心理健康</h3>
+                      <p class="body">教学楼 B 座 402 室</p>
+                    </div>
+                    <span class="time">09:30</span>
+                  </div>
+                  <button class="primary-btn" type="button"><i data-lucide="presentation"></i>查看课件</button>
+                </div>
+              </article>
+
+              <article class="card">
+                <div class="section-head">
+                  <h2>需要关注的家长</h2>
+                  <button class="text-btn" type="button" data-tab-shortcut="comm">查看全部</button>
+                </div>
+                <div class="stack">
+                  <div class="parent-card">
+                    <div class="row between">
+                      <div class="row">
+                        <div class="avatar soft">李</div>
+                        <div>
+                          <h3>李明宇妈妈</h3>
+                          <p class="body">关于近期情绪波动的沟通</p>
+                        </div>
+                      </div>
+                      <span class="tag danger">高优</span>
+                    </div>
+                  </div>
+                  <div class="parent-card">
+                    <div class="row between">
+                      <div class="row">
+                        <div class="avatar soft">张</div>
+                        <div>
+                          <h3>张梓涵爸爸</h3>
+                          <p class="body">上周课后反馈跟进</p>
+                        </div>
+                      </div>
+                      <span class="tag gold">需跟进</span>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="page-heal" data-title="疗愈空间" data-eyebrow="课间 5 分钟 · 白噪音与树洞">
+          <div class="grid-2">
+            <article class="card breath-card">
+              <div class="stack" style="justify-items:center;">
+                <div>
+                  <h2>呼吸律动</h2>
+                  <p class="body">跟随微光的节奏，深呼吸，卸下疲惫。</p>
+                </div>
+                <div class="breath-core" id="breathCore">
+                  <div class="breath-ring"></div>
+                  <div class="breath-ring"></div>
+                  <div class="breath-ring"></div>
+                  <div class="breath-center"><i data-lucide="wind"></i></div>
+                </div>
+                <button class="primary-btn" type="button" id="breathToggle"><i data-lucide="play"></i>开始一分钟冥想</button>
+              </div>
+            </article>
+
+            <div class="stack">
+              <article class="card">
+                <div class="section-head">
+                  <div>
+                    <h2>AI 夸夸</h2>
+                    <p class="caption">选择一个陪伴人格</p>
+                  </div>
+                  <span class="tag gold">治愈</span>
+                </div>
+                <div class="chip-row" id="personaGroup">
+                  <button class="chip active" type="button" data-persona="senior">温柔前辈</button>
+                  <button class="chip" type="button" data-persona="director">知心主任</button>
+                  <button class="chip" type="button" data-persona="friend">清醒同事</button>
+                </div>
+                <div class="form-grid" style="margin-top:14px;">
+                  <textarea id="praiseInput" placeholder="今天发生了什么？比如：开了很久的家长会，还被质疑..."></textarea>
+                  <button class="primary-btn gold" type="button" id="generatePraise"><i data-lucide="sparkles"></i>生成一句抱抱</button>
+                  <div class="ai-result visible" id="praiseOutput">能坚持站在讲台上的人，本身就已经很厉害。今天先把自己照顾好，剩下的事情可以一件一件来。</div>
+                </div>
+              </article>
+
+              <article class="card">
+                <div class="section-head">
+                  <h2>树洞</h2>
+                  <span class="tag">仅自己可见</span>
+                </div>
+                <div class="form-grid">
+                  <textarea id="treeInput" placeholder="写一点今天不方便说出口的话"></textarea>
+                  <button class="ghost-btn" type="button" id="treeSend"><i data-lucide="send"></i>放进树洞</button>
+                  <div class="ai-result" id="treeOutput"></div>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <article class="card">
+            <div class="section-head">
+              <div>
+                <h2>专注白噪音</h2>
+                <p class="caption">为备课、批改和午休营造宁静氛围</p>
+              </div>
+              <span class="tag">低打扰</span>
+            </div>
+            <div class="sound-grid">
+              <button class="sound-card" type="button" data-sound="rain">
+                <div class="sound-icon"><i data-lucide="cloud-rain"></i></div>
+                <div>
+                  <h3>雨夜</h3>
+                  <p class="body">午休与放空</p>
+                </div>
+                <div class="sound-wave"><i></i><i></i><i></i></div>
+              </button>
+              <button class="sound-card" type="button" data-sound="lofi">
+                <div class="sound-icon"><i data-lucide="radio"></i></div>
+                <div>
+                  <h3>Lo-fi</h3>
+                  <p class="body">批改作业</p>
+                </div>
+                <div class="sound-wave"><i></i><i></i><i></i></div>
+              </button>
+              <button class="sound-card" type="button" data-sound="classroom">
+                <div class="sound-icon"><i data-lucide="school"></i></div>
+                <div>
+                  <h3>安静教室</h3>
+                  <p class="body">轻专注</p>
+                </div>
+                <div class="sound-wave"><i></i><i></i><i></i></div>
+              </button>
+              <button class="sound-card" type="button" data-sound="piano">
+                <div class="sound-icon"><i data-lucide="music-2"></i></div>
+                <div>
+                  <h3>晚间钢琴</h3>
+                  <p class="body">放学后</p>
+                </div>
+                <div class="sound-wave"><i></i><i></i><i></i></div>
+              </button>
+            </div>
+          </article>
+        </section>
+
+        <section class="page" id="page-comm" data-title="家校沟通" data-eyebrow="AI 回复 · 家长档案 · 沟通记录">
+          <div class="grid-2">
+            <div class="stack">
+              <article class="card">
+                <div class="section-head">
+                  <div class="row">
+                    <div class="avatar soft"><i data-lucide="sparkles"></i></div>
+                    <div>
+                      <h2>AI 沟通助手</h2>
+                      <p class="caption">专业、有温度的回复草稿</p>
+                    </div>
+                  </div>
+                  <span class="tag gold">Pro</span>
+                </div>
+                <div class="form-grid">
+                  <div class="field">
+                    <label for="studentIssue">沟通要点</label>
+                    <textarea id="studentIssue">浩宇妈妈询问孩子最近在课堂上的专注度情况，希望语气温和一点，同时给出可执行建议。</textarea>
+                  </div>
+                  <div class="row">
+                    <div class="field" style="flex:1;">
+                      <label for="parentStyle">家长风格</label>
+                      <select id="parentStyle">
+                        <option>容易焦虑</option>
+                        <option>比较敏感</option>
+                        <option>沟通积极</option>
+                        <option>关注成绩</option>
+                      </select>
+                    </div>
+                    <div class="field" style="flex:1;">
+                      <label for="replyTone">语气</label>
+                      <select id="replyTone">
+                        <option>温和</option>
+                        <option>正式</option>
+                        <option>简短</option>
+                        <option>强硬但礼貌</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button class="primary-btn" type="button" id="generateReply"><i data-lucide="edit-3"></i>生成草稿</button>
+                  <div class="stack" id="replyOutput">
+                    <div class="ai-result visible">
+                      您好，想和您同步一下孩子最近课堂专注度的情况。孩子整体愿意参与，但在较长任务中容易分神。我们可以先从每天固定 10 分钟阅读或复述开始，我也会在课堂上继续提醒和观察。
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+
+            <div class="stack">
+              <article class="card">
+                <div class="section-head">
+                  <h2>重点关注</h2>
+                  <button class="text-btn" type="button"><i data-lucide="user-plus"></i>新增</button>
+                </div>
+                <div class="stack">
+                  <div class="parent-card">
+                    <div class="row between">
+                      <div class="row">
+                        <div class="avatar soft">林</div>
+                        <div>
+                          <h3>林晓晓妈妈</h3>
+                          <p class="body">近期情绪波动大</p>
+                        </div>
+                      </div>
+                      <span class="tag danger">敏感对话</span>
+                    </div>
+                    <p class="caption">昨天 14:30 语音通话</p>
+                  </div>
+                  <div class="parent-card">
+                    <div class="row between">
+                      <div class="row">
+                        <div class="avatar soft">陈</div>
+                        <div>
+                          <h3>陈子默爸爸</h3>
+                          <p class="body">询问期中测试反馈</p>
+                        </div>
+                      </div>
+                      <span class="tag gold">需跟进</span>
+                    </div>
+                    <p class="caption">待回复留言</p>
+                  </div>
+                </div>
+              </article>
+
+              <article class="card">
+                <div class="section-head">
+                  <h2>沟通记录</h2>
+                  <button class="text-btn" type="button" id="saveRecord"><i data-lucide="save"></i>保存当前</button>
+                </div>
+                <div class="timeline" id="recordList">
+                  <div class="timeline-item active">
+                    <div class="record-card">
+                      <div class="row between"><h3>林晓晓妈妈</h3><span class="caption">昨天</span></div>
+                      <p class="body">同步孩子近期情绪变化，约定一周后再回访。</p>
+                    </div>
+                  </div>
+                  <div class="timeline-item">
+                    <div class="record-card">
+                      <div class="row between"><h3>王浩宇妈妈</h3><span class="caption">周一</span></div>
+                      <p class="body">反馈课堂专注度，建议家庭端做短时间固定练习。</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="page-schedule" data-title="本周日程" data-eyebrow="周课表 · 低打扰提醒">
+          <article class="card">
+            <div class="section-head">
+              <div>
+                <h2>本周日程</h2>
+                <p class="caption">点击日期查看当天安排</p>
+              </div>
+              <button class="text-btn" type="button" data-open-reminder><i data-lucide="calendar-plus"></i>添加提醒</button>
+            </div>
+            <div class="day-strip">
+              <button class="day" type="button" data-day="mon"><span>一</span><strong>12</strong></button>
+              <button class="day" type="button" data-day="tue"><span>二</span><strong>13</strong></button>
+              <button class="day active" type="button" data-day="wed"><span>三</span><strong>14</strong></button>
+              <button class="day" type="button" data-day="thu"><span>四</span><strong>15</strong></button>
+              <button class="day" type="button" data-day="fri"><span>五</span><strong>16</strong></button>
+              <button class="day" type="button" data-day="sat"><span>六</span><strong>17</strong></button>
+              <button class="day" type="button" data-day="sun"><span>日</span><strong>18</strong></button>
+            </div>
+          </article>
+
+          <div class="grid-2">
+            <article class="card">
+              <div class="section-head">
+                <h2>今日安排</h2>
+                <span class="tag" id="courseDayTag">周三</span>
+              </div>
+              <div class="timeline" id="courseList"></div>
+            </article>
+
+            <article class="card">
+              <div class="section-head">
+                <h2>低打扰提醒</h2>
+                <span class="tag gold">5 条</span>
+              </div>
+              <div class="stack" id="reminderList">
+                <div class="schedule-card">
+                  <div class="row between"><h3>准备互动环节道具</h3><span class="time">09:10</span></div>
+                  <p class="body">提前到场布置投影设备并分发情绪卡片。</p>
+                </div>
+                <div class="schedule-card">
+                  <div class="row between"><h3>回访陈子默爸爸</h3><span class="time">17:20</span></div>
+                  <p class="body">同步期中测试反馈，语气正式但温和。</p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-profile" data-title="我的" data-eyebrow="教师工作陪伴 · Pro 试用">
+          <div class="stack">
+            <article class="card profile-hero pad-lg">
+              <div class="profile-avatar">
+                林
+                <span class="verified"><i data-lucide="badge-check"></i></span>
+              </div>
+              <div>
+                <h2>林小微</h2>
+                <p class="body">小学语文高级教师 · 三年级班主任</p>
+                <div class="row wrap" style="margin-top:10px;">
+                  <span class="tag">低打扰提醒</span>
+                  <span class="tag gold">Pro 试用</span>
+                </div>
+              </div>
+              <button class="text-btn" type="button"><i data-lucide="edit-3"></i>编辑资料</button>
+            </article>
+
+            <article class="card hero pad-lg" style="min-height:190px;">
+              <div>
+                <div class="hero-top"><i data-lucide="badge-check"></i><span>微光 Pro 会员</span></div>
+                <h2>剩余 14 天试用期</h2>
+                <p>享受 AI 家长沟通、无限记录、云同步、高级提醒与深度疗愈内容。</p>
+              </div>
+              <div class="hero-actions">
+                <button class="primary-btn gold" type="button">立即续费</button>
+                <button class="ghost-btn" type="button">查看权益</button>
+              </div>
+            </article>
+
+            <div class="stats">
+              <div class="stat"><strong>342</strong><span>AI 对话次数</span></div>
+              <div class="stat"><strong>18</strong><span>生成教案</span></div>
+              <div class="stat"><strong>27</strong><span>沟通记录</span></div>
+            </div>
+
+            <article class="card settings">
+              <div class="setting-row">
+                <div class="row">
+                  <div class="avatar soft"><i data-lucide="bookmark"></i></div>
+                  <div><h3>我的收藏</h3><p class="caption">暖心回复与常用模板</p></div>
+                </div>
+                <i data-lucide="chevron-right"></i>
+              </div>
+              <div class="setting-row">
+                <div class="row">
+                  <div class="avatar soft"><i data-lucide="bell-ring"></i></div>
+                  <div><h3>低打扰提醒</h3><p class="caption">仅提醒重要事务</p></div>
+                </div>
+                <button class="switch active" type="button" aria-label="低打扰提醒"><span></span></button>
+              </div>
+              <div class="setting-row">
+                <div class="row">
+                  <div class="avatar soft"><i data-lucide="cloud"></i></div>
+                  <div><h3>云同步</h3><p class="caption">课表与沟通记录备份</p></div>
+                </div>
+                <button class="switch" type="button" aria-label="云同步"><span></span></button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <nav class="bottom-nav" aria-label="移动端底部导航">
+    <button class="nav-btn active" type="button" data-tab="home"><i data-lucide="home"></i><span>首页</span></button>
+    <button class="nav-btn" type="button" data-tab="heal"><i data-lucide="sparkles"></i><span>疗愈</span></button>
+    <button class="nav-btn" type="button" data-tab="comm"><i data-lucide="message-circle"></i><span>沟通</span></button>
+    <button class="nav-btn" type="button" data-tab="schedule"><i data-lucide="calendar-days"></i><span>日程</span></button>
+    <button class="nav-btn" type="button" data-tab="profile"><i data-lucide="user-round"></i><span>我的</span></button>
+  </nav>
+
+  <div class="modal-backdrop" id="reminderModal" role="dialog" aria-modal="true" aria-label="添加提醒">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>添加提醒</h2>
+          <p class="caption">默认使用低打扰提醒</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeReminder" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="reminderTitle">事项</label>
+          <input id="reminderTitle" value="月考后沟通许嘉木爸爸">
+        </div>
+        <div class="row">
+          <div class="field" style="flex:1;">
+            <label for="reminderTime">时间</label>
+            <input id="reminderTime" type="time" value="17:20">
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="reminderType">分类</label>
+            <select id="reminderType">
+              <option>家长回访</option>
+              <option>教研会议</option>
+              <option>公开课</option>
+              <option>个人事项</option>
+            </select>
+          </div>
+        </div>
+        <button class="primary-btn" type="button" id="saveReminder"><i data-lucide="check"></i>保存提醒</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const $ = (selector, scope = document) => scope.querySelector(selector);
+    const $$ = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
+
+    const dayNames = {
+      mon: "周一",
+      tue: "周二",
+      wed: "周三",
+      thu: "周四",
+      fri: "周五",
+      sat: "周六",
+      sun: "周日"
+    };
+
+    const schedules = {
+      mon: [
+        ["08:30", "早读监督", "高一(2)班 · 教学楼 B102", false],
+        ["10:00", "语文阅读训练", "高二(3)班 · 教学楼 A303", true],
+        ["14:30", "家长会材料整理", "办公室 · 需确认名单", false]
+      ],
+      tue: [
+        ["09:20", "作文讲评", "高二(1)班 · 教学楼 A302", true],
+        ["15:40", "教研组备课", "行政楼会议室 B", false]
+      ],
+      wed: [
+        ["08:30", "早读监督", "高一(2)班 · 教学楼 B102", false],
+        ["10:00", "心理健康讲座", "高二(5)班 · 阶梯教室 2", true],
+        ["14:30", "教研室例会", "行政楼会议室 B", false]
+      ],
+      thu: [
+        ["08:10", "公开课", "三年级 2 班 · 阅读策略", true],
+        ["16:00", "班干部会议", "教室 302 · 值日安排", false]
+      ],
+      fri: [
+        ["09:50", "单元复习", "三年级 2 班 · 错题订正", true],
+        ["16:20", "班主任例会", "周末安全提醒", false]
+      ],
+      sat: [],
+      sun: []
+    };
+
+    let toastTimer;
+    let audioContext;
+    let soundNode;
+    let soundGain;
+
+    function initIcons() {
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    function showToast(message) {
+      const toast = $("#toast");
+      toast.textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("visible"), 2200);
+    }
+
+    function switchTab(tab) {
+      $$(".page").forEach(page => page.classList.remove("active"));
+      $(`#page-${tab}`).classList.add("active");
+      $$("[data-tab]").forEach(button => button.classList.toggle("active", button.dataset.tab === tab));
+      const page = $(`#page-${tab}`);
+      $("#pageTitle").textContent = page.dataset.title;
+      $("#topEyebrow").textContent = page.dataset.eyebrow;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function runAction(action) {
+      if (action === "praise") {
+        switchTab("heal");
+        setTimeout(() => $("#praiseInput").focus(), 160);
+      }
+      if (action === "record") switchTab("comm");
+      if (action === "reminder") openReminder();
+      if (action === "sound") switchTab("heal");
+    }
+
+    function openReminder() {
+      $("#reminderModal").classList.add("visible");
+    }
+
+    function closeReminder() {
+      $("#reminderModal").classList.remove("visible");
+    }
+
+    function generatePraise() {
+      const input = $("#praiseInput").value.trim() || "今天开了很久的会，还要继续处理班里的事情。";
+      const persona = $(".chip.active", $("#personaGroup")).dataset.persona;
+      const lead = {
+        senior: "你不是做得不够好，你只是已经连续承接了太多人的期待。",
+        director: "从专业角度看，能在疲惫里维持稳定，本身就是很强的职业能力。",
+        friend: "先说结论：今天的你已经很可以了，别急着给自己扣分。"
+      }[persona];
+      const preview = input.length > 34 ? input.slice(0, 34) + "..." : input;
+      $("#praiseOutput").textContent = `${lead} 你提到「${preview}」，这不是小事。现在先喝口水，把肩膀放下来，剩下的慢慢处理。`;
+      $("#praiseOutput").classList.add("visible");
+      showToast("已生成一条温柔回应");
+    }
+
+    function treeSend() {
+      const text = $("#treeInput").value.trim();
+      if (!text) {
+        showToast("先写一点心情");
+        return;
+      }
+      $("#treeOutput").textContent = "树洞已经接住了。你不需要马上变好，也不用把每一种情绪解释清楚。它可以先安全地放在这里。";
+      $("#treeOutput").classList.add("visible");
+      $("#treeInput").value = "";
+      showToast("已放进树洞");
+    }
+
+    function generateReply() {
+      const issue = $("#studentIssue").value.trim() || "孩子最近课堂专注度需要关注";
+      const style = $("#parentStyle").value;
+      const tone = $("#replyTone").value;
+      const versions = [
+        ["温和版", `您好，想和您同步一下孩子最近的情况。${issue}。我这边更希望先了解原因，再一起帮助孩子把节奏调整回来。考虑到您${style}，建议我们先从一个小目标开始，比如每天固定 10 分钟复盘或阅读。`],
+        ["正式版", `您好，关于孩子近期课堂状态和您沟通一下。${issue}，这可能会影响后续学习衔接。建议本周在家中配合确认作业和复习节奏，我也会继续在课堂上观察并及时反馈。`],
+        ["简短版", `您好，和您同步一下：${issue}。我们可以先从每天固定 10 分钟的小练习开始，我也会在课堂上继续关注。`],
+        ["强硬但礼貌版", `您好，需要和您明确同步：${issue}。如果持续出现，会影响后续学习效果。建议从今天开始固定检查学习任务完成情况，我也会持续跟进。`]
+      ];
+      const chosen = versions.find(([title]) => title.startsWith(tone)) || versions[0];
+      const sorted = [chosen, ...versions.filter(item => item !== chosen)];
+      $("#replyOutput").innerHTML = sorted.map(([title, copy]) => `
+        <div class="ai-result visible">
+          <strong style="color: var(--primary);">${title}</strong><br>${copy}
+        </div>
+      `).join("");
+      showToast("已生成 4 个沟通版本");
+    }
+
+    function saveRecord() {
+      const issue = $("#studentIssue").value.trim() || "已生成沟通草稿";
+      const item = document.createElement("div");
+      item.className = "timeline-item active";
+      item.innerHTML = `
+        <div class="record-card">
+          <div class="row between"><h3>王浩宇妈妈</h3><span class="caption">刚刚</span></div>
+          <p class="body">${issue.slice(0, 42)}，已保存为沟通记录。</p>
+        </div>
+      `;
+      $("#recordList").prepend(item);
+      showToast("已保存到沟通记录");
+    }
+
+    function renderCourses(day) {
+      $("#courseDayTag").textContent = dayNames[day];
+      const list = $("#courseList");
+      const data = schedules[day] || [];
+      if (!data.length) {
+        list.innerHTML = `<div class="empty">今天没有课程安排，可以留给自己一点空白。</div>`;
+        return;
+      }
+      list.innerHTML = data.map(([time, title, location, active]) => `
+        <div class="timeline-item ${active ? "active" : ""}">
+          <div class="schedule-card ${active ? "active" : ""}">
+            <div class="row between"><h3>${title}</h3><span class="time">${time}</span></div>
+            <p class="body">${location}</p>
+            ${active ? `<div class="tag">下一项</div>` : ""}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function saveReminder() {
+      const title = $("#reminderTitle").value.trim() || "新的提醒";
+      const time = $("#reminderTime").value || "17:20";
+      const item = document.createElement("div");
+      item.className = "schedule-card";
+      item.innerHTML = `<div class="row between"><h3>${title}</h3><span class="time">${time}</span></div><p class="body">${$("#reminderType").value} · 低打扰提醒</p>`;
+      $("#reminderList").append(item);
+      $("#todoCount").textContent = String(Number($("#todoCount").textContent) + 1);
+      closeReminder();
+      showToast("提醒已加入日程");
+    }
+
+    function stopSound() {
+      if (soundNode) {
+        try {
+          soundNode.stop();
+        } catch (error) {
+          soundNode.disconnect();
+        }
+        soundNode = null;
+      }
+      if (soundGain) {
+        soundGain.disconnect();
+        soundGain = null;
+      }
+    }
+
+    function playSound(type) {
+      stopSound();
+      try {
+        audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+        soundGain = audioContext.createGain();
+        soundGain.gain.value = 0.025;
+        soundGain.connect(audioContext.destination);
+        if (type === "rain" || type === "classroom") {
+          const bufferSize = audioContext.sampleRate * 2;
+          const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+          const output = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i += 1) {
+            output[i] = (Math.random() * 2 - 1) * (type === "rain" ? 0.7 : 0.25);
+          }
+          soundNode = audioContext.createBufferSource();
+          soundNode.buffer = buffer;
+          soundNode.loop = true;
+        } else {
+          soundNode = audioContext.createOscillator();
+          soundNode.frequency.value = type === "piano" ? 261.63 : 196;
+          soundNode.type = type === "piano" ? "sine" : "triangle";
+        }
+        soundNode.connect(soundGain);
+        soundNode.start();
+      } catch (error) {
+        showToast("当前环境限制音频播放，已保留视觉播放状态");
+      }
+    }
+
+    function toggleSound(card) {
+      const active = card.classList.contains("active");
+      $$(".sound-card").forEach(item => item.classList.remove("active"));
+      stopSound();
+      if (!active) {
+        card.classList.add("active");
+        playSound(card.dataset.sound);
+        showToast(`${$("h3", card).textContent}正在播放`);
+      }
+    }
+
+    function bindEvents() {
+      $$("[data-tab]").forEach(button => {
+        button.addEventListener("click", () => switchTab(button.dataset.tab));
+      });
+      $$("[data-tab-shortcut]").forEach(button => {
+        button.addEventListener("click", () => switchTab(button.dataset.tabShortcut));
+      });
+      $$("[data-action]").forEach(button => {
+        button.addEventListener("click", () => runAction(button.dataset.action));
+      });
+      $$("[data-open-reminder]").forEach(button => {
+        button.addEventListener("click", openReminder);
+      });
+      $("#closeReminder").addEventListener("click", closeReminder);
+      $("#saveReminder").addEventListener("click", saveReminder);
+      $("#reminderModal").addEventListener("click", event => {
+        if (event.target.id === "reminderModal") closeReminder();
+      });
+      $$("#personaGroup .chip").forEach(button => {
+        button.addEventListener("click", () => {
+          $$("#personaGroup .chip").forEach(item => item.classList.remove("active"));
+          button.classList.add("active");
+        });
+      });
+      $("#generatePraise").addEventListener("click", generatePraise);
+      $("#treeSend").addEventListener("click", treeSend);
+      $("#generateReply").addEventListener("click", generateReply);
+      $("#saveRecord").addEventListener("click", saveRecord);
+      $("#breathToggle").addEventListener("click", () => {
+        const core = $("#breathCore");
+        const active = core.classList.toggle("active");
+        $("#breathToggle").innerHTML = active ? `<i data-lucide="pause"></i>呼吸中` : `<i data-lucide="play"></i>开始一分钟冥想`;
+        initIcons();
+      });
+      $$(".sound-card").forEach(card => card.addEventListener("click", () => toggleSound(card)));
+      $$(".day").forEach(day => {
+        day.addEventListener("click", () => {
+          $$(".day").forEach(item => item.classList.remove("active"));
+          day.classList.add("active");
+          renderCourses(day.dataset.day);
+        });
+      });
+      $$(".switch").forEach(button => {
+        button.addEventListener("click", () => button.classList.toggle("active"));
+      });
+    }
+
+    initIcons();
+    bindEvents();
+    renderCourses("wed");
+  </script>
+</body>
+</html>
