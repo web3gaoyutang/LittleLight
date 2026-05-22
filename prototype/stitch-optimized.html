@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --background: #f9f9f7;
@@ -401,6 +402,75 @@
       flex-wrap: wrap;
     }
 
+    .today-rhythm {
+      width: fit-content;
+      max-width: 100%;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 999px;
+      backdrop-filter: blur(14px);
+    }
+
+    .rhythm-mark {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      color: var(--gold-soft);
+      background: rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+    }
+
+    .today-rhythm[data-rhythm="light"] .rhythm-mark {
+      color: #d9f7be;
+      background: rgba(217, 247, 190, 0.18);
+    }
+
+    .today-rhythm[data-rhythm="steady"] .rhythm-mark {
+      color: #c9f0ff;
+      background: rgba(201, 240, 255, 0.18);
+    }
+
+    .today-rhythm[data-rhythm="full"] .rhythm-mark {
+      color: var(--gold-soft);
+      background: rgba(255, 224, 130, 0.18);
+    }
+
+    .today-rhythm[data-rhythm="high"] .rhythm-mark {
+      color: #ffdad6;
+      background: rgba(255, 218, 214, 0.18);
+    }
+
+    .rhythm-mark svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2.2;
+    }
+
+    .rhythm-copy {
+      display: grid;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .rhythm-copy strong {
+      font-size: 15px;
+      line-height: 20px;
+      font-weight: 900;
+    }
+
+    .rhythm-copy span {
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 12px;
+      line-height: 18px;
+    }
+
     .section-head {
       display: flex;
       align-items: center;
@@ -455,6 +525,24 @@
       border: 1px solid rgba(199, 196, 214, 0.3);
       border-radius: 16px;
       box-shadow: var(--shadow-soft);
+    }
+
+    button.stat {
+      width: 100%;
+      color: inherit;
+      cursor: pointer;
+      transition: transform 160ms ease, border 160ms ease, box-shadow 160ms ease;
+    }
+
+    button.stat:hover {
+      transform: translateY(-2px);
+      border-color: rgba(93, 92, 222, 0.28);
+      box-shadow: var(--shadow);
+    }
+
+    button.stat:focus-visible {
+      outline: 3px solid rgba(93, 92, 222, 0.24);
+      outline-offset: 2px;
     }
 
     .stat strong {
@@ -652,6 +740,131 @@
       background: linear-gradient(135deg, #fff, rgba(244, 244, 242, 0.58));
       border: 1px solid rgba(199, 196, 214, 0.3);
       border-radius: 14px;
+    }
+
+    button.parent-card {
+      width: 100%;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: transform 160ms ease, border 160ms ease, box-shadow 160ms ease;
+    }
+
+    button.parent-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(93, 92, 222, 0.28);
+      box-shadow: var(--shadow);
+    }
+
+    button.parent-card:focus-visible {
+      outline: 3px solid rgba(93, 92, 222, 0.24);
+      outline-offset: 2px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .detail-item {
+      display: grid;
+      gap: 4px;
+      padding: 11px;
+      background: #fff;
+      border: 1px solid rgba(199, 196, 214, 0.3);
+      border-radius: 12px;
+    }
+
+    .detail-item span,
+    .detail-item label {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 700;
+    }
+
+    .detail-item strong {
+      color: var(--text);
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 800;
+    }
+
+    .detail-note {
+      padding: 12px;
+      color: var(--text-soft);
+      background: #fff;
+      border: 1px solid rgba(199, 196, 214, 0.3);
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 23px;
+    }
+
+    .record-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .record-action {
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 6px 9px;
+      color: var(--primary);
+      background: rgba(93, 92, 222, 0.08);
+      border: 1px solid rgba(93, 92, 222, 0.12);
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 800;
+    }
+
+    .record-action.danger {
+      color: #93000a;
+      background: rgba(255, 218, 214, 0.72);
+      border-color: rgba(186, 26, 26, 0.12);
+    }
+
+    .contact-list {
+      display: grid;
+      gap: 10px;
+      max-height: min(420px, 58vh);
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .contact-option {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      background: #fff;
+      border: 1px solid rgba(199, 196, 214, 0.3);
+      border-radius: 14px;
+      cursor: pointer;
+    }
+
+    .contact-option input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary-bright);
+    }
+
+    .contact-option.is-added {
+      opacity: 0.54;
+      cursor: not-allowed;
+    }
+
+    .contact-toolbar {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
     }
 
     .schedule-card.active {
@@ -991,6 +1204,82 @@
       border-radius: 999px;
     }
 
+    .profile-meta {
+      display: grid;
+      gap: 4px;
+    }
+
+    .plan-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .plan-card {
+      min-height: 116px;
+      display: grid;
+      align-content: space-between;
+      gap: 10px;
+      padding: 13px;
+      color: var(--text);
+      text-align: left;
+      background: #fff;
+      border: 1px solid rgba(199, 196, 214, 0.36);
+      border-radius: 14px;
+    }
+
+    .plan-card.active {
+      border-color: rgba(93, 92, 222, 0.36);
+      background: linear-gradient(135deg, #fff, rgba(93, 92, 222, 0.08));
+      box-shadow: var(--shadow-soft);
+    }
+
+    .plan-card strong {
+      display: block;
+      color: var(--primary);
+      font-size: 18px;
+      line-height: 24px;
+      font-weight: 900;
+    }
+
+    .benefit-list,
+    .usage-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .benefit-item,
+    .usage-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 12px;
+      background: #fff;
+      border: 1px solid rgba(199, 196, 214, 0.3);
+      border-radius: 14px;
+    }
+
+    .benefit-item i {
+      width: 20px;
+      height: 20px;
+      color: var(--primary-bright);
+    }
+
+    .usage-bar {
+      height: 8px;
+      overflow: hidden;
+      background: rgba(93, 92, 222, 0.1);
+      border-radius: 999px;
+    }
+
+    .usage-bar span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-bright));
+      border-radius: inherit;
+    }
+
     .settings {
       overflow: hidden;
       padding: 0;
@@ -1007,8 +1296,45 @@
       background: #fff;
     }
 
+    button.setting-row {
+      width: 100%;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: background 160ms ease;
+    }
+
+    button.setting-row:hover {
+      background: var(--surface-low);
+    }
+
+    button.setting-row:focus-visible {
+      outline: 3px solid rgba(93, 92, 222, 0.18);
+      outline-offset: -3px;
+    }
+
     .setting-row:last-child {
       border-bottom: 0;
+    }
+
+    .favorite-tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .favorite-card {
+      display: grid;
+      gap: 10px;
+      padding: 13px;
+      background: #fff;
+      border: 1px solid rgba(199, 196, 214, 0.3);
+      border-radius: 14px;
+    }
+
+    .favorite-card .body {
+      line-height: 23px;
     }
 
     .switch {
@@ -1051,6 +1377,8 @@
       align-items: flex-end;
       justify-content: center;
       padding: 18px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
       background: rgba(26, 28, 27, 0.38);
       backdrop-filter: blur(8px);
     }
@@ -1061,9 +1389,13 @@
 
     .sheet {
       width: min(540px, 100%);
+      max-height: calc(100vh - 36px - var(--safe-bottom));
       display: grid;
       gap: 16px;
       padding: 20px;
+      margin-bottom: var(--safe-bottom);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
       background: var(--background);
       border: 1px solid rgba(235, 235, 250, 0.86);
       border-radius: 16px;
@@ -1175,6 +1507,10 @@
         width: 100%;
       }
 
+      .plan-grid {
+        grid-template-columns: 1fr;
+      }
+
       .bottom-nav {
         position: fixed;
         left: 0;
@@ -1224,6 +1560,15 @@
       .hero p {
         font-size: 14px;
         line-height: 23px;
+      }
+
+      .today-rhythm {
+        padding: 12px;
+      }
+
+      .rhythm-mark {
+        width: 34px;
+        height: 34px;
       }
 
       .stats {
@@ -1293,36 +1638,41 @@
         <div class="topbar-left">
           <div class="avatar">林</div>
           <div class="top-title">
-            <span class="eyebrow" id="topEyebrow">周三 第 12 周 · 今日洞察</span>
+            <span class="eyebrow" id="topEyebrow">周三 第 12 周 · 工作简报</span>
             <h1 id="pageTitle">早上好，林老师</h1>
           </div>
         </div>
         <div class="top-actions">
           <button class="icon-btn" type="button" title="搜索"><i data-lucide="search"></i></button>
-          <button class="icon-btn" type="button" title="通知" data-open-reminder><i data-lucide="bell"></i><span class="dot"></span></button>
+          <button class="icon-btn" type="button" title="通知" id="jumpTodoFromBell"><i data-lucide="bell"></i><span class="dot"></span></button>
         </div>
       </header>
 
       <div class="content">
-        <section class="page active" id="page-home" data-title="早上好，林老师" data-eyebrow="周三 第 12 周 · 今日洞察">
+        <section class="page active" id="page-home" data-title="早上好，林老师" data-eyebrow="周三 第 12 周 · 工作简报">
           <div class="grid-2">
             <div class="stack">
               <article class="card hero pad-lg">
                 <div>
-                  <div class="hero-top"><i data-lucide="sun"></i><span>今日洞察</span></div>
+                  <div class="hero-top"><i data-lucide="sparkles"></i><span>今日简报</span></div>
                   <h2>深呼吸，今天有 3 节课等待您的指引。</h2>
                   <p>您总是能在混乱的消息和课程之间，给孩子们带来安定的力量。今天也请把一点点微光留给自己。</p>
                 </div>
-                <div class="hero-actions">
-                  <button class="primary-btn gold" type="button" data-action="praise"><i data-lucide="sparkles"></i>AI 夸夸</button>
-                  <button class="ghost-btn" type="button" data-action="sound"><i data-lucide="headphones"></i>5 分钟疗愈</button>
+                <div class="today-rhythm" id="todayRhythm" data-rhythm="full" aria-label="今日状态">
+                  <div class="rhythm-mark" aria-hidden="true">
+                    <i id="rhythmIcon" data-lucide="activity"></i>
+                  </div>
+                  <div class="rhythm-copy">
+                    <strong id="rhythmTitle">节奏偏满</strong>
+                    <span id="rhythmHint">先照看下一节课，其余慢慢来</span>
+                  </div>
                 </div>
               </article>
 
               <div class="stats">
-                <div class="stat"><strong>3</strong><span>今日课程</span></div>
-                <div class="stat"><strong id="todoCount">5</strong><span>待办提醒</span></div>
-                <div class="stat"><strong>2</strong><span>家长跟进</span></div>
+                <button class="stat" type="button" data-jump-tab="schedule"><strong id="courseCount">3</strong><span>今日课程</span></button>
+                <button class="stat" type="button" data-jump-tab="schedule" data-jump-target="todoSection"><strong id="todoCount">5</strong><span>待办提醒</span></button>
+                <button class="stat" type="button" data-jump-tab="comm" data-jump-target="focusParents"><strong>2</strong><span>家长跟进</span></button>
               </div>
 
               <div class="quick-grid">
@@ -1330,9 +1680,9 @@
                   <div class="quick-icon"><i data-lucide="sparkles"></i></div>
                   <span>AI 智能表扬</span>
                 </button>
-                <button class="quick-action" type="button" data-action="record">
+                <button class="quick-action" type="button" data-action="commAssistant">
                   <div class="quick-icon"><i data-lucide="message-circle"></i></div>
-                  <span>记录点滴</span>
+                  <span>AI沟通助手</span>
                 </button>
                 <button class="quick-action" type="button" data-action="reminder">
                   <div class="quick-icon"><i data-lucide="alarm-clock-plus"></i></div>
@@ -1404,7 +1754,7 @@
 
         <section class="page" id="page-heal" data-title="疗愈空间" data-eyebrow="课间 5 分钟 · 白噪音与树洞">
           <div class="grid-2">
-            <article class="card breath-card">
+            <article class="card breath-card" id="breathSection">
               <div class="stack" style="justify-items:center;">
                 <div>
                   <h2>呼吸律动</h2>
@@ -1421,7 +1771,7 @@
             </article>
 
             <div class="stack">
-              <article class="card">
+              <article class="card" id="praiseCard">
                 <div class="section-head">
                   <div>
                     <h2>AI 夸夸</h2>
@@ -1503,7 +1853,7 @@
         <section class="page" id="page-comm" data-title="家校沟通" data-eyebrow="AI 回复 · 家长档案 · 沟通记录">
           <div class="grid-2">
             <div class="stack">
-              <article class="card">
+              <article class="card" id="commAssistant">
                 <div class="section-head">
                   <div class="row">
                     <div class="avatar soft"><i data-lucide="sparkles"></i></div>
@@ -1550,13 +1900,13 @@
             </div>
 
             <div class="stack">
-              <article class="card">
+              <article class="card" id="focusParents">
                 <div class="section-head">
                   <h2>重点关注</h2>
-                  <button class="text-btn" type="button"><i data-lucide="user-plus"></i>新增</button>
+                  <button class="text-btn" type="button" id="openContacts"><i data-lucide="user-plus"></i>新增</button>
                 </div>
-                <div class="stack">
-                  <div class="parent-card">
+                <div class="stack" id="focusParentList">
+                  <button class="parent-card" type="button" data-parent-id="lin">
                     <div class="row between">
                       <div class="row">
                         <div class="avatar soft">林</div>
@@ -1568,8 +1918,8 @@
                       <span class="tag danger">敏感对话</span>
                     </div>
                     <p class="caption">昨天 14:30 语音通话</p>
-                  </div>
-                  <div class="parent-card">
+                  </button>
+                  <button class="parent-card" type="button" data-parent-id="chen">
                     <div class="row between">
                       <div class="row">
                         <div class="avatar soft">陈</div>
@@ -1581,26 +1931,34 @@
                       <span class="tag gold">需跟进</span>
                     </div>
                     <p class="caption">待回复留言</p>
-                  </div>
+                  </button>
                 </div>
               </article>
 
               <article class="card">
                 <div class="section-head">
                   <h2>沟通记录</h2>
-                  <button class="text-btn" type="button" id="saveRecord"><i data-lucide="save"></i>保存当前</button>
+                  <button class="text-btn" type="button" id="openRecordModal"><i data-lucide="plus"></i>手动添加</button>
                 </div>
                 <div class="timeline" id="recordList">
                   <div class="timeline-item active">
-                    <div class="record-card">
+                    <div class="record-card" data-parent="林晓晓妈妈" data-time="昨天" data-summary="同步孩子近期情绪变化，约定一周后再回访。">
                       <div class="row between"><h3>林晓晓妈妈</h3><span class="caption">昨天</span></div>
                       <p class="body">同步孩子近期情绪变化，约定一周后再回访。</p>
+                      <div class="record-actions">
+                        <button class="record-action" type="button" data-record-action="edit"><i data-lucide="edit-3"></i>编辑</button>
+                        <button class="record-action danger" type="button" data-record-action="delete"><i data-lucide="trash-2"></i>删除</button>
+                      </div>
                     </div>
                   </div>
                   <div class="timeline-item">
-                    <div class="record-card">
+                    <div class="record-card" data-parent="王浩宇妈妈" data-time="周一" data-summary="反馈课堂专注度，建议家庭端做短时间固定练习。">
                       <div class="row between"><h3>王浩宇妈妈</h3><span class="caption">周一</span></div>
                       <p class="body">反馈课堂专注度，建议家庭端做短时间固定练习。</p>
+                      <div class="record-actions">
+                        <button class="record-action" type="button" data-record-action="edit"><i data-lucide="edit-3"></i>编辑</button>
+                        <button class="record-action danger" type="button" data-record-action="delete"><i data-lucide="trash-2"></i>删除</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1609,14 +1967,14 @@
           </div>
         </section>
 
-        <section class="page" id="page-schedule" data-title="本周日程" data-eyebrow="周课表 · 低打扰提醒">
+        <section class="page" id="page-schedule" data-title="本周日程" data-eyebrow="周课表 · 待办事项">
           <article class="card">
             <div class="section-head">
               <div>
                 <h2>本周日程</h2>
                 <p class="caption">点击日期查看当天安排</p>
               </div>
-              <button class="text-btn" type="button" data-open-reminder><i data-lucide="calendar-plus"></i>添加提醒</button>
+              <button class="text-btn" type="button" id="importSchedule"><i data-lucide="file-spreadsheet"></i>导入课表</button>
             </div>
             <div class="day-strip">
               <button class="day" type="button" data-day="mon"><span>一</span><strong>12</strong></button>
@@ -1632,27 +1990,24 @@
           <div class="grid-2">
             <article class="card">
               <div class="section-head">
-                <h2>今日安排</h2>
-                <span class="tag" id="courseDayTag">周三</span>
+                <div>
+                  <h2>今日安排</h2>
+                  <p class="caption">当前选中日期的课程与事务</p>
+                </div>
+                <div class="row wrap">
+                  <span class="tag" id="courseDayTag">周三</span>
+                  <button class="text-btn" type="button" data-open-schedule-item><i data-lucide="calendar-plus"></i>添加日程</button>
+                </div>
               </div>
               <div class="timeline" id="courseList"></div>
             </article>
 
-            <article class="card">
+            <article class="card" id="todoSection">
               <div class="section-head">
-                <h2>低打扰提醒</h2>
-                <span class="tag gold">5 条</span>
+                <h2>待办事项</h2>
+                <button class="text-btn" type="button" data-open-todo><i data-lucide="alarm-clock-plus"></i>添加待办</button>
               </div>
-              <div class="stack" id="reminderList">
-                <div class="schedule-card">
-                  <div class="row between"><h3>准备互动环节道具</h3><span class="time">09:10</span></div>
-                  <p class="body">提前到场布置投影设备并分发情绪卡片。</p>
-                </div>
-                <div class="schedule-card">
-                  <div class="row between"><h3>回访陈子默爸爸</h3><span class="time">17:20</span></div>
-                  <p class="body">同步期中测试反馈，语气正式但温和。</p>
-                </div>
-              </div>
+              <div class="stack" id="reminderList"></div>
             </article>
           </div>
         </section>
@@ -1660,19 +2015,20 @@
         <section class="page" id="page-profile" data-title="我的" data-eyebrow="教师工作陪伴 · Pro 试用">
           <div class="stack">
             <article class="card profile-hero pad-lg">
-              <div class="profile-avatar">
-                林
+              <div class="profile-avatar" id="profileAvatar">
+                <span id="profileAvatarText">林</span>
                 <span class="verified"><i data-lucide="badge-check"></i></span>
               </div>
-              <div>
-                <h2>林小微</h2>
-                <p class="body">小学语文高级教师 · 三年级班主任</p>
+              <div class="profile-meta">
+                <h2 id="profileName">林小微</h2>
+                <p class="body" id="profileRole">小学语文高级教师 · 三年级班主任</p>
+                <p class="caption" id="profileSchool">微光实验小学 · 三年级 2 班</p>
                 <div class="row wrap" style="margin-top:10px;">
-                  <span class="tag">低打扰提醒</span>
-                  <span class="tag gold">Pro 试用</span>
+                  <span class="tag" id="profileNotifyTag">今日提醒允许通知</span>
+                  <span class="tag gold" id="profileMemberTag">Pro 试用</span>
                 </div>
               </div>
-              <button class="text-btn" type="button"><i data-lucide="edit-3"></i>编辑资料</button>
+              <button class="text-btn" type="button" id="openProfileEdit"><i data-lucide="edit-3"></i>编辑资料</button>
             </article>
 
             <article class="card hero pad-lg" style="min-height:190px;">
@@ -1682,8 +2038,8 @@
                 <p>享受 AI 家长沟通、无限记录、云同步、高级提醒与深度疗愈内容。</p>
               </div>
               <div class="hero-actions">
-                <button class="primary-btn gold" type="button">立即续费</button>
-                <button class="ghost-btn" type="button">查看权益</button>
+                <button class="primary-btn gold" type="button" id="openRenewal"><i data-lucide="crown"></i>立即续费</button>
+                <button class="ghost-btn" type="button" id="openBenefits"><i data-lucide="badge-check"></i>查看权益</button>
               </div>
             </article>
 
@@ -1694,19 +2050,19 @@
             </div>
 
             <article class="card settings">
-              <div class="setting-row">
+              <button class="setting-row" type="button" id="openFavorites">
                 <div class="row">
                   <div class="avatar soft"><i data-lucide="bookmark"></i></div>
-                  <div><h3>我的收藏</h3><p class="caption">暖心回复与常用模板</p></div>
+                  <div><h3>我的收藏</h3><p class="caption">沟通模板、AI夸夸、疗愈与待办</p></div>
                 </div>
                 <i data-lucide="chevron-right"></i>
-              </div>
+              </button>
               <div class="setting-row">
                 <div class="row">
                   <div class="avatar soft"><i data-lucide="bell-ring"></i></div>
-                  <div><h3>低打扰提醒</h3><p class="caption">仅提醒重要事务</p></div>
+                  <div><h3>今日提醒允许通知</h3><p class="caption">开启后接收今日待办与课程提醒</p></div>
                 </div>
-                <button class="switch active" type="button" aria-label="低打扰提醒"><span></span></button>
+                <button class="switch active" type="button" aria-label="今日提醒允许通知"><span></span></button>
               </div>
               <div class="setting-row">
                 <div class="row">
@@ -1730,18 +2086,18 @@
     <button class="nav-btn" type="button" data-tab="profile"><i data-lucide="user-round"></i><span>我的</span></button>
   </nav>
 
-  <div class="modal-backdrop" id="reminderModal" role="dialog" aria-modal="true" aria-label="添加提醒">
+  <div class="modal-backdrop" id="reminderModal" role="dialog" aria-modal="true" aria-label="添加">
     <div class="sheet">
       <div class="section-head tight">
         <div>
-          <h2>添加提醒</h2>
-          <p class="caption">默认使用低打扰提醒</p>
+          <h2 id="reminderModalTitle">添加待办</h2>
+          <p class="caption" id="reminderModalCaption">保存到当前选中日期的待办事项</p>
         </div>
         <button class="icon-btn" type="button" id="closeReminder" title="关闭"><i data-lucide="x"></i></button>
       </div>
       <div class="form-grid">
         <div class="field">
-          <label for="reminderTitle">事项</label>
+          <label for="reminderTitle" id="reminderTitleLabel">事项</label>
           <input id="reminderTitle" value="月考后沟通许嘉木爸爸">
         </div>
         <div class="row">
@@ -1759,7 +2115,345 @@
             </select>
           </div>
         </div>
-        <button class="primary-btn" type="button" id="saveReminder"><i data-lucide="check"></i>保存提醒</button>
+        <button class="primary-btn" type="button" id="saveReminder"><i data-lucide="check"></i>保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="scheduleImportModal" role="dialog" aria-modal="true" aria-label="导入课表">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>导入课表</h2>
+          <p class="caption">支持 Excel 或 CSV，首行作为表头</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeScheduleImport" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="detail-note">表头建议包含：星期/日期、时间、课程/标题、地点/备注。示例：周三，10:00，心理健康讲座，高二(5)班 · 阶梯教室 2。</div>
+      <div class="field">
+        <label for="scheduleFile">选择文件</label>
+        <input id="scheduleFile" type="file" accept=".xlsx,.xls,.csv">
+      </div>
+      <button class="primary-btn" type="button" id="confirmScheduleImport"><i data-lucide="file-spreadsheet"></i>导入文件</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="profileEditModal" role="dialog" aria-modal="true" aria-label="编辑资料">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>编辑资料</h2>
+          <p class="caption">建议资料包含身份、任教信息、联系方式和个人签名</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeProfileEdit" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="form-grid">
+        <div class="row">
+          <div class="field" style="flex:1;">
+            <label for="editTeacherName">姓名</label>
+            <input id="editTeacherName" value="林小微">
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="editTeacherTitle">职称</label>
+            <input id="editTeacherTitle" value="高级教师">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field" style="flex:1;">
+            <label for="editSchool">学校</label>
+            <input id="editSchool" value="微光实验小学">
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="editClassName">班主任班级</label>
+            <input id="editClassName" value="三年级 2 班">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field" style="flex:1;">
+            <label for="editStage">学段</label>
+            <select id="editStage">
+              <option>小学</option>
+              <option>初中</option>
+              <option>高中</option>
+              <option>中职</option>
+            </select>
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="editSubject">任教学科</label>
+            <input id="editSubject" value="语文">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field" style="flex:1;">
+            <label for="editPhone">手机号</label>
+            <input id="editPhone" value="138 0000 2026">
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="editEmail">邮箱</label>
+            <input id="editEmail" value="linxiaowei@littlelight.cn">
+          </div>
+        </div>
+        <div class="field">
+          <label for="editSignature">个人签名</label>
+          <textarea id="editSignature" placeholder="例如：愿每个孩子都被温柔看见。">愿每个孩子都被温柔看见，也愿老师先照顾好自己。</textarea>
+        </div>
+        <button class="primary-btn" type="button" id="saveProfileEdit"><i data-lucide="save"></i>保存资料</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="renewalModal" role="dialog" aria-modal="true" aria-label="立即续费">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>续费微光 Pro</h2>
+          <p class="caption">当前试用剩余 14 天，续费后权益自动顺延</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeRenewal" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="plan-grid" id="planGroup">
+        <button class="plan-card" type="button" data-plan="月度 Pro">
+          <span class="tag">灵活体验</span>
+          <div><strong>¥18/月</strong><p class="caption">适合短期高频使用</p></div>
+        </button>
+        <button class="plan-card active" type="button" data-plan="年度 Pro">
+          <span class="tag gold">推荐</span>
+          <div><strong>¥168/年</strong><p class="caption">约 ¥14/月，含全部权益</p></div>
+        </button>
+        <button class="plan-card" type="button" data-plan="校园团队版">
+          <span class="tag">多人协作</span>
+          <div><strong>联系开通</strong><p class="caption">适合年级组或学校</p></div>
+        </button>
+      </div>
+      <div class="detail-note" id="renewalSummary">已选择：年度 Pro。包含 AI 沟通助手、无限记录、云同步、高级提醒与疗愈内容。</div>
+      <div class="benefit-list">
+        <div class="benefit-item"><i data-lucide="sparkles"></i><div><h3>AI 沟通与表扬不限量</h3><p class="caption">家校沟通、AI 夸夸、文字润色和模板生成。</p></div></div>
+        <div class="benefit-item"><i data-lucide="cloud"></i><div><h3>云同步与数据备份</h3><p class="caption">课表、家长档案、沟通记录自动同步。</p></div></div>
+        <div class="benefit-item"><i data-lucide="bell-ring"></i><div><h3>高级提醒</h3><p class="caption">课程、待办、家长跟进和重复提醒统一管理。</p></div></div>
+      </div>
+      <button class="primary-btn gold" type="button" id="confirmRenewal"><i data-lucide="credit-card"></i>确认续费</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="benefitsModal" role="dialog" aria-modal="true" aria-label="查看权益">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>Pro 权益</h2>
+          <p class="caption">当前账号：Pro 试用，试用结束后可续费保留全部权益</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeBenefits" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="usage-list">
+        <div class="usage-item">
+          <div class="avatar soft"><i data-lucide="messages-square"></i></div>
+          <div><h3>AI 对话额度</h3><p class="caption">本月已用 342 次，Pro 不限量</p><div class="usage-bar"><span style="width:68%;"></span></div></div>
+        </div>
+        <div class="usage-item">
+          <div class="avatar soft"><i data-lucide="notebook-tabs"></i></div>
+          <div><h3>沟通记录与家长档案</h3><p class="caption">不限条数，支持编辑、导入与重点关注。</p><div class="usage-bar"><span style="width:42%;"></span></div></div>
+        </div>
+      </div>
+      <div class="benefit-list">
+        <div class="benefit-item"><i data-lucide="file-text"></i><div><h3>教案与活动方案生成</h3><p class="caption">根据学段、主题和课堂目标生成可编辑初稿。</p></div></div>
+        <div class="benefit-item"><i data-lucide="heart-handshake"></i><div><h3>深度疗愈内容</h3><p class="caption">一分钟呼吸、白噪音、情绪安放和复盘陪伴。</p></div></div>
+        <div class="benefit-item"><i data-lucide="shield-check"></i><div><h3>隐私与云端备份</h3><p class="caption">本地原型中展示权限，正式版可配置备份与导出。</p></div></div>
+      </div>
+      <button class="primary-btn" type="button" id="renewFromBenefits"><i data-lucide="crown"></i>续费保留权益</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="favoritesModal" role="dialog" aria-modal="true" aria-label="我的收藏">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>我的收藏</h2>
+          <p class="caption">适合收藏常用回复、表扬语、疗愈练习、教案灵感和待办模板</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeFavorites" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="favorite-tabs" id="favoriteTabs">
+        <button class="chip active" type="button" data-favorite-filter="all">全部</button>
+        <button class="chip" type="button" data-favorite-filter="reply">沟通模板</button>
+        <button class="chip" type="button" data-favorite-filter="praise">AI夸夸</button>
+        <button class="chip" type="button" data-favorite-filter="heal">疗愈内容</button>
+        <button class="chip" type="button" data-favorite-filter="todo">待办模板</button>
+      </div>
+      <div class="stack" id="favoriteList">
+        <div class="favorite-card" data-favorite-type="reply">
+          <div class="row between"><h3>家长情绪较焦虑时的回复</h3><span class="tag">沟通模板</span></div>
+          <p class="body">先承接家长担心，再同步课堂事实，最后给出一个家庭端可执行的小建议。</p>
+          <button class="text-btn" type="button" data-favorite-action="reply" data-favorite-text="家长比较焦虑，希望先安抚情绪，再同步孩子近期课堂观察，并给出一个家庭端能配合的小建议。"><i data-lucide="messages-square"></i>带入 AI 沟通助手</button>
+        </div>
+        <div class="favorite-card" data-favorite-type="praise">
+          <div class="row between"><h3>开完家长会后的自我鼓励</h3><span class="tag gold">AI夸夸</span></div>
+          <p class="body">适合收藏老师高压场景后的温柔回应，让 AI 生成一段更贴近当下的鼓励。</p>
+          <button class="text-btn" type="button" data-favorite-action="praise" data-favorite-text="今天连续开了家长会，处理了很多情绪和问题，需要一段温柔但不敷衍的鼓励。"><i data-lucide="sparkles"></i>去生成夸夸</button>
+        </div>
+        <div class="favorite-card" data-favorite-type="heal">
+          <div class="row between"><h3>课间一分钟呼吸</h3><span class="tag">疗愈内容</span></div>
+          <p class="body">适合课间、放学后或回复消息前快速稳定状态。</p>
+          <button class="text-btn" type="button" data-favorite-action="breath"><i data-lucide="wind"></i>打开呼吸律动</button>
+        </div>
+        <div class="favorite-card" data-favorite-type="todo">
+          <div class="row between"><h3>家长回访待办模板</h3><span class="tag">待办模板</span></div>
+          <p class="body">默认生成“回访家长，同步孩子近期状态并确认下一步配合事项”。</p>
+          <button class="text-btn" type="button" data-favorite-action="todo"><i data-lucide="alarm-clock-plus"></i>添加到待办事项</button>
+        </div>
+        <div class="favorite-card" data-favorite-type="reply">
+          <div class="row between"><h3>成绩波动沟通框架</h3><span class="tag">沟通模板</span></div>
+          <p class="body">先说明阶段性波动正常，再拆解问题，避免直接给孩子贴标签。</p>
+          <button class="text-btn" type="button" data-favorite-action="reply" data-favorite-text="家长关注孩子成绩波动，希望回复能先稳定预期，再说明阶段问题和下一步改进计划。"><i data-lucide="messages-square"></i>带入 AI 沟通助手</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="parentModal" role="dialog" aria-modal="true" aria-label="家长档案详情">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2 id="parentDetailTitle">家长档案</h2>
+          <p class="caption" id="parentDetailSubtitle">学生与沟通信息</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeParentDetail" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-item">
+          <label for="parentStudentName">学生</label>
+          <input id="parentStudentName">
+        </div>
+        <div class="detail-item">
+          <label for="parentClassName">班级</label>
+          <input id="parentClassName">
+        </div>
+        <div class="detail-item">
+          <label for="parentRelation">关系</label>
+          <select id="parentRelation">
+            <option>妈妈</option>
+            <option>爸爸</option>
+            <option>其他监护人</option>
+          </select>
+        </div>
+        <div class="detail-item">
+          <label for="parentRisk">风险</label>
+          <select id="parentRisk">
+            <option>敏感对话</option>
+            <option>需跟进</option>
+            <option>需观察</option>
+            <option>新建档案</option>
+            <option>待观察</option>
+            <option>低</option>
+          </select>
+        </div>
+      </div>
+      <div class="row wrap" id="parentTags"></div>
+      <div class="field">
+        <label for="parentNote">沟通备注</label>
+        <textarea id="parentNote"></textarea>
+      </div>
+      <div class="field">
+        <label for="parentFollowUp">跟进建议</label>
+        <textarea id="parentFollowUp"></textarea>
+      </div>
+      <button class="ghost-btn" type="button" id="saveParentDetail"><i data-lucide="save"></i>保存档案</button>
+      <button class="primary-btn" type="button" id="useParentForReply"><i data-lucide="messages-square"></i>带入 AI 沟通助手</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="recordModal" role="dialog" aria-modal="true" aria-label="手动添加沟通记录">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>手动添加沟通记录</h2>
+          <p class="caption">记录家长沟通重点，后续可继续追加</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeRecordModal" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="form-grid">
+        <div class="row">
+          <div class="field" style="flex:1;">
+            <label for="recordParentName">家长</label>
+            <input id="recordParentName" value="新家长">
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="recordTime">时间</label>
+            <input id="recordTime" value="刚刚">
+          </div>
+        </div>
+        <div class="field">
+          <label for="recordSummary">沟通内容</label>
+          <textarea id="recordSummary" placeholder="例如：同步孩子近期课堂状态，约定下周再回访。"></textarea>
+        </div>
+        <button class="primary-btn" type="button" id="saveRecord"><i data-lucide="check"></i>保存记录</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="contactsModal" role="dialog" aria-modal="true" aria-label="家长通讯录">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>家长通讯录</h2>
+          <p class="caption">选择一个或多个家长加入重点关注</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeContacts" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="contact-toolbar">
+        <button class="ghost-btn" type="button" id="openNewParent"><i data-lucide="user-plus"></i>新建家长档案</button>
+        <button class="ghost-btn" type="button" id="importClassParents"><i data-lucide="file-spreadsheet"></i>导入班级名单</button>
+      </div>
+      <input id="classParentFile" type="file" accept=".xlsx,.xls,.csv" hidden>
+      <p class="caption">支持 Excel/CSV，表头建议：学生、班级、家长、关系、标签、备注</p>
+      <div class="contact-list" id="contactsList"></div>
+      <button class="primary-btn" type="button" id="addSelectedParents"><i data-lucide="user-plus"></i>添加到重点关注</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="newParentModal" role="dialog" aria-modal="true" aria-label="新建家长档案">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>新建家长档案</h2>
+          <p class="caption">手动录入后会进入家长通讯录</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeNewParent" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="form-grid">
+        <div class="row">
+          <div class="field" style="flex:1;">
+            <label for="newStudentName">学生</label>
+            <input id="newStudentName" value="赵一宁">
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="newClassName">班级</label>
+            <input id="newClassName" value="高二(4)班">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field" style="flex:1;">
+            <label for="newParentName">家长称呼</label>
+            <input id="newParentName" value="赵一宁妈妈">
+          </div>
+          <div class="field" style="flex:1;">
+            <label for="newRelation">关系</label>
+            <select id="newRelation">
+              <option>妈妈</option>
+              <option>爸爸</option>
+              <option>其他监护人</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="newParentStyle">沟通风格</label>
+          <select id="newParentStyle">
+            <option>容易焦虑</option>
+            <option>比较敏感</option>
+            <option>沟通积极</option>
+            <option>关注成绩</option>
+          </select>
+        </div>
+        <button class="primary-btn" type="button" id="saveNewParent"><i data-lucide="check"></i>保存到通讯录</button>
       </div>
     </div>
   </div>
@@ -1807,10 +2501,105 @@
       sun: []
     };
 
+    const todosByDay = {
+      mon: [
+        ["09:10", "准备互动环节道具", "提前到场布置投影设备并分发情绪卡片。"],
+        ["17:20", "回访陈子默爸爸", "同步期中测试反馈，语气正式但温和。"]
+      ],
+      tue: [
+        ["12:30", "整理作文讲评名单", "标记需要单独反馈的学生。"]
+      ],
+      wed: [
+        ["09:10", "确认讲座材料", "提前测试投影设备和音频。"],
+        ["17:20", "回访陈子默爸爸", "同步期中测试反馈，语气正式但温和。"]
+      ],
+      thu: [
+        ["07:50", "公开课设备检查", "提前确认投影、板书和互动卡片。"]
+      ],
+      fri: [
+        ["16:20", "班主任例会提醒", "整理周末安全提醒内容。"]
+      ],
+      sat: [],
+      sun: []
+    };
+
+    const parentProfiles = {
+      lin: {
+        title: "林晓晓妈妈",
+        subtitle: "昨天 14:30 语音通话",
+        student: "林晓晓",
+        className: "高二(5)班",
+        relation: "妈妈",
+        risk: "敏感对话",
+        tags: ["比较敏感", "关注情绪", "需要委婉"],
+        note: "近期孩子情绪波动较大，家长表达焦虑，沟通时应先同步观察到的事实，再给出可执行的小建议。",
+        followUp: "建议一周后回访，重点确认孩子睡眠、到校状态和课堂参与情况。",
+        replyDraft: "林晓晓妈妈关注孩子近期情绪波动，希望语气委婉，先同步课堂观察，再给出家庭端可配合的小建议。"
+      },
+      chen: {
+        title: "陈子默爸爸",
+        subtitle: "待回复留言",
+        student: "陈子默",
+        className: "高二(3)班",
+        relation: "爸爸",
+        risk: "需跟进",
+        tags: ["关注成绩", "沟通积极", "需定期反馈"],
+        note: "家长询问期中测试反馈，态度积极，适合用正式但温和的方式说明现状和下一步改进节奏。",
+        followUp: "建议今天放学后回复，并约定下周同步一次错题订正和课堂专注度变化。",
+        replyDraft: "陈子默爸爸询问期中测试反馈，希望语气正式但温和，同步孩子当前学习情况，并给出下周可执行的改进建议。"
+      },
+      wang: {
+        title: "王浩宇妈妈",
+        subtitle: "周一沟通记录",
+        student: "王浩宇",
+        className: "高二(3)班",
+        relation: "妈妈",
+        risk: "需观察",
+        tags: ["容易焦虑", "关注专注度", "需定期反馈"],
+        note: "家长关注孩子课堂专注度，希望获得明确、可执行的家庭配合建议。",
+        followUp: "建议下周同步一次短时练习和课堂观察变化。",
+        replyDraft: "王浩宇妈妈关注孩子课堂专注度，希望语气温和，说明课堂观察，并给出家庭端短时间固定练习建议。"
+      },
+      xu: {
+        title: "许嘉木爸爸",
+        subtitle: "月考后待沟通",
+        student: "许嘉木",
+        className: "高二(1)班",
+        relation: "爸爸",
+        risk: "需跟进",
+        tags: ["关注成绩", "沟通积极", "需要具体计划"],
+        note: "月考后希望了解孩子阶段性表现，适合给出清晰的复盘方向。",
+        followUp: "建议放学后沟通月考问题，并确认错题订正计划。",
+        replyDraft: "许嘉木爸爸希望了解月考后孩子表现，请正式但温和地同步学习情况，并给出错题订正计划。"
+      },
+      zhang: {
+        title: "张梓涵爸爸",
+        subtitle: "上周课后反馈跟进",
+        student: "张梓涵",
+        className: "高二(5)班",
+        relation: "爸爸",
+        risk: "低",
+        tags: ["沟通积极", "关注课堂反馈"],
+        note: "家长配合度较高，适合简短同步课堂表现和下一步观察点。",
+        followUp: "建议本周五前补充一次课堂参与度反馈。",
+        replyDraft: "张梓涵爸爸希望了解课后反馈，请简短同步课堂参与情况，并说明后续观察点。"
+      }
+    };
+
+    let activeParentId = null;
+    const contactIds = ["lin", "chen", "wang", "xu", "zhang"];
+    let newParentIndex = 1;
+
     let toastTimer;
     let audioContext;
     let soundNode;
     let soundGain;
+    let breathTimer;
+    let breathRemaining = 60;
+    let editingRecordCard = null;
+    let currentScheduleDay = "wed";
+    let reminderMode = "todo";
+    let selectedPlan = "年度 Pro";
 
     function initIcons() {
       if (window.lucide) window.lucide.createIcons();
@@ -1824,32 +2613,591 @@
       toastTimer = setTimeout(() => toast.classList.remove("visible"), 2200);
     }
 
-    function switchTab(tab) {
+    function switchTab(tab, options = {}) {
       $$(".page").forEach(page => page.classList.remove("active"));
       $(`#page-${tab}`).classList.add("active");
       $$("[data-tab]").forEach(button => button.classList.toggle("active", button.dataset.tab === tab));
       const page = $(`#page-${tab}`);
       $("#pageTitle").textContent = page.dataset.title;
       $("#topEyebrow").textContent = page.dataset.eyebrow;
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (options.scrollTop !== false) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }
+
+    function focusPraiseInput() {
+      const praiseCard = $("#praiseCard");
+      const praiseInput = $("#praiseInput");
+      if (praiseCard) {
+        const topbarHeight = $(".topbar")?.offsetHeight || 0;
+        const targetTop = praiseCard.getBoundingClientRect().top + window.scrollY - topbarHeight - 16;
+        window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+      }
+      if (praiseInput) {
+        setTimeout(() => praiseInput.focus({ preventScroll: true }), 260);
+      }
+    }
+
+    function scrollToTarget(targetId) {
+      const target = $(`#${targetId}`);
+      if (!target) return;
+      const topbarHeight = $(".topbar")?.offsetHeight || 0;
+      const targetTop = target.getBoundingClientRect().top + window.scrollY - topbarHeight - 16;
+      window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+    }
+
+    function jumpToTab(tab, targetId) {
+      switchTab(tab, { scrollTop: !targetId });
+      if (targetId) {
+        setTimeout(() => scrollToTarget(targetId), 80);
+      }
+    }
+
+    function formatBreathTime(seconds) {
+      return `00:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function setBreathButton(active) {
+      $("#breathToggle").innerHTML = active
+        ? `<i data-lucide="pause"></i>呼吸中 ${formatBreathTime(breathRemaining)}`
+        : `<i data-lucide="play"></i>开始一分钟冥想`;
+      initIcons();
+    }
+
+    function playBreathDoneSound() {
+      try {
+        audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+        const gain = audioContext.createGain();
+        gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 1.1);
+        gain.connect(audioContext.destination);
+
+        [523.25, 659.25, 783.99].forEach((frequency, index) => {
+          const oscillator = audioContext.createOscillator();
+          oscillator.type = "sine";
+          oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + index * 0.16);
+          oscillator.connect(gain);
+          oscillator.start(audioContext.currentTime + index * 0.16);
+          oscillator.stop(audioContext.currentTime + index * 0.16 + 0.32);
+        });
+
+        setTimeout(() => gain.disconnect(), 1300);
+      } catch (error) {
+        showToast("一分钟呼吸完成");
+      }
+    }
+
+    function stopBreathSession(completed = false) {
+      clearInterval(breathTimer);
+      breathTimer = null;
+      $("#breathCore").classList.remove("active");
+      breathRemaining = 60;
+      setBreathButton(false);
+      if (completed) {
+        playBreathDoneSound();
+        showToast("一分钟呼吸完成");
+      }
+    }
+
+    function startBreathSession() {
+      clearInterval(breathTimer);
+      breathRemaining = 60;
+      $("#breathCore").classList.add("active");
+      setBreathButton(true);
+      breathTimer = setInterval(() => {
+        breathRemaining -= 1;
+        if (breathRemaining <= 0) {
+          stopBreathSession(true);
+          return;
+        }
+        setBreathButton(true);
+      }, 1000);
+    }
+
+    function toggleBreathSession() {
+      if (breathTimer) {
+        stopBreathSession(false);
+        return;
+      }
+      startBreathSession();
     }
 
     function runAction(action) {
       if (action === "praise") {
-        switchTab("heal");
-        setTimeout(() => $("#praiseInput").focus(), 160);
+        switchTab("heal", { scrollTop: false });
+        focusPraiseInput();
       }
-      if (action === "record") switchTab("comm");
-      if (action === "reminder") openReminder();
+      if (action === "commAssistant") jumpToTab("comm", "commAssistant");
+      if (action === "reminder") openReminder("todo");
       if (action === "sound") switchTab("heal");
     }
 
-    function openReminder() {
+    function openReminder(mode = "todo") {
+      reminderMode = mode;
+      const isSchedule = mode === "schedule";
+      $("#reminderModalTitle").textContent = isSchedule ? "添加日程" : "添加待办";
+      $("#reminderModalCaption").textContent = isSchedule ? "保存到当前选中日期的今日安排" : "保存到当前选中日期的待办事项";
+      $("#reminderTitleLabel").textContent = isSchedule ? "日程" : "事项";
+      $("#reminderTitle").value = isSchedule ? "新增课程或会议" : "新的待办事项";
+      $("#reminderType").innerHTML = isSchedule
+        ? `<option>课程</option><option>会议</option><option>教研</option><option>活动</option>`
+        : `<option>家长回访</option><option>教研会议</option><option>公开课</option><option>个人事项</option>`;
       $("#reminderModal").classList.add("visible");
     }
 
     function closeReminder() {
       $("#reminderModal").classList.remove("visible");
+    }
+
+    function openScheduleImport() {
+      $("#scheduleImportModal").classList.add("visible");
+    }
+
+    function closeScheduleImport() {
+      $("#scheduleImportModal").classList.remove("visible");
+    }
+
+    function openProfileEdit() {
+      $("#profileEditModal").classList.add("visible");
+      setTimeout(() => $("#editTeacherName").focus(), 80);
+    }
+
+    function closeProfileEdit() {
+      $("#profileEditModal").classList.remove("visible");
+    }
+
+    function saveProfileEdit() {
+      const name = $("#editTeacherName").value.trim() || "未命名老师";
+      const stage = $("#editStage").value;
+      const subject = $("#editSubject").value.trim() || "未填写学科";
+      const title = $("#editTeacherTitle").value.trim() || "教师";
+      const className = $("#editClassName").value.trim() || "未填写班级";
+      const school = $("#editSchool").value.trim() || "未填写学校";
+      $("#profileName").textContent = name;
+      $("#profileRole").textContent = `${stage}${subject}${title} · ${className}班主任`;
+      $("#profileSchool").textContent = `${school} · ${className}`;
+      $("#profileAvatarText").textContent = name.slice(0, 1);
+      closeProfileEdit();
+      showToast("资料已保存");
+    }
+
+    function openRenewal() {
+      $("#renewalModal").classList.add("visible");
+      initIcons();
+    }
+
+    function closeRenewal() {
+      $("#renewalModal").classList.remove("visible");
+    }
+
+    function openBenefits() {
+      $("#benefitsModal").classList.add("visible");
+      initIcons();
+    }
+
+    function closeBenefits() {
+      $("#benefitsModal").classList.remove("visible");
+    }
+
+    function selectPlan(planButton) {
+      $$("#planGroup .plan-card").forEach(card => card.classList.remove("active"));
+      planButton.classList.add("active");
+      selectedPlan = planButton.dataset.plan;
+      const descriptions = {
+        "月度 Pro": "已选择：月度 Pro。适合短期集中使用，可随时续费。",
+        "年度 Pro": "已选择：年度 Pro。包含 AI 沟通助手、无限记录、云同步、高级提醒与疗愈内容。",
+        "校园团队版": "已选择：校园团队版。适合年级组或学校统一开通，可配置多人协作。"
+      };
+      $("#renewalSummary").textContent = descriptions[selectedPlan];
+    }
+
+    function confirmRenewal() {
+      $("#profileMemberTag").textContent = selectedPlan === "校园团队版" ? "团队权益待开通" : "Pro 已续费";
+      closeRenewal();
+      showToast(selectedPlan === "校园团队版" ? "已提交团队版开通意向" : `已选择${selectedPlan}续费`);
+    }
+
+    function openFavorites() {
+      $("#favoritesModal").classList.add("visible");
+      initIcons();
+    }
+
+    function closeFavorites() {
+      $("#favoritesModal").classList.remove("visible");
+    }
+
+    function filterFavorites(filter) {
+      $$("#favoriteTabs .chip").forEach(button => button.classList.toggle("active", button.dataset.favoriteFilter === filter));
+      $$("#favoriteList .favorite-card").forEach(card => {
+        card.style.display = filter === "all" || card.dataset.favoriteType === filter ? "grid" : "none";
+      });
+    }
+
+    function useFavorite(actionButton) {
+      const action = actionButton.dataset.favoriteAction;
+      const text = actionButton.dataset.favoriteText || "";
+      closeFavorites();
+      if (action === "reply") {
+        jumpToTab("comm", "commAssistant");
+        setTimeout(() => {
+          $("#studentIssue").value = text;
+          $("#studentIssue").focus({ preventScroll: true });
+        }, 180);
+        showToast("已带入 AI 沟通助手");
+        return;
+      }
+      if (action === "praise") {
+        jumpToTab("heal", "praiseCard");
+        setTimeout(() => {
+          $("#praiseInput").value = text;
+          $("#praiseInput").focus({ preventScroll: true });
+        }, 180);
+        showToast("已带入 AI 夸夸");
+        return;
+      }
+      if (action === "breath") {
+        jumpToTab("heal", "breathSection");
+        showToast("已打开呼吸律动");
+        return;
+      }
+      if (action === "todo") {
+        jumpToTab("schedule", "todoSection");
+        setTimeout(() => openReminder("todo"), 220);
+      }
+    }
+
+    function normalizeScheduleDay(value) {
+      const text = String(value || "").trim();
+      const map = [
+        ["mon", ["周一", "星期一", "礼拜一", "一", "mon", "monday"]],
+        ["tue", ["周二", "星期二", "礼拜二", "二", "tue", "tuesday"]],
+        ["wed", ["周三", "星期三", "礼拜三", "三", "wed", "wednesday"]],
+        ["thu", ["周四", "星期四", "礼拜四", "四", "thu", "thursday"]],
+        ["fri", ["周五", "星期五", "礼拜五", "五", "fri", "friday"]],
+        ["sat", ["周六", "星期六", "礼拜六", "六", "sat", "saturday"]],
+        ["sun", ["周日", "周天", "星期日", "星期天", "礼拜日", "日", "天", "sun", "sunday"]]
+      ];
+      const hit = map.find(([, names]) => names.some(name => text.toLowerCase().includes(String(name).toLowerCase())));
+      return hit ? hit[0] : currentScheduleDay;
+    }
+
+    function pickRowValue(row, keys) {
+      const entry = Object.entries(row).find(([key]) => keys.some(candidate => key.trim().toLowerCase().includes(candidate)));
+      return entry ? entry[1] : "";
+    }
+
+    function importRowsToSchedule(rows) {
+      let count = 0;
+      rows.forEach(row => {
+        const day = normalizeScheduleDay(pickRowValue(row, ["星期", "周", "日期", "day"]));
+        const time = String(pickRowValue(row, ["时间", "开始", "time"]) || "08:00").slice(0, 5);
+        const title = String(pickRowValue(row, ["课程", "标题", "科目", "事项", "title", "course"]) || "").trim();
+        if (!title) return;
+        const location = String(pickRowValue(row, ["地点", "教室", "班级", "备注", "location", "note"]) || "未填写地点").trim();
+        schedules[day] = schedules[day] || [];
+        const exists = schedules[day].some(item => item[0] === time && item[1] === title);
+        if (!exists) {
+          schedules[day].push([time, title, location, false]);
+          count += 1;
+        }
+      });
+      renderCourses(currentScheduleDay);
+      closeScheduleImport();
+      showToast(count ? `已导入 ${count} 条课表` : "没有发现可导入的课表行");
+    }
+
+    function parseCsv(text) {
+      const lines = text.split(/\r?\n/).filter(Boolean);
+      const headers = (lines.shift() || "").split(",").map(item => item.trim());
+      return lines.map(line => {
+        const cells = line.split(",").map(item => item.trim());
+        return Object.fromEntries(headers.map((header, index) => [header, cells[index] || ""]));
+      });
+    }
+
+    function importScheduleData() {
+      const file = $("#scheduleFile").files[0];
+      if (!file) {
+        showToast("请先选择 Excel 或 CSV 文件");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = event => {
+        try {
+          const fileName = file.name.toLowerCase();
+          if (fileName.endsWith(".csv")) {
+            importRowsToSchedule(parseCsv(event.target.result));
+            return;
+          }
+          if (!window.XLSX) {
+            showToast("Excel 解析库未加载，请检查网络后重试");
+            return;
+          }
+          const workbook = XLSX.read(event.target.result, { type: "array" });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+          importRowsToSchedule(rows);
+        } catch (error) {
+          showToast("课表解析失败，请检查表头格式");
+        }
+      };
+      if (file.name.toLowerCase().endsWith(".csv")) {
+        reader.readAsText(file, "UTF-8");
+      } else {
+        reader.readAsArrayBuffer(file);
+      }
+    }
+
+    function openParentDetail(parentId) {
+      const profile = parentProfiles[parentId];
+      if (!profile) return;
+      activeParentId = parentId;
+      $("#parentDetailTitle").textContent = profile.title;
+      $("#parentDetailSubtitle").textContent = profile.subtitle;
+      $("#parentStudentName").value = profile.student;
+      $("#parentClassName").value = profile.className;
+      $("#parentRelation").value = profile.relation;
+      $("#parentRisk").value = profile.risk;
+      $("#parentTags").innerHTML = profile.tags.map(tag => `<span class="tag">${tag}</span>`).join("");
+      $("#parentNote").value = profile.note;
+      $("#parentFollowUp").value = profile.followUp;
+      $("#parentModal").classList.add("visible");
+      initIcons();
+    }
+
+    function closeParentDetail() {
+      $("#parentModal").classList.remove("visible");
+    }
+
+    function saveParentDetail() {
+      const profile = parentProfiles[activeParentId];
+      if (!profile) return;
+      profile.student = $("#parentStudentName").value.trim() || profile.student;
+      profile.className = $("#parentClassName").value.trim() || profile.className;
+      profile.relation = $("#parentRelation").value;
+      profile.risk = $("#parentRisk").value;
+      profile.note = $("#parentNote").value.trim() || profile.note;
+      profile.followUp = $("#parentFollowUp").value.trim() || profile.followUp;
+      profile.subtitle = profile.subtitle || "已更新档案";
+      const card = $(`[data-parent-id="${activeParentId}"]`, $("#focusParentList"));
+      if (card) {
+        card.outerHTML = renderFocusParentCard(activeParentId);
+        initIcons();
+      }
+      showToast("家长档案已保存");
+    }
+
+    function openRecordModal(recordCard = null) {
+      editingRecordCard = recordCard;
+      if (recordCard) {
+        $("#recordParentName").value = recordCard.dataset.parent || "";
+        $("#recordTime").value = recordCard.dataset.time || "";
+        $("#recordSummary").value = recordCard.dataset.summary || "";
+      } else {
+        $("#recordParentName").value = "新家长";
+        $("#recordTime").value = "刚刚";
+        $("#recordSummary").value = "";
+      }
+      $("#recordModal").classList.add("visible");
+      setTimeout(() => $("#recordParentName").focus(), 80);
+    }
+
+    function closeRecordModal() {
+      $("#recordModal").classList.remove("visible");
+      editingRecordCard = null;
+    }
+
+    function renderFocusParentCard(parentId) {
+      const profile = parentProfiles[parentId];
+      if (!profile) return "";
+      const tagClass = profile.risk.includes("敏感") ? "danger" : profile.risk.includes("需") ? "gold" : "";
+      return `
+        <button class="parent-card" type="button" data-parent-id="${parentId}">
+          <div class="row between">
+            <div class="row">
+              <div class="avatar soft">${profile.student.slice(0, 1)}</div>
+              <div>
+                <h3>${profile.title}</h3>
+                <p class="body">${profile.note.slice(0, 18)}</p>
+              </div>
+            </div>
+            <span class="tag ${tagClass}">${profile.risk}</span>
+          </div>
+          <p class="caption">${profile.subtitle}</p>
+        </button>
+      `;
+    }
+
+    function renderContacts() {
+      const selectedIds = new Set($$("[data-parent-id]", $("#focusParentList")).map(card => card.dataset.parentId));
+      $("#contactsList").innerHTML = contactIds.map(parentId => {
+        const profile = parentProfiles[parentId];
+        const added = selectedIds.has(parentId);
+        return `
+          <label class="contact-option ${added ? "is-added" : ""}">
+            <input type="checkbox" value="${parentId}" ${added ? "disabled checked" : ""}>
+            <span>
+              <strong>${profile.title}</strong>
+              <span class="caption">${profile.student} · ${profile.className} · ${profile.risk}</span>
+            </span>
+          </label>
+        `;
+      }).join("");
+    }
+
+    function openContacts() {
+      renderContacts();
+      $("#contactsModal").classList.add("visible");
+    }
+
+    function closeContacts() {
+      $("#contactsModal").classList.remove("visible");
+    }
+
+    function openNewParent() {
+      $("#newParentModal").classList.add("visible");
+      setTimeout(() => $("#newStudentName").focus(), 80);
+    }
+
+    function closeNewParent() {
+      $("#newParentModal").classList.remove("visible");
+    }
+
+    function saveNewParent() {
+      const student = $("#newStudentName").value.trim() || "新学生";
+      const className = $("#newClassName").value.trim() || "未填写班级";
+      const parentName = $("#newParentName").value.trim() || `${student}家长`;
+      const relation = $("#newRelation").value;
+      const style = $("#newParentStyle").value;
+      const id = `custom-${Date.now()}-${newParentIndex}`;
+      newParentIndex += 1;
+      parentProfiles[id] = {
+        title: parentName,
+        subtitle: "手动创建",
+        student,
+        className,
+        relation,
+        risk: "新建档案",
+        tags: [style, "手动创建"],
+        note: `${parentName}由老师手动创建，后续可继续补充沟通备注。`,
+        followUp: "建议完成首次沟通后补充跟进时间和沟通结果。",
+        replyDraft: `${parentName}需要首次沟通，请语气温和地同步孩子近期情况，并给出一个可执行的小建议。`
+      };
+      contactIds.push(id);
+      closeNewParent();
+      renderContacts();
+      showToast("已保存到家长通讯录");
+    }
+
+    function inferRelation(parentName) {
+      if (parentName.includes("妈妈") || parentName.includes("母亲")) return "妈妈";
+      if (parentName.includes("爸爸") || parentName.includes("父亲")) return "爸爸";
+      if (parentName.includes("奶奶") || parentName.includes("姥姥")) return "奶奶";
+      if (parentName.includes("爷爷") || parentName.includes("姥爷")) return "爷爷";
+      return "家长";
+    }
+
+    function importRowsToParents(rows) {
+      let count = 0;
+      rows.forEach((row, index) => {
+        const student = String(pickRowValue(row, ["学生", "学生姓名", "姓名", "student"]) || "").trim();
+        const className = String(pickRowValue(row, ["班级", "年级", "class"]) || "未填写班级").trim();
+        const parentName = String(pickRowValue(row, ["家长", "家长姓名", "称呼", "监护人", "parent"]) || "").trim();
+        if (!student && !parentName) return;
+        const title = parentName || `${student}家长`;
+        const relation = String(pickRowValue(row, ["关系", "relation"]) || inferRelation(title)).trim();
+        const tag = String(pickRowValue(row, ["标签", "沟通风格", "风格", "tag", "style"]) || "名单导入").trim();
+        const risk = String(pickRowValue(row, ["风险", "状态", "关注", "risk"]) || "待观察").trim();
+        const phone = String(pickRowValue(row, ["电话", "手机号", "联系方式", "phone", "mobile"]) || "").trim();
+        const rawNote = String(pickRowValue(row, ["备注", "注意事项", "说明", "note"]) || `${title}来自班级名单导入，尚未补充详细沟通记录。`).trim();
+        const note = phone ? `${rawNote}\n联系方式：${phone}` : rawNote;
+        const exists = contactIds.some(parentId => {
+          const profile = parentProfiles[parentId];
+          return profile && profile.title === title && profile.student === (student || "未填写学生");
+        });
+        if (exists) return;
+        const id = `class-import-${Date.now()}-${index}`;
+        parentProfiles[id] = {
+          title,
+          subtitle: "班级名单导入",
+          student: student || "未填写学生",
+          className,
+          relation,
+          risk,
+          tags: [tag, "名单导入"],
+          note,
+          followUp: "建议首次沟通后补充风格标签和跟进提醒。",
+          replyDraft: `${title}来自班级名单导入，请温和开启首次沟通，了解孩子近期在家和课堂状态。`
+        };
+        contactIds.push(id);
+        count += 1;
+      });
+      renderContacts();
+      showToast(count ? `已导入 ${count} 位家长` : "没有发现可导入的家长");
+      $("#classParentFile").value = "";
+    }
+
+    function importClassParents() {
+      $("#classParentFile").click();
+    }
+
+    function importClassParentData() {
+      const file = $("#classParentFile").files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = event => {
+        try {
+          const fileName = file.name.toLowerCase();
+          if (fileName.endsWith(".csv")) {
+            importRowsToParents(parseCsv(event.target.result));
+            return;
+          }
+          if (!window.XLSX) {
+            showToast("Excel 解析库未加载，请检查网络后重试");
+            $("#classParentFile").value = "";
+            return;
+          }
+          const workbook = XLSX.read(event.target.result, { type: "array" });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+          importRowsToParents(rows);
+        } catch (error) {
+          showToast("班级名单解析失败，请检查表头格式");
+          $("#classParentFile").value = "";
+        }
+      };
+      if (file.name.toLowerCase().endsWith(".csv")) {
+        reader.readAsText(file, "UTF-8");
+      } else {
+        reader.readAsArrayBuffer(file);
+      }
+    }
+
+    function addSelectedParents() {
+      const selected = $$('input[type="checkbox"]:checked:not(:disabled)', $("#contactsList")).map(input => input.value);
+      if (!selected.length) {
+        showToast("请选择要添加的家长");
+        return;
+      }
+      const list = $("#focusParentList");
+      selected.forEach(parentId => {
+        list.insertAdjacentHTML("beforeend", renderFocusParentCard(parentId));
+      });
+      closeContacts();
+      showToast(`已添加 ${selected.length} 位家长到重点关注`);
+    }
+
+    function useParentForReply() {
+      const profile = parentProfiles[activeParentId];
+      if (!profile) return;
+      closeParentDetail();
+      jumpToTab("comm", "commAssistant");
+      setTimeout(() => {
+        $("#studentIssue").value = profile.replyDraft;
+        $("#studentIssue").focus({ preventScroll: true });
+      }, 180);
+      showToast("已带入 AI 沟通助手");
     }
 
     function generatePraise() {
@@ -1898,26 +3246,138 @@
       showToast("已生成 4 个沟通版本");
     }
 
-    function saveRecord() {
-      const issue = $("#studentIssue").value.trim() || "已生成沟通草稿";
-      const item = document.createElement("div");
-      item.className = "timeline-item active";
-      item.innerHTML = `
+    function renderRecordCard(parentName, recordTime, summary) {
+      return `
         <div class="record-card">
-          <div class="row between"><h3>王浩宇妈妈</h3><span class="caption">刚刚</span></div>
-          <p class="body">${issue.slice(0, 42)}，已保存为沟通记录。</p>
+          <div class="row between"><h3>${parentName}</h3><span class="caption">${recordTime}</span></div>
+          <p class="body">${summary}</p>
+          <div class="record-actions">
+            <button class="record-action" type="button" data-record-action="edit"><i data-lucide="edit-3"></i>编辑</button>
+            <button class="record-action danger" type="button" data-record-action="delete"><i data-lucide="trash-2"></i>删除</button>
+          </div>
         </div>
       `;
+    }
+
+    function applyRecordData(recordCard, parentName, recordTime, summary) {
+      recordCard.dataset.parent = parentName;
+      recordCard.dataset.time = recordTime;
+      recordCard.dataset.summary = summary;
+      $("h3", recordCard).textContent = parentName;
+      $(".caption", recordCard).textContent = recordTime;
+      $(".body", recordCard).textContent = summary;
+    }
+
+    function saveRecord() {
+      const parentName = $("#recordParentName").value.trim() || "新家长";
+      const recordTime = $("#recordTime").value.trim() || "刚刚";
+      const issue = $("#recordSummary").value.trim() || "已补充一条手动沟通记录。";
+      if (editingRecordCard) {
+        applyRecordData(editingRecordCard, parentName, recordTime, issue);
+        closeRecordModal();
+        showToast("沟通记录已更新");
+        return;
+      }
+      const item = document.createElement("div");
+      item.className = "timeline-item active";
+      item.innerHTML = renderRecordCard(parentName, recordTime, issue);
+      const recordCard = $(".record-card", item);
+      recordCard.dataset.parent = parentName;
+      recordCard.dataset.time = recordTime;
+      recordCard.dataset.summary = issue;
       $("#recordList").prepend(item);
-      showToast("已保存到沟通记录");
+      closeRecordModal();
+      initIcons();
+      showToast("已添加沟通记录");
+    }
+
+    function handleRecordAction(event) {
+      const actionButton = event.target.closest("[data-record-action]");
+      if (!actionButton) return;
+      const recordCard = actionButton.closest(".record-card");
+      if (!recordCard) return;
+      if (actionButton.dataset.recordAction === "edit") {
+        openRecordModal(recordCard);
+        return;
+      }
+      if (actionButton.dataset.recordAction === "delete") {
+        recordCard.closest(".timeline-item")?.remove();
+        showToast("沟通记录已删除");
+      }
+    }
+
+    function getRhythmState(day) {
+      const courseCount = (schedules[day] || []).length;
+      const todoCount = (todosByDay[day] || []).length;
+      const loadScore = courseCount * 2 + todoCount;
+      if (loadScore <= 2) {
+        return {
+          key: "light",
+          icon: "leaf",
+          title: "节奏轻松",
+          hint: `${dayNames[day]}安排较少，可以留一点空白`
+        };
+      }
+      if (loadScore <= 5) {
+        return {
+          key: "steady",
+          icon: "waves",
+          title: "节奏平稳",
+          hint: `${courseCount} 项日程 · ${todoCount} 项待办，按顺序推进`
+        };
+      }
+      if (loadScore <= 8) {
+        return {
+          key: "full",
+          icon: "activity",
+          title: "节奏偏满",
+          hint: `${courseCount} 项日程 · ${todoCount} 项待办，先处理下一项`
+        };
+      }
+      return {
+        key: "high",
+        icon: "flame",
+        title: "节奏高压",
+        hint: `${courseCount} 项日程 · ${todoCount} 项待办，建议拆小处理`
+      };
+    }
+
+    function updateTodayRhythm(day = currentScheduleDay) {
+      const rhythm = getRhythmState(day);
+      $("#courseCount").textContent = String((schedules[day] || []).length);
+      $("#todoCount").textContent = String((todosByDay[day] || []).length);
+      $("#todayRhythm").dataset.rhythm = rhythm.key;
+      $("#rhythmIcon").setAttribute("data-lucide", rhythm.icon);
+      $("#rhythmTitle").textContent = rhythm.title;
+      $("#rhythmHint").textContent = rhythm.hint;
+      initIcons();
+    }
+
+    function renderTodos(day) {
+      const list = $("#reminderList");
+      const data = todosByDay[day] || [];
+      if (!data.length) {
+        list.innerHTML = `<div class="empty">今天没有待办事项。</div>`;
+        updateTodayRhythm(day);
+        return;
+      }
+      list.innerHTML = data.map(([time, title, note]) => `
+        <div class="schedule-card">
+          <div class="row between"><h3>${title}</h3><span class="time">${time}</span></div>
+          <p class="body">${note}</p>
+        </div>
+      `).join("");
+      updateTodayRhythm(day);
     }
 
     function renderCourses(day) {
+      currentScheduleDay = day;
       $("#courseDayTag").textContent = dayNames[day];
       const list = $("#courseList");
       const data = schedules[day] || [];
       if (!data.length) {
         list.innerHTML = `<div class="empty">今天没有课程安排，可以留给自己一点空白。</div>`;
+        renderTodos(day);
         return;
       }
       list.innerHTML = data.map(([time, title, location, active]) => `
@@ -1929,18 +3389,24 @@
           </div>
         </div>
       `).join("");
+      renderTodos(day);
     }
 
     function saveReminder() {
       const title = $("#reminderTitle").value.trim() || "新的提醒";
       const time = $("#reminderTime").value || "17:20";
-      const item = document.createElement("div");
-      item.className = "schedule-card";
-      item.innerHTML = `<div class="row between"><h3>${title}</h3><span class="time">${time}</span></div><p class="body">${$("#reminderType").value} · 低打扰提醒</p>`;
-      $("#reminderList").append(item);
-      $("#todoCount").textContent = String(Number($("#todoCount").textContent) + 1);
+      if (reminderMode === "schedule") {
+        schedules[currentScheduleDay] = schedules[currentScheduleDay] || [];
+        schedules[currentScheduleDay].push([time, title, $("#reminderType").value, false]);
+        renderCourses(currentScheduleDay);
+        showToast("日程已加入今日安排");
+      } else {
+        todosByDay[currentScheduleDay] = todosByDay[currentScheduleDay] || [];
+        todosByDay[currentScheduleDay].push([time, title, `${$("#reminderType").value} · 今日待办`]);
+        renderTodos(currentScheduleDay);
+        showToast("待办已加入当前日期");
+      }
       closeReminder();
-      showToast("提醒已加入日程");
     }
 
     function stopSound() {
@@ -2005,16 +3471,93 @@
       $$("[data-tab-shortcut]").forEach(button => {
         button.addEventListener("click", () => switchTab(button.dataset.tabShortcut));
       });
+      $$("[data-jump-tab]").forEach(button => {
+        button.addEventListener("click", () => jumpToTab(button.dataset.jumpTab, button.dataset.jumpTarget));
+      });
       $$("[data-action]").forEach(button => {
         button.addEventListener("click", () => runAction(button.dataset.action));
       });
-      $$("[data-open-reminder]").forEach(button => {
-        button.addEventListener("click", openReminder);
+      $("#jumpTodoFromBell").addEventListener("click", () => jumpToTab("schedule", "todoSection"));
+      $$("[data-open-schedule-item]").forEach(button => {
+        button.addEventListener("click", () => openReminder("schedule"));
+      });
+      $$("[data-open-todo]").forEach(button => {
+        button.addEventListener("click", () => openReminder("todo"));
+      });
+      $("#importSchedule").addEventListener("click", openScheduleImport);
+      $("#closeScheduleImport").addEventListener("click", closeScheduleImport);
+      $("#scheduleImportModal").addEventListener("click", event => {
+        if (event.target.id === "scheduleImportModal") closeScheduleImport();
+      });
+      $("#confirmScheduleImport").addEventListener("click", importScheduleData);
+      $("#openProfileEdit").addEventListener("click", openProfileEdit);
+      $("#closeProfileEdit").addEventListener("click", closeProfileEdit);
+      $("#profileEditModal").addEventListener("click", event => {
+        if (event.target.id === "profileEditModal") closeProfileEdit();
+      });
+      $("#saveProfileEdit").addEventListener("click", saveProfileEdit);
+      $("#openRenewal").addEventListener("click", openRenewal);
+      $("#closeRenewal").addEventListener("click", closeRenewal);
+      $("#renewalModal").addEventListener("click", event => {
+        if (event.target.id === "renewalModal") closeRenewal();
+      });
+      $$("#planGroup .plan-card").forEach(card => {
+        card.addEventListener("click", () => selectPlan(card));
+      });
+      $("#confirmRenewal").addEventListener("click", confirmRenewal);
+      $("#openBenefits").addEventListener("click", openBenefits);
+      $("#closeBenefits").addEventListener("click", closeBenefits);
+      $("#benefitsModal").addEventListener("click", event => {
+        if (event.target.id === "benefitsModal") closeBenefits();
+      });
+      $("#renewFromBenefits").addEventListener("click", () => {
+        closeBenefits();
+        openRenewal();
+      });
+      $("#openFavorites").addEventListener("click", openFavorites);
+      $("#closeFavorites").addEventListener("click", closeFavorites);
+      $("#favoritesModal").addEventListener("click", event => {
+        if (event.target.id === "favoritesModal") closeFavorites();
+      });
+      $$("#favoriteTabs .chip").forEach(button => {
+        button.addEventListener("click", () => filterFavorites(button.dataset.favoriteFilter));
+      });
+      $$("#favoriteList [data-favorite-action]").forEach(button => {
+        button.addEventListener("click", () => useFavorite(button));
       });
       $("#closeReminder").addEventListener("click", closeReminder);
       $("#saveReminder").addEventListener("click", saveReminder);
       $("#reminderModal").addEventListener("click", event => {
         if (event.target.id === "reminderModal") closeReminder();
+      });
+      $("#focusParentList").addEventListener("click", event => {
+        const card = event.target.closest("[data-parent-id]");
+        if (card) openParentDetail(card.dataset.parentId);
+      });
+      $("#closeParentDetail").addEventListener("click", closeParentDetail);
+      $("#parentModal").addEventListener("click", event => {
+        if (event.target.id === "parentModal") closeParentDetail();
+      });
+      $("#saveParentDetail").addEventListener("click", saveParentDetail);
+      $("#useParentForReply").addEventListener("click", useParentForReply);
+      $("#openContacts").addEventListener("click", openContacts);
+      $("#closeContacts").addEventListener("click", closeContacts);
+      $("#contactsModal").addEventListener("click", event => {
+        if (event.target.id === "contactsModal") closeContacts();
+      });
+      $("#addSelectedParents").addEventListener("click", addSelectedParents);
+      $("#openNewParent").addEventListener("click", openNewParent);
+      $("#closeNewParent").addEventListener("click", closeNewParent);
+      $("#newParentModal").addEventListener("click", event => {
+        if (event.target.id === "newParentModal") closeNewParent();
+      });
+      $("#saveNewParent").addEventListener("click", saveNewParent);
+      $("#importClassParents").addEventListener("click", importClassParents);
+      $("#classParentFile").addEventListener("change", importClassParentData);
+      $("#openRecordModal").addEventListener("click", () => openRecordModal());
+      $("#closeRecordModal").addEventListener("click", closeRecordModal);
+      $("#recordModal").addEventListener("click", event => {
+        if (event.target.id === "recordModal") closeRecordModal();
       });
       $$("#personaGroup .chip").forEach(button => {
         button.addEventListener("click", () => {
@@ -2026,12 +3569,8 @@
       $("#treeSend").addEventListener("click", treeSend);
       $("#generateReply").addEventListener("click", generateReply);
       $("#saveRecord").addEventListener("click", saveRecord);
-      $("#breathToggle").addEventListener("click", () => {
-        const core = $("#breathCore");
-        const active = core.classList.toggle("active");
-        $("#breathToggle").innerHTML = active ? `<i data-lucide="pause"></i>呼吸中` : `<i data-lucide="play"></i>开始一分钟冥想`;
-        initIcons();
-      });
+      $("#recordList").addEventListener("click", handleRecordAction);
+      $("#breathToggle").addEventListener("click", toggleBreathSession);
       $$(".sound-card").forEach(card => card.addEventListener("click", () => toggleSound(card)));
       $$(".day").forEach(day => {
         day.addEventListener("click", () => {
