@@ -2,8 +2,10 @@ package httpapi
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -37,13 +39,27 @@ func (s *Server) Routes() http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/dashboard", s.dashboard)
 		r.Get("/courses", s.courses)
+		r.Post("/courses", s.createCourse)
+		r.Get("/courses/{id}", s.course)
+		r.Put("/courses/{id}", s.updateCourse)
+		r.Delete("/courses/{id}", s.deleteCourse)
 		r.Get("/reminders", s.reminders)
 		r.Post("/reminders", s.createReminder)
+		r.Get("/reminders/{id}", s.reminder)
+		r.Put("/reminders/{id}", s.updateReminder)
+		r.Delete("/reminders/{id}", s.deleteReminder)
 		r.Post("/reminders/{id}/complete", s.completeReminder)
+		r.Post("/reminders/{id}/snooze", s.snoozeReminder)
 		r.Get("/parents", s.parents)
 		r.Post("/parents", s.createParent)
+		r.Get("/parents/{id}", s.parent)
+		r.Put("/parents/{id}", s.updateParent)
+		r.Delete("/parents/{id}", s.deleteParent)
 		r.Get("/communication-records", s.communicationRecords)
 		r.Post("/communication-records", s.createCommunicationRecord)
+		r.Get("/communication-records/{id}", s.communicationRecord)
+		r.Put("/communication-records/{id}", s.updateCommunicationRecord)
+		r.Delete("/communication-records/{id}", s.deleteCommunicationRecord)
 		r.Post("/ai/parent-drafts", s.parentDrafts)
 		r.Post("/ai/praise", s.praise)
 		r.Post("/healing/entries", s.createHealingEntry)
@@ -80,8 +96,53 @@ func (s *Server) courses(w http.ResponseWriter, r *http.Request) {
 	writeResult(w, data, err)
 }
 
+func (s *Server) course(w http.ResponseWriter, r *http.Request) {
+	data, err := s.store.Course(r.Context(), currentUserID(r), pathID(r))
+	writeResult(w, data, err)
+}
+
+func (s *Server) createCourse(w http.ResponseWriter, r *http.Request) {
+	var payload domain.Course
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	userID := currentUserID(r)
+	data, err := s.store.CreateCourse(r.Context(), userID, payload)
+	if err == nil {
+		s.invalidateDashboard(r, userID)
+	}
+	writeResult(w, data, err)
+}
+
+func (s *Server) updateCourse(w http.ResponseWriter, r *http.Request) {
+	var payload domain.Course
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	userID := currentUserID(r)
+	data, err := s.store.UpdateCourse(r.Context(), userID, pathID(r), payload)
+	if err == nil {
+		s.invalidateDashboard(r, userID)
+	}
+	writeResult(w, data, err)
+}
+
+func (s *Server) deleteCourse(w http.ResponseWriter, r *http.Request) {
+	userID := currentUserID(r)
+	err := s.store.DeleteCourse(r.Context(), userID, pathID(r))
+	if err == nil {
+		s.invalidateDashboard(r, userID)
+	}
+	writeResult(w, map[string]bool{"ok": err == nil}, err)
+}
+
 func (s *Server) reminders(w http.ResponseWriter, r *http.Request) {
 	data, err := s.store.RemindersByDay(r.Context(), currentUserID(r), parseDay(r))
+	writeResult(w, data, err)
+}
+
+func (s *Server) reminder(w http.ResponseWriter, r *http.Request) {
+	data, err := s.store.Reminder(r.Context(), currentUserID(r), pathID(r))
 	writeResult(w, data, err)
 }
 
@@ -101,17 +162,65 @@ func (s *Server) createReminder(w http.ResponseWriter, r *http.Request) {
 	writeResult(w, data, err)
 }
 
+func (s *Server) updateReminder(w http.ResponseWriter, r *http.Request) {
+	var payload domain.Reminder
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	if payload.RemindAt.IsZero() {
+		payload.RemindAt = time.Now().Add(30 * time.Minute)
+	}
+	userID := currentUserID(r)
+	data, err := s.store.UpdateReminder(r.Context(), userID, pathID(r), payload)
+	if err == nil {
+		s.invalidateDashboard(r, userID)
+	}
+	writeResult(w, data, err)
+}
+
 func (s *Server) completeReminder(w http.ResponseWriter, r *http.Request) {
 	userID := currentUserID(r)
-	err := s.store.CompleteReminder(r.Context(), userID, domain.ID(chi.URLParam(r, "id")))
+	err := s.store.CompleteReminder(r.Context(), userID, pathID(r))
 	if err == nil {
 		s.invalidateDashboard(r, userID)
 	}
 	writeResult(w, map[string]bool{"ok": err == nil}, err)
 }
 
+func (s *Server) deleteReminder(w http.ResponseWriter, r *http.Request) {
+	userID := currentUserID(r)
+	err := s.store.DeleteReminder(r.Context(), userID, pathID(r))
+	if err == nil {
+		s.invalidateDashboard(r, userID)
+	}
+	writeResult(w, map[string]bool{"ok": err == nil}, err)
+}
+
+func (s *Server) snoozeReminder(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Until time.Time `json:"until"`
+	}
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	if payload.Until.IsZero() {
+		payload.Until = time.Now().Add(30 * time.Minute)
+	}
+	userID := currentUserID(r)
+	data, err := s.store.SnoozeReminder(r.Context(), userID, pathID(r), payload.Until)
+	if err == nil {
+		s.invalidateDashboard(r, userID)
+	}
+	writeResult(w, data, err)
+}
+
 func (s *Server) parents(w http.ResponseWriter, r *http.Request) {
 	data, err := s.store.Parents(r.Context(), currentUserID(r))
+	writeResult(w, data, err)
+}
+
+func (s *Server) parent(w http.ResponseWriter, r *http.Request) {
+	data, err := s.store.Parent(r.Context(), currentUserID(r), pathID(r))
 	writeResult(w, data, err)
 }
 
@@ -128,6 +237,28 @@ func (s *Server) createParent(w http.ResponseWriter, r *http.Request) {
 	writeResult(w, data, err)
 }
 
+func (s *Server) updateParent(w http.ResponseWriter, r *http.Request) {
+	var payload domain.ParentProfile
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	userID := currentUserID(r)
+	data, err := s.store.UpdateParent(r.Context(), userID, pathID(r), payload)
+	if err == nil {
+		s.invalidateDashboard(r, userID)
+	}
+	writeResult(w, data, err)
+}
+
+func (s *Server) deleteParent(w http.ResponseWriter, r *http.Request) {
+	userID := currentUserID(r)
+	err := s.store.DeleteParent(r.Context(), userID, pathID(r))
+	if err == nil {
+		s.invalidateDashboard(r, userID)
+	}
+	writeResult(w, map[string]bool{"ok": err == nil}, err)
+}
+
 func (s *Server) communicationRecords(w http.ResponseWriter, r *http.Request) {
 	var parentID *domain.ID
 	if raw := r.URL.Query().Get("parentId"); raw != "" {
@@ -138,6 +269,11 @@ func (s *Server) communicationRecords(w http.ResponseWriter, r *http.Request) {
 	writeResult(w, data, err)
 }
 
+func (s *Server) communicationRecord(w http.ResponseWriter, r *http.Request) {
+	data, err := s.store.CommunicationRecord(r.Context(), currentUserID(r), pathID(r))
+	writeResult(w, data, err)
+}
+
 func (s *Server) createCommunicationRecord(w http.ResponseWriter, r *http.Request) {
 	var payload domain.CommunicationRecord
 	if !decodeJSON(w, r, &payload) {
@@ -145,6 +281,20 @@ func (s *Server) createCommunicationRecord(w http.ResponseWriter, r *http.Reques
 	}
 	data, err := s.store.CreateCommunicationRecord(r.Context(), currentUserID(r), payload)
 	writeResult(w, data, err)
+}
+
+func (s *Server) updateCommunicationRecord(w http.ResponseWriter, r *http.Request) {
+	var payload domain.CommunicationRecord
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	data, err := s.store.UpdateCommunicationRecord(r.Context(), currentUserID(r), pathID(r), payload)
+	writeResult(w, data, err)
+}
+
+func (s *Server) deleteCommunicationRecord(w http.ResponseWriter, r *http.Request) {
+	err := s.store.DeleteCommunicationRecord(r.Context(), currentUserID(r), pathID(r))
+	writeResult(w, map[string]bool{"ok": err == nil}, err)
 }
 
 func (s *Server) parentDrafts(w http.ResponseWriter, r *http.Request) {
@@ -189,9 +339,17 @@ func parseDay(r *http.Request) time.Time {
 	return time.Now()
 }
 
+func pathID(r *http.Request) domain.ID {
+	return domain.ID(chi.URLParam(r, "id"))
+}
+
 func writeResult(w http.ResponseWriter, data any, err error) {
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]any{"error": err.Error()})
+		status := http.StatusBadRequest
+		if errors.Is(err, repository.ErrNotFound) || strings.Contains(err.Error(), "not found") {
+			status = http.StatusNotFound
+		}
+		writeJSON(w, status, map[string]any{"error": err.Error()})
 		return
 	}
 	writeJSON(w, http.StatusOK, data)

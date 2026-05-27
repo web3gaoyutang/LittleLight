@@ -23,3 +23,15 @@ npm run dev:h5
 ```
 
 完整技术文档见：`docs/engineering-technical-design.md`。
+
+## 当前能力
+
+- `app/` 提供 uni-app + Vue 3 五个 Tab 页面骨架，日程页和沟通页已接入核心 API。
+- `server/` 提供 Go HTTP API，包含 Dashboard、课程、提醒、家长档案、沟通记录、疗愈记录和 AI mock 服务。
+- PostgreSQL 负责持久化业务数据，Redis 负责首页工作台缓存。
+- `deploy/docker-compose.yml` 可编排 API、PostgreSQL、Redis。
+- `.github/workflows/engineering-checks.yml` 包含 Go 测试和 H5 构建检查。
+
+## 本地环境说明
+
+当前机器未安装 `go`、`npm`、`docker` 时，无法直接运行 `go test ./...`、`npm run build:h5` 或 Docker Compose 联调。CI 或具备这些工具的开发机应作为运行级验证入口。

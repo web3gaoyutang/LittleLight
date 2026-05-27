@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -9,16 +10,32 @@ import (
 	"github.com/web3gaoyutang/littlelight/server/internal/domain"
 )
 
+var ErrNotFound = errors.New("not found")
+
 type Store interface {
 	Dashboard(ctx context.Context, userID domain.ID, day time.Time) (domain.DashboardSummary, error)
 	CoursesByDay(ctx context.Context, userID domain.ID, weekday int) ([]domain.Course, error)
+	Course(ctx context.Context, userID domain.ID, id domain.ID) (domain.Course, error)
+	CreateCourse(ctx context.Context, userID domain.ID, course domain.Course) (domain.Course, error)
+	UpdateCourse(ctx context.Context, userID domain.ID, id domain.ID, course domain.Course) (domain.Course, error)
+	DeleteCourse(ctx context.Context, userID domain.ID, id domain.ID) error
 	RemindersByDay(ctx context.Context, userID domain.ID, day time.Time) ([]domain.Reminder, error)
+	Reminder(ctx context.Context, userID domain.ID, id domain.ID) (domain.Reminder, error)
 	CreateReminder(ctx context.Context, userID domain.ID, reminder domain.Reminder) (domain.Reminder, error)
+	UpdateReminder(ctx context.Context, userID domain.ID, id domain.ID, reminder domain.Reminder) (domain.Reminder, error)
 	CompleteReminder(ctx context.Context, userID domain.ID, id domain.ID) error
+	DeleteReminder(ctx context.Context, userID domain.ID, id domain.ID) error
+	SnoozeReminder(ctx context.Context, userID domain.ID, id domain.ID, until time.Time) (domain.Reminder, error)
 	Parents(ctx context.Context, userID domain.ID) ([]domain.ParentProfile, error)
+	Parent(ctx context.Context, userID domain.ID, id domain.ID) (domain.ParentProfile, error)
 	CreateParent(ctx context.Context, userID domain.ID, parent domain.ParentProfile) (domain.ParentProfile, error)
+	UpdateParent(ctx context.Context, userID domain.ID, id domain.ID, parent domain.ParentProfile) (domain.ParentProfile, error)
+	DeleteParent(ctx context.Context, userID domain.ID, id domain.ID) error
 	CommunicationRecords(ctx context.Context, userID domain.ID, parentID *domain.ID) ([]domain.CommunicationRecord, error)
+	CommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID) (domain.CommunicationRecord, error)
 	CreateCommunicationRecord(ctx context.Context, userID domain.ID, record domain.CommunicationRecord) (domain.CommunicationRecord, error)
+	UpdateCommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID, record domain.CommunicationRecord) (domain.CommunicationRecord, error)
+	DeleteCommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID) error
 	CreateHealingEntry(ctx context.Context, userID domain.ID, entry domain.HealingEntry) (domain.HealingEntry, error)
 }
 
@@ -81,6 +98,56 @@ func (s *MemoryStore) CoursesByDay(ctx context.Context, userID domain.ID, weekda
 	return items, nil
 }
 
+func (s *MemoryStore) Course(ctx context.Context, userID domain.ID, id domain.ID) (domain.Course, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, item := range s.courses {
+		if item.ID == id {
+			return item, nil
+		}
+	}
+	return domain.Course{}, notFound("course", id)
+}
+
+func (s *MemoryStore) CreateCourse(ctx context.Context, userID domain.ID, course domain.Course) (domain.Course, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.seq++
+	course.ID = domain.ID(fmt.Sprintf("course_%d", s.seq))
+	course.CreatedAt = time.Now()
+	if course.Weekday < 0 || course.Weekday > 6 {
+		course.Weekday = int(time.Now().Weekday())
+	}
+	s.courses = append(s.courses, course)
+	return course, nil
+}
+
+func (s *MemoryStore) UpdateCourse(ctx context.Context, userID domain.ID, id domain.ID, course domain.Course) (domain.Course, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.courses {
+		if s.courses[index].ID == id {
+			course.ID = id
+			course.CreatedAt = s.courses[index].CreatedAt
+			s.courses[index] = course
+			return course, nil
+		}
+	}
+	return domain.Course{}, notFound("course", id)
+}
+
+func (s *MemoryStore) DeleteCourse(ctx context.Context, userID domain.ID, id domain.ID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.courses {
+		if s.courses[index].ID == id {
+			s.courses = append(s.courses[:index], s.courses[index+1:]...)
+			return nil
+		}
+	}
+	return notFound("course", id)
+}
+
 func (s *MemoryStore) RemindersByDay(ctx context.Context, userID domain.ID, day time.Time) ([]domain.Reminder, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -91,6 +158,17 @@ func (s *MemoryStore) RemindersByDay(ctx context.Context, userID domain.ID, day 
 		}
 	}
 	return items, nil
+}
+
+func (s *MemoryStore) Reminder(ctx context.Context, userID domain.ID, id domain.ID) (domain.Reminder, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, item := range s.reminders {
+		if item.ID == id && item.Status != "deleted" {
+			return item, nil
+		}
+	}
+	return domain.Reminder{}, notFound("reminder", id)
 }
 
 func (s *MemoryStore) CreateReminder(ctx context.Context, userID domain.ID, reminder domain.Reminder) (domain.Reminder, error) {
@@ -106,18 +184,61 @@ func (s *MemoryStore) CreateReminder(ctx context.Context, userID domain.ID, remi
 	return reminder, nil
 }
 
+func (s *MemoryStore) UpdateReminder(ctx context.Context, userID domain.ID, id domain.ID, reminder domain.Reminder) (domain.Reminder, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.reminders {
+		if s.reminders[index].ID == id && s.reminders[index].Status != "deleted" {
+			reminder.ID = id
+			reminder.CreatedAt = s.reminders[index].CreatedAt
+			if reminder.Status == "" {
+				reminder.Status = s.reminders[index].Status
+			}
+			s.reminders[index] = reminder
+			return reminder, nil
+		}
+	}
+	return domain.Reminder{}, notFound("reminder", id)
+}
+
 func (s *MemoryStore) CompleteReminder(ctx context.Context, userID domain.ID, id domain.ID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	now := time.Now()
 	for index := range s.reminders {
-		if s.reminders[index].ID == id {
+		if s.reminders[index].ID == id && s.reminders[index].Status != "deleted" {
 			s.reminders[index].Status = "done"
 			s.reminders[index].DoneAt = &now
 			return nil
 		}
 	}
-	return fmt.Errorf("reminder not found: %s", id)
+	return notFound("reminder", id)
+}
+
+func (s *MemoryStore) DeleteReminder(ctx context.Context, userID domain.ID, id domain.ID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.reminders {
+		if s.reminders[index].ID == id && s.reminders[index].Status != "deleted" {
+			s.reminders[index].Status = "deleted"
+			return nil
+		}
+	}
+	return notFound("reminder", id)
+}
+
+func (s *MemoryStore) SnoozeReminder(ctx context.Context, userID domain.ID, id domain.ID, until time.Time) (domain.Reminder, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.reminders {
+		if s.reminders[index].ID == id && s.reminders[index].Status != "deleted" {
+			s.reminders[index].Status = "snoozed"
+			s.reminders[index].RemindAt = until
+			s.reminders[index].DoneAt = nil
+			return s.reminders[index], nil
+		}
+	}
+	return domain.Reminder{}, notFound("reminder", id)
 }
 
 func (s *MemoryStore) Parents(ctx context.Context, userID domain.ID) ([]domain.ParentProfile, error) {
@@ -125,6 +246,17 @@ func (s *MemoryStore) Parents(ctx context.Context, userID domain.ID) ([]domain.P
 	defer s.mu.RUnlock()
 	items := append([]domain.ParentProfile(nil), s.parents...)
 	return items, nil
+}
+
+func (s *MemoryStore) Parent(ctx context.Context, userID domain.ID, id domain.ID) (domain.ParentProfile, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, item := range s.parents {
+		if item.ID == id {
+			return item, nil
+		}
+	}
+	return domain.ParentProfile{}, notFound("parent", id)
 }
 
 func (s *MemoryStore) CreateParent(ctx context.Context, userID domain.ID, parent domain.ParentProfile) (domain.ParentProfile, error) {
@@ -135,6 +267,35 @@ func (s *MemoryStore) CreateParent(ctx context.Context, userID domain.ID, parent
 	parent.CreatedAt = time.Now()
 	s.parents = append([]domain.ParentProfile{parent}, s.parents...)
 	return parent, nil
+}
+
+func (s *MemoryStore) UpdateParent(ctx context.Context, userID domain.ID, id domain.ID, parent domain.ParentProfile) (domain.ParentProfile, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.parents {
+		if s.parents[index].ID == id {
+			parent.ID = id
+			parent.CreatedAt = s.parents[index].CreatedAt
+			if parent.RiskLevel == "" {
+				parent.RiskLevel = "low"
+			}
+			s.parents[index] = parent
+			return parent, nil
+		}
+	}
+	return domain.ParentProfile{}, notFound("parent", id)
+}
+
+func (s *MemoryStore) DeleteParent(ctx context.Context, userID domain.ID, id domain.ID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.parents {
+		if s.parents[index].ID == id {
+			s.parents = append(s.parents[:index], s.parents[index+1:]...)
+			return nil
+		}
+	}
+	return notFound("parent", id)
 }
 
 func (s *MemoryStore) CommunicationRecords(ctx context.Context, userID domain.ID, parentID *domain.ID) ([]domain.CommunicationRecord, error) {
@@ -149,6 +310,17 @@ func (s *MemoryStore) CommunicationRecords(ctx context.Context, userID domain.ID
 	return items, nil
 }
 
+func (s *MemoryStore) CommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID) (domain.CommunicationRecord, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, item := range s.records {
+		if item.ID == id {
+			return item, nil
+		}
+	}
+	return domain.CommunicationRecord{}, notFound("communication record", id)
+}
+
 func (s *MemoryStore) CreateCommunicationRecord(ctx context.Context, userID domain.ID, record domain.CommunicationRecord) (domain.CommunicationRecord, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -157,6 +329,35 @@ func (s *MemoryStore) CreateCommunicationRecord(ctx context.Context, userID doma
 	record.CreatedAt = time.Now()
 	s.records = append([]domain.CommunicationRecord{record}, s.records...)
 	return record, nil
+}
+
+func (s *MemoryStore) UpdateCommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID, record domain.CommunicationRecord) (domain.CommunicationRecord, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.records {
+		if s.records[index].ID == id {
+			record.ID = id
+			record.CreatedAt = s.records[index].CreatedAt
+			if record.RiskLevel == "" {
+				record.RiskLevel = "low"
+			}
+			s.records[index] = record
+			return record, nil
+		}
+	}
+	return domain.CommunicationRecord{}, notFound("communication record", id)
+}
+
+func (s *MemoryStore) DeleteCommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.records {
+		if s.records[index].ID == id {
+			s.records = append(s.records[:index], s.records[index+1:]...)
+			return nil
+		}
+	}
+	return notFound("communication record", id)
 }
 
 func (s *MemoryStore) CreateHealingEntry(ctx context.Context, userID domain.ID, entry domain.HealingEntry) (domain.HealingEntry, error) {
@@ -183,4 +384,10 @@ func sameDay(a, b time.Time) bool {
 	by, bm, bd := b.Date()
 	return ay == by && am == bm && ad == bd
 }
+
+func notFound(kind string, id domain.ID) error {
+	return fmt.Errorf("%w: %s %s", ErrNotFound, kind, id)
+}
+
+var _ Store = (*MemoryStore)(nil)
 

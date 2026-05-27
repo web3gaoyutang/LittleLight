@@ -3,9 +3,10 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/web3gaoyutang/littlelight/server/internal/domain"
 )
@@ -64,6 +65,68 @@ func (s *PostgresStore) CoursesByDay(ctx context.Context, userID domain.ID, week
 	return items, rows.Err()
 }
 
+func (s *PostgresStore) Course(ctx context.Context, userID domain.ID, id domain.ID) (domain.Course, error) {
+	var item domain.Course
+	err := s.pool.QueryRow(ctx, `
+		SELECT id::text, title, class_name, COALESCE(location, ''), weekday, to_char(start_time, 'HH24:MI'), to_char(end_time, 'HH24:MI'), COALESCE(note, ''), created_at
+		FROM courses
+		WHERE user_id = $1 AND id = $2`, string(userID), string(id)).
+		Scan(&item.ID, &item.Title, &item.ClassName, &item.Location, &item.Weekday, &item.StartTime, &item.EndTime, &item.Note, &item.CreatedAt)
+	if isNoRows(err) {
+		return domain.Course{}, notFound("course", id)
+	}
+	return item, err
+}
+
+func (s *PostgresStore) CreateCourse(ctx context.Context, userID domain.ID, course domain.Course) (domain.Course, error) {
+	if course.Weekday < 0 || course.Weekday > 6 {
+		course.Weekday = int(time.Now().Weekday())
+	}
+	if course.StartTime == "" {
+		course.StartTime = "08:00"
+	}
+	if course.EndTime == "" {
+		course.EndTime = "08:45"
+	}
+	err := s.pool.QueryRow(ctx, `
+		INSERT INTO courses (user_id, title, class_name, location, weekday, start_time, end_time, note)
+		VALUES ($1, $2, $3, $4, $5, $6::time, $7::time, $8)
+		RETURNING id::text, created_at`, string(userID), course.Title, course.ClassName, course.Location, course.Weekday, course.StartTime, course.EndTime, course.Note).
+		Scan(&course.ID, &course.CreatedAt)
+	return course, err
+}
+
+func (s *PostgresStore) UpdateCourse(ctx context.Context, userID domain.ID, id domain.ID, course domain.Course) (domain.Course, error) {
+	if course.StartTime == "" {
+		course.StartTime = "08:00"
+	}
+	if course.EndTime == "" {
+		course.EndTime = "08:45"
+	}
+	err := s.pool.QueryRow(ctx, `
+		UPDATE courses
+		SET title = $3, class_name = $4, location = $5, weekday = $6, start_time = $7::time, end_time = $8::time, note = $9, updated_at = now()
+		WHERE user_id = $1 AND id = $2
+		RETURNING id::text, title, class_name, COALESCE(location, ''), weekday, to_char(start_time, 'HH24:MI'), to_char(end_time, 'HH24:MI'), COALESCE(note, ''), created_at`,
+		string(userID), string(id), course.Title, course.ClassName, course.Location, course.Weekday, course.StartTime, course.EndTime, course.Note).
+		Scan(&course.ID, &course.Title, &course.ClassName, &course.Location, &course.Weekday, &course.StartTime, &course.EndTime, &course.Note, &course.CreatedAt)
+	if isNoRows(err) {
+		return domain.Course{}, notFound("course", id)
+	}
+	return course, err
+}
+
+func (s *PostgresStore) DeleteCourse(ctx context.Context, userID domain.ID, id domain.ID) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM courses WHERE user_id = $1 AND id = $2`, string(userID), string(id))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return notFound("course", id)
+	}
+	return nil
+}
+
 func (s *PostgresStore) RemindersByDay(ctx context.Context, userID domain.ID, day time.Time) ([]domain.Reminder, error) {
 	start := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, day.Location())
 	end := start.Add(24 * time.Hour)
@@ -94,6 +157,26 @@ func (s *PostgresStore) RemindersByDay(ctx context.Context, userID domain.ID, da
 	return items, rows.Err()
 }
 
+func (s *PostgresStore) Reminder(ctx context.Context, userID domain.ID, id domain.ID) (domain.Reminder, error) {
+	var item domain.Reminder
+	var parentID, courseID sql.NullString
+	var doneAt sql.NullTime
+	err := s.pool.QueryRow(ctx, `
+		SELECT id::text, title, category, remind_at, status, COALESCE(note, ''), parent_id::text, course_id::text, created_at, done_at
+		FROM reminders
+		WHERE user_id = $1 AND id = $2 AND status <> 'deleted'`, string(userID), string(id)).
+		Scan(&item.ID, &item.Title, &item.Category, &item.RemindAt, &item.Status, &item.Note, &parentID, &courseID, &item.CreatedAt, &doneAt)
+	if isNoRows(err) {
+		return domain.Reminder{}, notFound("reminder", id)
+	}
+	item.ParentID = nullableDomainID(parentID)
+	item.CourseID = nullableDomainID(courseID)
+	if doneAt.Valid {
+		item.DoneAt = &doneAt.Time
+	}
+	return item, err
+}
+
 func (s *PostgresStore) CreateReminder(ctx context.Context, userID domain.ID, reminder domain.Reminder) (domain.Reminder, error) {
 	if reminder.Status == "" {
 		reminder.Status = "pending"
@@ -109,15 +192,77 @@ func (s *PostgresStore) CreateReminder(ctx context.Context, userID domain.ID, re
 	return reminder, err
 }
 
+func (s *PostgresStore) UpdateReminder(ctx context.Context, userID domain.ID, id domain.ID, reminder domain.Reminder) (domain.Reminder, error) {
+	if reminder.Status == "" {
+		reminder.Status = "pending"
+	}
+	if reminder.Category == "" {
+		reminder.Category = "personal"
+	}
+	var parentID, courseID sql.NullString
+	var doneAt sql.NullTime
+	err := s.pool.QueryRow(ctx, `
+		UPDATE reminders
+		SET parent_id = $3, course_id = $4, title = $5, category = $6, remind_at = $7, status = $8, note = $9, done_at = $10, updated_at = now()
+		WHERE user_id = $1 AND id = $2 AND status <> 'deleted'
+		RETURNING id::text, title, category, remind_at, status, COALESCE(note, ''), parent_id::text, course_id::text, created_at, done_at`,
+		string(userID), string(id), fromDomainID(reminder.ParentID), fromDomainID(reminder.CourseID), reminder.Title, reminder.Category, reminder.RemindAt, reminder.Status, reminder.Note, fromTimePtr(reminder.DoneAt)).
+		Scan(&reminder.ID, &reminder.Title, &reminder.Category, &reminder.RemindAt, &reminder.Status, &reminder.Note, &parentID, &courseID, &reminder.CreatedAt, &doneAt)
+	if isNoRows(err) {
+		return domain.Reminder{}, notFound("reminder", id)
+	}
+	reminder.ParentID = nullableDomainID(parentID)
+	reminder.CourseID = nullableDomainID(courseID)
+	if doneAt.Valid {
+		reminder.DoneAt = &doneAt.Time
+	} else {
+		reminder.DoneAt = nil
+	}
+	return reminder, err
+}
+
 func (s *PostgresStore) CompleteReminder(ctx context.Context, userID domain.ID, id domain.ID) error {
-	tag, err := s.pool.Exec(ctx, `UPDATE reminders SET status = 'done', done_at = now(), updated_at = now() WHERE user_id = $1 AND id = $2`, string(userID), string(id))
+	tag, err := s.pool.Exec(ctx, `UPDATE reminders SET status = 'done', done_at = now(), updated_at = now() WHERE user_id = $1 AND id = $2 AND status <> 'deleted'`, string(userID), string(id))
 	if err != nil {
 		return err
 	}
 	if tag.RowsAffected() == 0 {
-		return fmt.Errorf("reminder not found: %s", id)
+		return notFound("reminder", id)
 	}
 	return nil
+}
+
+func (s *PostgresStore) DeleteReminder(ctx context.Context, userID domain.ID, id domain.ID) error {
+	tag, err := s.pool.Exec(ctx, `UPDATE reminders SET status = 'deleted', updated_at = now() WHERE user_id = $1 AND id = $2 AND status <> 'deleted'`, string(userID), string(id))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return notFound("reminder", id)
+	}
+	return nil
+}
+
+func (s *PostgresStore) SnoozeReminder(ctx context.Context, userID domain.ID, id domain.ID, until time.Time) (domain.Reminder, error) {
+	var item domain.Reminder
+	var parentID, courseID sql.NullString
+	var doneAt sql.NullTime
+	err := s.pool.QueryRow(ctx, `
+		UPDATE reminders
+		SET status = 'snoozed', remind_at = $3, done_at = NULL, updated_at = now()
+		WHERE user_id = $1 AND id = $2 AND status <> 'deleted'
+		RETURNING id::text, title, category, remind_at, status, COALESCE(note, ''), parent_id::text, course_id::text, created_at, done_at`,
+		string(userID), string(id), until).
+		Scan(&item.ID, &item.Title, &item.Category, &item.RemindAt, &item.Status, &item.Note, &parentID, &courseID, &item.CreatedAt, &doneAt)
+	if isNoRows(err) {
+		return domain.Reminder{}, notFound("reminder", id)
+	}
+	item.ParentID = nullableDomainID(parentID)
+	item.CourseID = nullableDomainID(courseID)
+	if doneAt.Valid {
+		item.DoneAt = &doneAt.Time
+	}
+	return item, err
 }
 
 func (s *PostgresStore) Parents(ctx context.Context, userID domain.ID) ([]domain.ParentProfile, error) {
@@ -141,6 +286,19 @@ func (s *PostgresStore) Parents(ctx context.Context, userID domain.ID) ([]domain
 	return items, rows.Err()
 }
 
+func (s *PostgresStore) Parent(ctx context.Context, userID domain.ID, id domain.ID) (domain.ParentProfile, error) {
+	var item domain.ParentProfile
+	err := s.pool.QueryRow(ctx, `
+		SELECT id::text, student_name, class_name, parent_name, relationship, COALESCE(contact, ''), COALESCE(communication_style, ''), risk_level, COALESCE(important_notes, ''), COALESCE(next_action, ''), created_at
+		FROM parent_profiles
+		WHERE user_id = $1 AND id = $2`, string(userID), string(id)).
+		Scan(&item.ID, &item.StudentName, &item.ClassName, &item.ParentName, &item.Relationship, &item.Contact, &item.CommunicationStyle, &item.RiskLevel, &item.ImportantNotes, &item.NextAction, &item.CreatedAt)
+	if isNoRows(err) {
+		return domain.ParentProfile{}, notFound("parent", id)
+	}
+	return item, err
+}
+
 func (s *PostgresStore) CreateParent(ctx context.Context, userID domain.ID, parent domain.ParentProfile) (domain.ParentProfile, error) {
 	if parent.RiskLevel == "" {
 		parent.RiskLevel = "low"
@@ -151,6 +309,34 @@ func (s *PostgresStore) CreateParent(ctx context.Context, userID domain.ID, pare
 		RETURNING id::text, created_at`, string(userID), parent.StudentName, parent.ClassName, parent.ParentName, parent.Relationship, parent.Contact, parent.CommunicationStyle, parent.RiskLevel, parent.ImportantNotes, parent.NextAction).
 		Scan(&parent.ID, &parent.CreatedAt)
 	return parent, err
+}
+
+func (s *PostgresStore) UpdateParent(ctx context.Context, userID domain.ID, id domain.ID, parent domain.ParentProfile) (domain.ParentProfile, error) {
+	if parent.RiskLevel == "" {
+		parent.RiskLevel = "low"
+	}
+	err := s.pool.QueryRow(ctx, `
+		UPDATE parent_profiles
+		SET student_name = $3, class_name = $4, parent_name = $5, relationship = $6, contact = $7, communication_style = $8, risk_level = $9, important_notes = $10, next_action = $11, updated_at = now()
+		WHERE user_id = $1 AND id = $2
+		RETURNING id::text, student_name, class_name, parent_name, relationship, COALESCE(contact, ''), COALESCE(communication_style, ''), risk_level, COALESCE(important_notes, ''), COALESCE(next_action, ''), created_at`,
+		string(userID), string(id), parent.StudentName, parent.ClassName, parent.ParentName, parent.Relationship, parent.Contact, parent.CommunicationStyle, parent.RiskLevel, parent.ImportantNotes, parent.NextAction).
+		Scan(&parent.ID, &parent.StudentName, &parent.ClassName, &parent.ParentName, &parent.Relationship, &parent.Contact, &parent.CommunicationStyle, &parent.RiskLevel, &parent.ImportantNotes, &parent.NextAction, &parent.CreatedAt)
+	if isNoRows(err) {
+		return domain.ParentProfile{}, notFound("parent", id)
+	}
+	return parent, err
+}
+
+func (s *PostgresStore) DeleteParent(ctx context.Context, userID domain.ID, id domain.ID) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM parent_profiles WHERE user_id = $1 AND id = $2`, string(userID), string(id))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return notFound("parent", id)
+	}
+	return nil
 }
 
 func (s *PostgresStore) CommunicationRecords(ctx context.Context, userID domain.ID, parentID *domain.ID) ([]domain.CommunicationRecord, error) {
@@ -188,6 +374,27 @@ func (s *PostgresStore) CommunicationRecords(ctx context.Context, userID domain.
 	return items, rows.Err()
 }
 
+func (s *PostgresStore) CommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID) (domain.CommunicationRecord, error) {
+	var item domain.CommunicationRecord
+	var parent sql.NullString
+	var followUp sql.NullTime
+	err := s.pool.QueryRow(ctx, `
+		SELECT id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, created_at
+		FROM communication_records
+		WHERE user_id = $1 AND id = $2`, string(userID), string(id)).
+		Scan(&item.ID, &parent, &item.Student, &item.Channel, &item.Reason, &item.Summary, &item.Result, &item.RiskLevel, &followUp, &item.CreatedAt)
+	if isNoRows(err) {
+		return domain.CommunicationRecord{}, notFound("communication record", id)
+	}
+	if parent.Valid {
+		item.ParentID = domain.ID(parent.String)
+	}
+	if followUp.Valid {
+		item.FollowUpAt = followUp.Time
+	}
+	return item, err
+}
+
 func (s *PostgresStore) CreateCommunicationRecord(ctx context.Context, userID domain.ID, record domain.CommunicationRecord) (domain.CommunicationRecord, error) {
 	if record.RiskLevel == "" {
 		record.RiskLevel = "low"
@@ -195,9 +402,45 @@ func (s *PostgresStore) CreateCommunicationRecord(ctx context.Context, userID do
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO communication_records (user_id, parent_id, student, channel, reason, summary, result, risk_level, follow_up_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id::text, created_at`, string(userID), string(record.ParentID), record.Student, record.Channel, record.Reason, record.Summary, record.Result, record.RiskLevel, nullableTime(record.FollowUpAt)).
+		RETURNING id::text, created_at`, string(userID), nullableRecordParentID(record.ParentID), record.Student, record.Channel, record.Reason, record.Summary, record.Result, record.RiskLevel, nullableTime(record.FollowUpAt)).
 		Scan(&record.ID, &record.CreatedAt)
 	return record, err
+}
+
+func (s *PostgresStore) UpdateCommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID, record domain.CommunicationRecord) (domain.CommunicationRecord, error) {
+	if record.RiskLevel == "" {
+		record.RiskLevel = "low"
+	}
+	var parent sql.NullString
+	var followUp sql.NullTime
+	err := s.pool.QueryRow(ctx, `
+		UPDATE communication_records
+		SET parent_id = $3, student = $4, channel = $5, reason = $6, summary = $7, result = $8, risk_level = $9, follow_up_at = $10, updated_at = now()
+		WHERE user_id = $1 AND id = $2
+		RETURNING id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, created_at`,
+		string(userID), string(id), nullableRecordParentID(record.ParentID), record.Student, record.Channel, record.Reason, record.Summary, record.Result, record.RiskLevel, nullableTime(record.FollowUpAt)).
+		Scan(&record.ID, &parent, &record.Student, &record.Channel, &record.Reason, &record.Summary, &record.Result, &record.RiskLevel, &followUp, &record.CreatedAt)
+	if isNoRows(err) {
+		return domain.CommunicationRecord{}, notFound("communication record", id)
+	}
+	if parent.Valid {
+		record.ParentID = domain.ID(parent.String)
+	}
+	if followUp.Valid {
+		record.FollowUpAt = followUp.Time
+	}
+	return record, err
+}
+
+func (s *PostgresStore) DeleteCommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM communication_records WHERE user_id = $1 AND id = $2`, string(userID), string(id))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return notFound("communication record", id)
+	}
+	return nil
 }
 
 func (s *PostgresStore) CreateHealingEntry(ctx context.Context, userID domain.ID, entry domain.HealingEntry) (domain.HealingEntry, error) {
@@ -224,11 +467,29 @@ func fromDomainID(value *domain.ID) any {
 	return string(*value)
 }
 
+func fromTimePtr(value *time.Time) any {
+	if value == nil || value.IsZero() {
+		return nil
+	}
+	return *value
+}
+
+func nullableRecordParentID(value domain.ID) any {
+	if value == "" {
+		return nil
+	}
+	return string(value)
+}
+
 func nullableTime(value time.Time) any {
 	if value.IsZero() {
 		return nil
 	}
 	return value
+}
+
+func isNoRows(err error) bool {
+	return errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows)
 }
 
 var _ Store = (*PostgresStore)(nil)

@@ -320,11 +320,29 @@ AI 生成记录。
 
 用途：日程页切换日期时读取课程列表。
 
-后续接口：
+当前已实现接口：
 
+- `GET /api/v1/courses/{id}`
 - `POST /api/v1/courses`
 - `PUT /api/v1/courses/{id}`
 - `DELETE /api/v1/courses/{id}`
+
+请求示例：
+
+```json
+{
+  "title": "心理健康",
+  "className": "高二(3)班",
+  "location": "教学楼 B 座 402 室",
+  "weekday": 3,
+  "startTime": "09:30",
+  "endTime": "10:15",
+  "note": "情绪识别与压力调节"
+}
+```
+
+导入接口规划：
+
 - `POST /api/v1/courses/imports`，上传 Excel 课表。
 
 ### 8.4 提醒
@@ -344,11 +362,20 @@ AI 生成记录。
 
 `POST /api/v1/reminders/{id}/complete`
 
-后续接口：
+当前已实现接口：
 
-- `POST /api/v1/reminders/{id}/snooze`
+- `GET /api/v1/reminders/{id}`
 - `PUT /api/v1/reminders/{id}`
-- `DELETE /api/v1/reminders/{id}`
+- `DELETE /api/v1/reminders/{id}`，软删除为 `status=deleted`
+- `POST /api/v1/reminders/{id}/snooze`
+
+延后提醒请求：
+
+```json
+{
+  "until": "2026-05-27T18:00:00+08:00"
+}
+```
 
 ### 8.5 家长档案
 
@@ -369,10 +396,14 @@ AI 生成记录。
 }
 ```
 
-后续接口：
+当前已实现接口：
 
 - `GET /api/v1/parents/{id}`
 - `PUT /api/v1/parents/{id}`
+- `DELETE /api/v1/parents/{id}`
+
+导入接口规划：
+
 - `POST /api/v1/parents/imports`，上传 Excel 班级名单。
 
 ### 8.6 沟通记录
@@ -393,6 +424,12 @@ AI 生成记录。
   "followUpAt": "2026-05-30T17:20:00+08:00"
 }
 ```
+
+当前已实现接口：
+
+- `GET /api/v1/communication-records/{id}`
+- `PUT /api/v1/communication-records/{id}`
+- `DELETE /api/v1/communication-records/{id}`
 
 ### 8.7 AI 家长回复
 
@@ -572,16 +609,17 @@ Docker Compose 中：
 已完成：
 
 - 工程目录拆分：`app/`、`server/`、`deploy/`、`docs/`。
-- PostgreSQL repository 初版已接入，覆盖 Dashboard、课程、提醒、家长档案、沟通记录、疗愈记录。
-- 后端单元测试初版已补充，覆盖内存仓库和 AI 服务。
+- PostgreSQL repository 已接入，覆盖 Dashboard、课程、提醒、家长档案、沟通记录、疗愈记录。
+- 课程、提醒、家长档案、沟通记录已具备列表、详情、新增、编辑、删除等核心 CRUD；提醒额外支持完成和延后。
+- 后端单元测试初版已补充，覆盖内存仓库 CRUD 和 AI 服务。
 - GitHub Actions 初版已补充，包含 Go 测试和 uni-app H5 构建。
-- uni-app 五个 Tab 页面骨架。
+- uni-app 五个 Tab 页面骨架，日程页已接入课程/待办增删改查入口，沟通页已接入家长档案和沟通记录基础操作。
 - Go API 服务骨架。
 - V1 核心领域模型。
 - 内存仓库用于本地无数据库演示。
 - PostgreSQL 初始化迁移脚本。
 - Redis/PostgreSQL/Docker Compose 配置。
-- Redis dashboard 缓存已接入，读取首页时优先查缓存，提醒/家长写入成功后清理缓存。
+- Redis dashboard 缓存已接入，读取首页时优先查缓存，课程、提醒、家长写入成功后清理缓存。
 - HTTP 开发鉴权中间件已接入，支持 X-User-ID，并保留默认种子用户。
 - 详细技术文档。
 
@@ -592,6 +630,7 @@ Docker Compose 中：
 - uni-app 依赖需要执行 `npm install` 后才能运行 H5。
 - PostgreSQL repository 已接入，但当前本机缺 Go/Docker，尚未完成本地容器级联调。
 - 正式用户鉴权尚未接入，当前为开发鉴权中间件：`X-User-ID` 或默认种子用户。
+- Excel 课表导入和班级名单导入目前保留前端选文件入口和接口规划，后端解析任务尚未实现。
 
 
 
