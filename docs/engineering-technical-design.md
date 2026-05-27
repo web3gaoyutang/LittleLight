@@ -614,6 +614,7 @@ type AIProvider interface {
 | 首页 | pages/home/index | 今日工作台、状态、下一项、快捷入口 |
 | 疗愈 | pages/heal/index | 呼吸、AI 夸夸、疗愈记录 |
 | 沟通 | pages/communication/index | AI 回复、家长关注、草稿复制 |
+| 家长档案详情 | pages/communication/parent-detail | 档案编辑、风险等级、重点备注、沟通记录 |
 | 日程 | pages/schedule/index | 周日期、课程、待办提醒 |
 | 我的 | pages/profile/index | 资料、素材库、Pro、云同步 |
 
@@ -689,7 +690,7 @@ Docker Compose 中：
 ### P1
 
 - 完善 Excel/CSV 导入预览、字段映射配置和导入回滚。
-- 家长档案详情页。
+- 完善家长档案详情时间线和附件。
 - 沟通记录详情页。
 - 提醒延后、编辑、删除。
 - 收藏列表与素材库。
@@ -712,7 +713,7 @@ Docker Compose 中：
 - 课程、提醒、家长档案、沟通记录已具备列表、详情、新增、编辑、删除等核心 CRUD；提醒额外支持完成和延后。
 - 后端单元测试初版已补充，覆盖内存仓库 CRUD 和 AI 服务。
 - GitHub Actions 初版已补充，包含 Go 测试和 uni-app H5 构建。
-- uni-app 五个 Tab 页面骨架，日程页已接入课程/待办增删改查入口，沟通页已接入家长档案和沟通记录基础操作，我的页已接入教师资料与收藏素材管理。
+- uni-app 五个 Tab 页面骨架，日程页已接入课程/待办增删改查入口，沟通页已接入家长档案、家长详情和沟通记录基础操作，我的页已接入教师资料与收藏素材管理。
 - Go API 服务骨架。
 - V1 核心领域模型。
 - 内存仓库用于本地无数据库演示。

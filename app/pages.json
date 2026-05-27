@@ -6,6 +6,7 @@
     { "path": "pages/home/index", "style": { "navigationBarTitleText": "今日" } },
     { "path": "pages/heal/index", "style": { "navigationBarTitleText": "疗愈" } },
     { "path": "pages/communication/index", "style": { "navigationBarTitleText": "沟通" } },
+    { "path": "pages/communication/parent-detail", "style": { "navigationBarTitleText": "家长档案" } },
     { "path": "pages/schedule/index", "style": { "navigationBarTitleText": "日程" } },
     { "path": "pages/profile/index", "style": { "navigationBarTitleText": "我的" } }
   ],

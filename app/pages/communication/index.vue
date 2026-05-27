@@ -34,10 +34,10 @@
         <button class="primary-btn small" @tap="addParent">新增家长</button>
       </view>
     </view>
-    <view v-for="parent in parents" :key="parent.id" class="card" @tap="selectParent(parent)">
+    <view v-for="parent in parents" :key="parent.id" class="card" @tap="openParent(parent)">
       <view class="row between">
         <text class="section-title">{{ parent.parentName }}</text>
-        <button class="ghost-btn mini" @tap.stop="editParent(parent)">编辑</button>
+        <button class="ghost-btn mini" @tap.stop="selectParent(parent)">记录</button>
       </view>
       <text class="body">{{ parent.studentName }} · {{ parent.className }} · {{ parent.nextAction }}</text>
     </view>
@@ -94,6 +94,11 @@ async function selectParent(parent) {
   showToast(`已切换到 ${parent.studentName}`)
 }
 
+function openParent(parent) {
+  activeParent.value = parent
+  uni.navigateTo({ url: `/pages/communication/parent-detail?id=${encodeURIComponent(parent.id)}` })
+}
+
 async function addParent() {
   const parent = await api.createParent({
     studentName: '新学生',
@@ -127,14 +132,6 @@ function importParents() {
       await load()
     }
   })
-}
-
-async function editParent(parent) {
-  const data = { ...parent, nextAction: `${parent.nextAction || '继续跟进'}（已更新）` }
-  const updated = await api.updateParent(parent.id, data)
-  parents.value = parents.value.map((item) => item.id === updated.id ? updated : item)
-  activeParent.value = updated
-  showToast('已更新家长档案')
 }
 
 async function addRecord() {
