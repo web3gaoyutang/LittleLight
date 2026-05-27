@@ -1,0 +1,19 @@
+{
+    "name":  "littlelight-uni-app",
+    "version":  "0.1.0",
+    "private":  true,
+    "scripts":  {
+                    "dev:h5":  "vite --host 0.0.0.0",
+                    "build:h5":  "vite build"
+                },
+    "dependencies":  {
+                         "@dcloudio/uni-app":  "latest",
+                         "@dcloudio/uni-ui":  "latest",
+                         "vue":  "^3.4.0",
+                         "pinia":  "^2.1.7"
+                     },
+    "devDependencies":  {
+                            "@dcloudio/vite-plugin-uni":  "latest",
+                            "vite":  "^5.0.0"
+                        }
+}
