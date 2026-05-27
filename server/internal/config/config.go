@@ -12,6 +12,7 @@ type Config struct {
 	RedisAddr     string
 	RedisPassword string
 	RedisDB       int
+	MigrationsDir string
 	AIProvider    string
 	AIAPIKey      string
 }
@@ -24,6 +25,7 @@ func Load() Config {
 		RedisAddr:     env("REDIS_ADDR", "localhost:6379"),
 		RedisPassword: env("REDIS_PASSWORD", ""),
 		RedisDB:       envInt("REDIS_DB", 0),
+		MigrationsDir: env("MIGRATIONS_DIR", "server/migrations"),
 		AIProvider:    env("AI_PROVIDER", "mock"),
 		AIAPIKey:      env("AI_API_KEY", ""),
 	}

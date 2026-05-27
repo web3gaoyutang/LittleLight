@@ -27,8 +27,17 @@ func main() {
 		store = repository.NewMemoryStore()
 	} else {
 		defer pool.Close()
-		store = repository.NewPostgresStore(pool)
-		log.Printf("postgres connected, using persistent store")
+		if err := database.Migrate(ctx, pool, cfg.MigrationsDir); err != nil {
+			if cfg.AppEnv == "local" {
+				log.Printf("postgres migrations failed, using memory store: %v", err)
+				store = repository.NewMemoryStore()
+			} else {
+				log.Fatalf("postgres migrations failed: %v", err)
+			}
+		} else {
+			store = repository.NewPostgresStore(pool)
+			log.Printf("postgres connected, migrations applied, using persistent store")
+		}
 	}
 
 	if redisClient, err := cache.Connect(ctx, cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB); err != nil {

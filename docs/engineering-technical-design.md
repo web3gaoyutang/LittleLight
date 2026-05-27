@@ -39,9 +39,10 @@ LittleLight/
     migrations/                # 数据库初始化脚本
     go.mod
   deploy/
-    docker-compose.yml         # API + PostgreSQL + Redis 编排
+    docker-compose.yml         # H5 + API + PostgreSQL + Redis 编排
     server.Dockerfile          # Go API 镜像构建
-    nginx/default.conf         # 后续反向代理配置
+    web.Dockerfile             # H5 静态站点镜像构建
+    nginx/default.conf         # H5 静态资源与 API 反向代理配置
   docs/
     engineering-technical-design.md
     glimmer-teacher-product-design-spec.md
@@ -108,6 +109,7 @@ docker compose -f deploy/docker-compose.yml up --build
 
 服务：
 
+- H5: `http://localhost:8081`
 - API: `http://localhost:8080`
 - PostgreSQL: `localhost:5432`
 - Redis: `localhost:6379`
@@ -117,6 +119,10 @@ docker compose -f deploy/docker-compose.yml up --build
 ```bash
 curl http://localhost:8080/healthz
 ```
+
+API 容器启动后会读取 `MIGRATIONS_DIR=/app/migrations` 并按文件名顺序执行 SQL 迁移。当前迁移脚本保持幂等，因此即使 PostgreSQL 数据卷已存在，新增字段或种子数据也可以随服务启动自动对齐。
+
+H5 容器使用 `deploy/web.Dockerfile` 构建 uni-app H5 产物，并由 nginx 托管静态文件；同一个 nginx 配置会把 `/api/` 和 `/healthz` 代理到 API 容器。
 
 ### 4.2 前端 H5 开发
 
@@ -148,6 +154,7 @@ go run ./cmd/api
 | REDIS_ADDR | redis:6379 | Redis 地址 |
 | REDIS_PASSWORD | 空 | Redis 密码 |
 | REDIS_DB | 0 | Redis DB |
+| MIGRATIONS_DIR | server/migrations / /app/migrations | SQL 迁移目录；Docker 容器内使用 `/app/migrations` |
 | AI_PROVIDER | mock / openai / qwen | AI 供应商 |
 | AI_API_KEY | sk-xxx | AI API Key |
 
@@ -255,6 +262,14 @@ AI 生成记录。
 
 - `server/migrations/001_init.sql`
 - `server/migrations/002_seed.sql`
+
+迁移执行策略：
+
+- API 启动时调用 `database.Migrate`，读取 `MIGRATIONS_DIR` 下所有 `.sql` 文件并按文件名顺序执行。
+- Docker 镜像会把 `server/migrations` 复制到 `/app/migrations`，Compose 中显式设置 `MIGRATIONS_DIR=/app/migrations`。
+- 本地直接运行 `go run ./cmd/api` 时可使用 `.env.example` 中的 `MIGRATIONS_DIR=server/migrations`，也可以按实际工作目录覆盖；迁移器会依次尝试 `MIGRATIONS_DIR`、`migrations`、`server/migrations`、`/app/migrations`。
+- 当前迁移脚本使用 `CREATE TABLE IF NOT EXISTS`、`CREATE INDEX IF NOT EXISTS`、`ON CONFLICT DO NOTHING` 等幂等写法，适合服务启动时重复执行。后续涉及结构变更时，新增迁移必须继续保持可重复执行。
+- `APP_ENV=local` 时迁移失败会降级到内存仓库，便于本地先调通 API；`APP_ENV=docker/prod` 时迁移失败会直接退出进程，避免部署环境静默丢失持久化。
 
 当前表：
 
@@ -545,7 +560,7 @@ type AIProvider interface {
 
 ### 12.1 开发环境
 
-Docker Compose 启动 API、PostgreSQL、Redis。uni-app H5 本地运行，通过代理访问 API。
+Docker Compose 启动 H5 Web、API、PostgreSQL、Redis。uni-app H5 也可以本地运行，通过 Vite 代理访问 API。
 
 ### 12.2 生产环境建议
 
@@ -559,6 +574,7 @@ Docker Compose 启动 API、PostgreSQL、Redis。uni-app H5 本地运行，通�
 
 Docker Compose 中：
 
+- H5 静态产物由 nginx 容器托管，不保存业务状态。
 - postgres_data：数据库数据卷。
 - redis_data：Redis AOF 数据卷。
 
@@ -617,8 +633,8 @@ Docker Compose 中：
 - Go API 服务骨架。
 - V1 核心领域模型。
 - 内存仓库用于本地无数据库演示。
-- PostgreSQL 初始化迁移脚本。
-- Redis/PostgreSQL/Docker Compose 配置。
+- PostgreSQL 初始化迁移脚本与 API 启动时自动迁移。
+- H5 Web/API/Redis/PostgreSQL/Docker Compose 配置。
 - Redis dashboard 缓存已接入，读取首页时优先查缓存，课程、提醒、家长写入成功后清理缓存。
 - HTTP 开发鉴权中间件已接入，支持 X-User-ID，并保留默认种子用户。
 - 详细技术文档。
@@ -628,7 +644,7 @@ Docker Compose 中：
 - 本机未安装 Go 和 Docker，当前未在本机实际启动容器。
 - Go 依赖需要在有网络和 Go 环境的机器上执行 `go mod download` 生成 `go.sum`。
 - uni-app 依赖需要执行 `npm install` 后才能运行 H5。
-- PostgreSQL repository 已接入，但当前本机缺 Go/Docker，尚未完成本地容器级联调。
+- PostgreSQL repository 和启动迁移已接入，但当前本机缺 Go/Docker，尚未完成本地容器级联调。
 - 正式用户鉴权尚未接入，当前为开发鉴权中间件：`X-User-ID` 或默认种子用户。
 - Excel 课表导入和班级名单导入目前保留前端选文件入口和接口规划，后端解析任务尚未实现。
 

@@ -3,6 +3,9 @@ import uni from '@dcloudio/vite-plugin-uni'
 
 export default defineConfig({
   plugins: [uni()],
+  build: {
+    outDir: 'dist'
+  },
   server: {
     port: 5173,
     proxy: {
