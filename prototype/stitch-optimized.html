@@ -983,6 +983,40 @@
       display: block;
     }
 
+    .reply-card {
+      display: grid;
+      gap: 10px;
+      width: 100%;
+      padding: 14px;
+      color: var(--text-soft);
+      text-align: left;
+      background: linear-gradient(135deg, rgba(241, 238, 255, 0.8), rgba(255, 255, 255, 0.9));
+      border: 1px solid rgba(93, 92, 222, 0.12);
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 24px;
+      transition: border 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    }
+
+    .reply-card:hover {
+      transform: translateY(-1px);
+      border-color: rgba(93, 92, 222, 0.24);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .reply-card.active {
+      border-color: rgba(93, 92, 222, 0.42);
+      box-shadow: 0 0 0 4px rgba(93, 92, 222, 0.1);
+    }
+
+    .reply-card strong {
+      color: var(--primary);
+    }
+
+    .reply-card .tag {
+      justify-self: start;
+    }
+
     .sound-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1337,6 +1371,28 @@
       line-height: 23px;
     }
 
+    .save-favorite-btn {
+      justify-self: start;
+      min-height: 34px;
+      padding: 8px 11px;
+      color: var(--primary);
+      background: rgba(93, 92, 222, 0.08);
+      border: 1px solid rgba(93, 92, 222, 0.14);
+      border-radius: 999px;
+      font-size: 12px;
+      line-height: 16px;
+      font-weight: 900;
+    }
+
+    .save-favorite-btn:hover {
+      background: rgba(93, 92, 222, 0.12);
+    }
+
+    .save-favorite-btn svg {
+      width: 15px;
+      height: 15px;
+    }
+
     .switch {
       width: 48px;
       height: 28px;
@@ -1602,9 +1658,6 @@
         font-size: 18px;
       }
 
-      .top-actions .icon-btn:first-child {
-        display: none;
-      }
     }
   </style>
 </head>
@@ -1643,7 +1696,6 @@
           </div>
         </div>
         <div class="top-actions">
-          <button class="icon-btn" type="button" title="搜索"><i data-lucide="search"></i></button>
           <button class="icon-btn" type="button" title="通知" id="jumpTodoFromBell"><i data-lucide="bell"></i><span class="dot"></span></button>
         </div>
       </header>
@@ -1712,17 +1764,17 @@
                     </div>
                     <span class="time">09:30</span>
                   </div>
-                  <button class="primary-btn" type="button"><i data-lucide="presentation"></i>查看课件</button>
+                  <button class="primary-btn" type="button" id="openLessonPrep"><i data-lucide="clipboard-list"></i>课前准备</button>
                 </div>
               </article>
 
               <article class="card">
                 <div class="section-head">
                   <h2>需要关注的家长</h2>
-                  <button class="text-btn" type="button" data-tab-shortcut="comm">查看全部</button>
+                  <button class="text-btn" type="button" data-jump-tab="comm" data-jump-target="focusParents">查看全部</button>
                 </div>
                 <div class="stack">
-                  <div class="parent-card">
+                  <button class="parent-card" type="button" data-jump-tab="comm" data-jump-target="focusParents">
                     <div class="row between">
                       <div class="row">
                         <div class="avatar soft">李</div>
@@ -1733,8 +1785,8 @@
                       </div>
                       <span class="tag danger">高优</span>
                     </div>
-                  </div>
-                  <div class="parent-card">
+                  </button>
+                  <button class="parent-card" type="button" data-jump-tab="comm" data-jump-target="focusParents">
                     <div class="row between">
                       <div class="row">
                         <div class="avatar soft">张</div>
@@ -1745,7 +1797,7 @@
                       </div>
                       <span class="tag gold">需跟进</span>
                     </div>
-                  </div>
+                  </button>
                 </div>
               </article>
             </div>
@@ -1788,6 +1840,7 @@
                   <textarea id="praiseInput" placeholder="今天发生了什么？比如：开了很久的家长会，还被质疑..."></textarea>
                   <button class="primary-btn gold" type="button" id="generatePraise"><i data-lucide="sparkles"></i>生成一句抱抱</button>
                   <div class="ai-result visible" id="praiseOutput">能坚持站在讲台上的人，本身就已经很厉害。今天先把自己照顾好，剩下的事情可以一件一件来。</div>
+                  <button class="save-favorite-btn" type="button" id="favoritePraise"><i data-lucide="bookmark-plus"></i>收藏这句夸夸</button>
                 </div>
               </article>
 
@@ -1891,10 +1944,13 @@
                   </div>
                   <button class="primary-btn" type="button" id="generateReply"><i data-lucide="edit-3"></i>生成草稿</button>
                   <div class="stack" id="replyOutput">
-                    <div class="ai-result visible">
+                    <button class="reply-card active" type="button" data-reply-copy="您好，想和您同步一下孩子最近课堂专注度的情况。孩子整体愿意参与，但在较长任务中容易分神。我们可以先从每天固定 10 分钟阅读或复述开始，我也会在课堂上继续提醒和观察。">
+                      <span class="tag">温和 · 容易焦虑 · 推荐</span>
+                      <strong>先安抚再建议</strong>
                       您好，想和您同步一下孩子最近课堂专注度的情况。孩子整体愿意参与，但在较长任务中容易分神。我们可以先从每天固定 10 分钟阅读或复述开始，我也会在课堂上继续提醒和观察。
-                    </div>
+                    </button>
                   </div>
+                  <button class="save-favorite-btn" type="button" id="favoriteReply"><i data-lucide="bookmark-plus"></i>收藏为常用沟通模板</button>
                 </div>
               </article>
             </div>
@@ -2053,7 +2109,7 @@
               <button class="setting-row" type="button" id="openFavorites">
                 <div class="row">
                   <div class="avatar soft"><i data-lucide="bookmark"></i></div>
-                  <div><h3>我的收藏</h3><p class="caption">沟通模板、AI夸夸、疗愈与待办</p></div>
+                  <div><h3>我的收藏</h3><p class="caption">常用沟通模板与AI夸夸用语</p></div>
                 </div>
                 <i data-lucide="chevron-right"></i>
               </button>
@@ -2135,6 +2191,28 @@
         <input id="scheduleFile" type="file" accept=".xlsx,.xls,.csv">
       </div>
       <button class="primary-btn" type="button" id="confirmScheduleImport"><i data-lucide="file-spreadsheet"></i>导入文件</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="lessonPrepModal" role="dialog" aria-modal="true" aria-label="课前准备">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>课前准备</h2>
+          <p class="caption">高二(3)班 · 心理健康 · 09:30 · 教学楼 B 座 402 室</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeLessonPrep" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="benefit-list">
+        <div class="benefit-item"><i data-lucide="presentation"></i><div><h3>课件</h3><p class="caption">情绪识别与压力调节 · 18 页，建议课前 5 分钟打开投影。</p></div></div>
+        <div class="benefit-item"><i data-lucide="file-text"></i><div><h3>教案</h3><p class="caption">包含导入问题、课堂活动、总结话术和课后反馈建议。</p></div></div>
+        <div class="benefit-item"><i data-lucide="messages-square"></i><div><h3>互动材料</h3><p class="caption">情绪卡片 32 张，小组讨论问题 4 组，课后匿名反馈 1 份。</p></div></div>
+        <div class="benefit-item"><i data-lucide="check-circle-2"></i><div><h3>设备检查</h3><p class="caption">投影、音响、白板笔、情绪卡片和签到名单。</p></div></div>
+      </div>
+      <div class="row wrap">
+        <button class="ghost-btn" type="button" id="prepAddSchedule"><i data-lucide="calendar-plus"></i>加入今日安排</button>
+        <button class="primary-btn" type="button" id="prepAddTodo"><i data-lucide="alarm-clock-plus"></i>添加课前待办</button>
+      </div>
     </div>
   </div>
 
@@ -2268,42 +2346,35 @@
       <div class="section-head tight">
         <div>
           <h2>我的收藏</h2>
-          <p class="caption">适合收藏常用回复、表扬语、疗愈练习、教案灵感和待办模板</p>
+          <p class="caption">保存高频家校沟通话术和适合老师的AI夸夸用语</p>
         </div>
         <button class="icon-btn" type="button" id="closeFavorites" title="关闭"><i data-lucide="x"></i></button>
       </div>
       <div class="favorite-tabs" id="favoriteTabs">
         <button class="chip active" type="button" data-favorite-filter="all">全部</button>
-        <button class="chip" type="button" data-favorite-filter="reply">沟通模板</button>
+        <button class="chip" type="button" data-favorite-filter="reply">常用沟通模板</button>
         <button class="chip" type="button" data-favorite-filter="praise">AI夸夸</button>
-        <button class="chip" type="button" data-favorite-filter="heal">疗愈内容</button>
-        <button class="chip" type="button" data-favorite-filter="todo">待办模板</button>
       </div>
       <div class="stack" id="favoriteList">
         <div class="favorite-card" data-favorite-type="reply">
-          <div class="row between"><h3>家长情绪较焦虑时的回复</h3><span class="tag">沟通模板</span></div>
+          <div class="row between"><h3>家长情绪较焦虑时的回复</h3><span class="tag">常用沟通模板</span></div>
           <p class="body">先承接家长担心，再同步课堂事实，最后给出一个家庭端可执行的小建议。</p>
           <button class="text-btn" type="button" data-favorite-action="reply" data-favorite-text="家长比较焦虑，希望先安抚情绪，再同步孩子近期课堂观察，并给出一个家庭端能配合的小建议。"><i data-lucide="messages-square"></i>带入 AI 沟通助手</button>
         </div>
         <div class="favorite-card" data-favorite-type="praise">
-          <div class="row between"><h3>开完家长会后的自我鼓励</h3><span class="tag gold">AI夸夸</span></div>
+          <div class="row between"><h3>开完家长会后的自我鼓励</h3><span class="tag gold">AI夸夸用语</span></div>
           <p class="body">适合收藏老师高压场景后的温柔回应，让 AI 生成一段更贴近当下的鼓励。</p>
           <button class="text-btn" type="button" data-favorite-action="praise" data-favorite-text="今天连续开了家长会，处理了很多情绪和问题，需要一段温柔但不敷衍的鼓励。"><i data-lucide="sparkles"></i>去生成夸夸</button>
         </div>
-        <div class="favorite-card" data-favorite-type="heal">
-          <div class="row between"><h3>课间一分钟呼吸</h3><span class="tag">疗愈内容</span></div>
-          <p class="body">适合课间、放学后或回复消息前快速稳定状态。</p>
-          <button class="text-btn" type="button" data-favorite-action="breath"><i data-lucide="wind"></i>打开呼吸律动</button>
-        </div>
-        <div class="favorite-card" data-favorite-type="todo">
-          <div class="row between"><h3>家长回访待办模板</h3><span class="tag">待办模板</span></div>
-          <p class="body">默认生成“回访家长，同步孩子近期状态并确认下一步配合事项”。</p>
-          <button class="text-btn" type="button" data-favorite-action="todo"><i data-lucide="alarm-clock-plus"></i>添加到待办事项</button>
-        </div>
         <div class="favorite-card" data-favorite-type="reply">
-          <div class="row between"><h3>成绩波动沟通框架</h3><span class="tag">沟通模板</span></div>
+          <div class="row between"><h3>成绩波动沟通框架</h3><span class="tag">常用沟通模板</span></div>
           <p class="body">先说明阶段性波动正常，再拆解问题，避免直接给孩子贴标签。</p>
           <button class="text-btn" type="button" data-favorite-action="reply" data-favorite-text="家长关注孩子成绩波动，希望回复能先稳定预期，再说明阶段问题和下一步改进计划。"><i data-lucide="messages-square"></i>带入 AI 沟通助手</button>
+        </div>
+        <div class="favorite-card" data-favorite-type="praise">
+          <div class="row between"><h3>放学后复盘自己的努力</h3><span class="tag gold">AI夸夸用语</span></div>
+          <p class="body">今天能把班级、课程和沟通都稳稳接住，已经是很不容易的专业能力。</p>
+          <button class="text-btn" type="button" data-favorite-action="praise" data-favorite-text="今天把课程、班级事务和家长消息都处理完了，需要一句认可专业付出的夸夸。"><i data-lucide="sparkles"></i>去生成夸夸</button>
         </div>
       </div>
     </div>
@@ -2403,10 +2474,26 @@
         <button class="ghost-btn" type="button" id="openNewParent"><i data-lucide="user-plus"></i>新建家长档案</button>
         <button class="ghost-btn" type="button" id="importClassParents"><i data-lucide="file-spreadsheet"></i>导入班级名单</button>
       </div>
-      <input id="classParentFile" type="file" accept=".xlsx,.xls,.csv" hidden>
-      <p class="caption">支持 Excel/CSV，表头建议：学生、班级、家长、关系、标签、备注</p>
       <div class="contact-list" id="contactsList"></div>
       <button class="primary-btn" type="button" id="addSelectedParents"><i data-lucide="user-plus"></i>添加到重点关注</button>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="classImportModal" role="dialog" aria-modal="true" aria-label="导入班级名单">
+    <div class="sheet">
+      <div class="section-head tight">
+        <div>
+          <h2>导入班级名单</h2>
+          <p class="caption">支持 Excel 或 CSV，首行作为表头</p>
+        </div>
+        <button class="icon-btn" type="button" id="closeClassImport" title="关闭"><i data-lucide="x"></i></button>
+      </div>
+      <div class="detail-note">提醒：至少包含“学生”和“家长/家长姓名”两列；建议补充“班级、关系、手机号、标签、备注”。重复的学生+家长会自动跳过，不会覆盖已有档案。</div>
+      <div class="field">
+        <label for="classParentFile">选择文件</label>
+        <input id="classParentFile" type="file" accept=".xlsx,.xls,.csv">
+      </div>
+      <button class="primary-btn" type="button" id="confirmClassImport"><i data-lucide="file-spreadsheet"></i>导入文件</button>
     </div>
   </div>
 
@@ -2758,6 +2845,39 @@
       $("#scheduleImportModal").classList.remove("visible");
     }
 
+    function openLessonPrep() {
+      $("#lessonPrepModal").classList.add("visible");
+      initIcons();
+    }
+
+    function closeLessonPrep() {
+      $("#lessonPrepModal").classList.remove("visible");
+    }
+
+    function addLessonPrepSchedule() {
+      schedules[currentScheduleDay] = schedules[currentScheduleDay] || [];
+      const exists = schedules[currentScheduleDay].some(item => item[1] === "心理健康课前准备");
+      if (!exists) {
+        schedules[currentScheduleDay].push(["09:15", "心理健康课前准备", "教学楼 B 座 402 室 · 投影与互动材料", false]);
+      }
+      closeLessonPrep();
+      renderCourses(currentScheduleDay);
+      jumpToTab("schedule");
+      showToast(exists ? "今日安排里已有课前准备" : "已加入今日安排");
+    }
+
+    function addLessonPrepTodo() {
+      todosByDay[currentScheduleDay] = todosByDay[currentScheduleDay] || [];
+      const exists = todosByDay[currentScheduleDay].some(item => item[1] === "检查心理健康课件和情绪卡片");
+      if (!exists) {
+        todosByDay[currentScheduleDay].push(["09:10", "检查心理健康课件和情绪卡片", "确认投影、音响、白板笔和互动材料。"]);
+      }
+      closeLessonPrep();
+      renderTodos(currentScheduleDay);
+      jumpToTab("schedule", "todoSection");
+      showToast(exists ? "待办事项里已有课前检查" : "已添加课前待办");
+    }
+
     function openProfileEdit() {
       $("#profileEditModal").classList.add("visible");
       setTimeout(() => $("#editTeacherName").focus(), 80);
@@ -2834,9 +2954,68 @@
       });
     }
 
+    function bindFavoriteCardActions(scope = $("#favoriteList")) {
+      $$("[data-favorite-action]", scope).forEach(button => {
+        button.addEventListener("click", () => useFavorite(button));
+      });
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function addFavorite(type, title, text) {
+      const normalized = text.trim();
+      if (!normalized) {
+        showToast(type === "reply" ? "先生成或填写沟通内容" : "先生成一句夸夸");
+        return;
+      }
+      const exists = $$("#favoriteList .favorite-card").some(card => card.dataset.favoriteText === normalized);
+      if (exists) {
+        showToast("这条内容已经在收藏里");
+        return;
+      }
+      const label = type === "reply" ? "常用沟通模板" : "AI夸夸用语";
+      const icon = type === "reply" ? "messages-square" : "sparkles";
+      const card = document.createElement("div");
+      card.className = "favorite-card";
+      card.dataset.favoriteType = type;
+      card.dataset.favoriteText = normalized;
+      const safeText = escapeHtml(normalized);
+      const safeTitle = escapeHtml(title);
+      card.innerHTML = `
+        <div class="row between"><h3>${safeTitle}</h3><span class="tag ${type === "praise" ? "gold" : ""}">${label}</span></div>
+        <p class="body">${safeText}</p>
+        <button class="text-btn" type="button" data-favorite-action="${type}"><i data-lucide="${icon}"></i>${type === "reply" ? "带入 AI 沟通助手" : "去生成夸夸"}</button>
+      `;
+      $("#favoriteList").prepend(card);
+      bindFavoriteCardActions(card);
+      filterFavorites($(".chip.active", $("#favoriteTabs")).dataset.favoriteFilter);
+      initIcons();
+      showToast(type === "reply" ? "已收藏到常用沟通模板" : "已收藏到AI夸夸用语");
+    }
+
+    function favoritePraiseText() {
+      const text = $("#praiseOutput").textContent.trim() || $("#praiseInput").value.trim();
+      addFavorite("praise", "自定义夸夸用语", text);
+    }
+
+    function favoriteReplyText() {
+      const activeReply = $(".reply-card.active", $("#replyOutput"));
+      const firstReply = $(".ai-result.visible", $("#replyOutput")) || $(".ai-result", $("#replyOutput"));
+      const text = activeReply?.dataset.replyCopy || firstReply?.textContent.trim() || $("#studentIssue").value.trim();
+      addFavorite("reply", "自定义沟通模板", text);
+    }
+
     function useFavorite(actionButton) {
       const action = actionButton.dataset.favoriteAction;
-      const text = actionButton.dataset.favoriteText || "";
+      const text = actionButton.dataset.favoriteText || actionButton.closest(".favorite-card")?.dataset.favoriteText || "";
       closeFavorites();
       if (action === "reply") {
         jumpToTab("comm", "commAssistant");
@@ -2854,16 +3033,6 @@
           $("#praiseInput").focus({ preventScroll: true });
         }, 180);
         showToast("已带入 AI 夸夸");
-        return;
-      }
-      if (action === "breath") {
-        jumpToTab("heal", "breathSection");
-        showToast("已打开呼吸律动");
-        return;
-      }
-      if (action === "todo") {
-        jumpToTab("schedule", "todoSection");
-        setTimeout(() => openReminder("todo"), 220);
       }
     }
 
@@ -3055,6 +3224,15 @@
       $("#contactsModal").classList.remove("visible");
     }
 
+    function openClassImport() {
+      $("#classParentFile").value = "";
+      $("#classImportModal").classList.add("visible");
+    }
+
+    function closeClassImport() {
+      $("#classImportModal").classList.remove("visible");
+    }
+
     function openNewParent() {
       $("#newParentModal").classList.add("visible");
       setTimeout(() => $("#newStudentName").focus(), 80);
@@ -3136,15 +3314,19 @@
       renderContacts();
       showToast(count ? `已导入 ${count} 位家长` : "没有发现可导入的家长");
       $("#classParentFile").value = "";
+      closeClassImport();
     }
 
     function importClassParents() {
-      $("#classParentFile").click();
+      openClassImport();
     }
 
     function importClassParentData() {
       const file = $("#classParentFile").files[0];
-      if (!file) return;
+      if (!file) {
+        showToast("请先选择 Excel 或 CSV 文件");
+        return;
+      }
       const reader = new FileReader();
       reader.onload = event => {
         try {
@@ -3226,24 +3408,109 @@
       showToast("已放进树洞");
     }
 
+    function getStyleStrategy(style) {
+      return {
+        "容易焦虑": {
+          opener: "我理解您会担心，也谢谢您第一时间和我沟通。",
+          focus: "我会先把观察到的事实说清楚，避免让您凭猜测增加压力。",
+          action: "建议我们先定一个小目标，连续观察 3 天，再根据变化调整。",
+          caution: "用词尽量稳定，不放大问题。"
+        },
+        "比较敏感": {
+          opener: "先和您同步一下，今天这件事我们会就事论事地看。",
+          focus: "我会尽量区分事实、原因和下一步，不给孩子贴标签。",
+          action: "我们可以先从一个孩子容易做到的小动作开始配合。",
+          caution: "表达要委婉，少用判断性词语。"
+        },
+        "沟通积极": {
+          opener: "谢谢您一直愿意配合学校这边的观察和调整。",
+          focus: "这次可以直接同步现状，并一起确认接下来怎么配合更有效。",
+          action: "建议我们约定一个反馈节点，我这边继续观察，您那边同步家庭端变化。",
+          caution: "可以更明确地分工和推进。"
+        },
+        "关注成绩": {
+          opener: "和您沟通一下孩子近期学习表现和后续提升节奏。",
+          focus: "我会把当前表现、可能原因和可执行方法分开说明。",
+          action: "建议先抓一个具体学习动作，比如订正、复盘或固定练习。",
+          caution: "强调阶段变化，不只看单次结果。"
+        }
+      }[style];
+    }
+
+    function getToneStrategy(tone) {
+      return {
+        "温和": {
+          prefix: "您好，",
+          connective: "我们可以先不急着下结论，",
+          close: "我会继续关注，也会及时和您同步。",
+          strength: "轻柔"
+        },
+        "正式": {
+          prefix: "您好，关于孩子近期情况，和您做一个同步：",
+          connective: "从目前观察看，",
+          close: "后续我会持续记录并在合适时间再次反馈。",
+          strength: "清晰"
+        },
+        "简短": {
+          prefix: "您好，简短和您同步：",
+          connective: "",
+          close: "我们先按这个方向试几天。",
+          strength: "简洁"
+        },
+        "强硬但礼貌": {
+          prefix: "您好，这件事需要和您明确同步：",
+          connective: "如果持续不调整，可能会影响后续状态，",
+          close: "希望家校两端从今天开始一起落实。",
+          strength: "明确"
+        }
+      }[tone];
+    }
+
+    function buildReplyDrafts(issue, style, tone) {
+      const styleRule = getStyleStrategy(style);
+      const toneRule = getToneStrategy(tone);
+      return [
+        {
+          title: "先共情再推进",
+          label: `${tone} · ${style} · 推荐`,
+          copy: `${toneRule.prefix}${styleRule.opener}${toneRule.connective}${issue}。${styleRule.focus}${styleRule.action}${toneRule.close}`
+        },
+        {
+          title: "事实观察版",
+          label: `${tone} · ${style} · 事实清晰`,
+          copy: `${toneRule.prefix}${issue}。目前我更建议先围绕课堂观察和家庭配合来处理：第一，先确认最近一周的具体表现；第二，选择一个最容易执行的小任务；第三，约定下次反馈时间。${styleRule.caution}${toneRule.close}`
+        },
+        {
+          title: "行动计划版",
+          label: `${tone} · ${style} · 可执行`,
+          copy: `${toneRule.prefix}${styleRule.focus}${issue}。接下来建议这样配合：在家里先做 10 分钟固定练习或复盘，我这边在课堂上继续观察提醒，三天后我们再看是否有变化。${styleRule.action}${toneRule.close}`
+        }
+      ];
+    }
+
+    function selectReplyCard(card) {
+      $$("#replyOutput .reply-card").forEach(item => item.classList.remove("active"));
+      card.classList.add("active");
+      showToast("已选中这个草稿");
+    }
+
     function generateReply() {
       const issue = $("#studentIssue").value.trim() || "孩子最近课堂专注度需要关注";
       const style = $("#parentStyle").value;
       const tone = $("#replyTone").value;
-      const versions = [
-        ["温和版", `您好，想和您同步一下孩子最近的情况。${issue}。我这边更希望先了解原因，再一起帮助孩子把节奏调整回来。考虑到您${style}，建议我们先从一个小目标开始，比如每天固定 10 分钟复盘或阅读。`],
-        ["正式版", `您好，关于孩子近期课堂状态和您沟通一下。${issue}，这可能会影响后续学习衔接。建议本周在家中配合确认作业和复习节奏，我也会继续在课堂上观察并及时反馈。`],
-        ["简短版", `您好，和您同步一下：${issue}。我们可以先从每天固定 10 分钟的小练习开始，我也会在课堂上继续关注。`],
-        ["强硬但礼貌版", `您好，需要和您明确同步：${issue}。如果持续出现，会影响后续学习效果。建议从今天开始固定检查学习任务完成情况，我也会持续跟进。`]
-      ];
-      const chosen = versions.find(([title]) => title.startsWith(tone)) || versions[0];
-      const sorted = [chosen, ...versions.filter(item => item !== chosen)];
-      $("#replyOutput").innerHTML = sorted.map(([title, copy]) => `
-        <div class="ai-result visible">
-          <strong style="color: var(--primary);">${title}</strong><br>${copy}
-        </div>
+      const drafts = buildReplyDrafts(issue, style, tone);
+      $("#replyOutput").innerHTML = drafts.map((draft, index) => `
+        <button class="reply-card ${index === 0 ? "active" : ""}" type="button">
+          <span class="tag ${index === 0 ? "gold" : ""}">${draft.label}</span>
+          <strong>${draft.title}</strong>
+          ${escapeHtml(draft.copy)}
+        </button>
       `).join("");
-      showToast("已生成 4 个沟通版本");
+      $$("#replyOutput .reply-card").forEach((card, index) => {
+        card.dataset.replyCopy = drafts[index].copy;
+        card.addEventListener("click", () => selectReplyCard(card));
+      });
+      showToast(`已生成 3 个${style} · ${tone}草稿`);
     }
 
     function renderRecordCard(parentName, recordTime, summary) {
@@ -3490,6 +3757,13 @@
         if (event.target.id === "scheduleImportModal") closeScheduleImport();
       });
       $("#confirmScheduleImport").addEventListener("click", importScheduleData);
+      $("#openLessonPrep").addEventListener("click", openLessonPrep);
+      $("#closeLessonPrep").addEventListener("click", closeLessonPrep);
+      $("#lessonPrepModal").addEventListener("click", event => {
+        if (event.target.id === "lessonPrepModal") closeLessonPrep();
+      });
+      $("#prepAddSchedule").addEventListener("click", addLessonPrepSchedule);
+      $("#prepAddTodo").addEventListener("click", addLessonPrepTodo);
       $("#openProfileEdit").addEventListener("click", openProfileEdit);
       $("#closeProfileEdit").addEventListener("click", closeProfileEdit);
       $("#profileEditModal").addEventListener("click", event => {
@@ -3522,8 +3796,11 @@
       $$("#favoriteTabs .chip").forEach(button => {
         button.addEventListener("click", () => filterFavorites(button.dataset.favoriteFilter));
       });
-      $$("#favoriteList [data-favorite-action]").forEach(button => {
-        button.addEventListener("click", () => useFavorite(button));
+      bindFavoriteCardActions();
+      $("#favoritePraise").addEventListener("click", favoritePraiseText);
+      $("#favoriteReply").addEventListener("click", favoriteReplyText);
+      $$("#replyOutput .reply-card").forEach(card => {
+        card.addEventListener("click", () => selectReplyCard(card));
       });
       $("#closeReminder").addEventListener("click", closeReminder);
       $("#saveReminder").addEventListener("click", saveReminder);
@@ -3553,7 +3830,11 @@
       });
       $("#saveNewParent").addEventListener("click", saveNewParent);
       $("#importClassParents").addEventListener("click", importClassParents);
-      $("#classParentFile").addEventListener("change", importClassParentData);
+      $("#closeClassImport").addEventListener("click", closeClassImport);
+      $("#classImportModal").addEventListener("click", event => {
+        if (event.target.id === "classImportModal") closeClassImport();
+      });
+      $("#confirmClassImport").addEventListener("click", importClassParentData);
       $("#openRecordModal").addEventListener("click", () => openRecordModal());
       $("#closeRecordModal").addEventListener("click", closeRecordModal);
       $("#recordModal").addEventListener("click", event => {
@@ -3568,6 +3849,8 @@
       $("#generatePraise").addEventListener("click", generatePraise);
       $("#treeSend").addEventListener("click", treeSend);
       $("#generateReply").addEventListener("click", generateReply);
+      $("#parentStyle").addEventListener("change", generateReply);
+      $("#replyTone").addEventListener("change", generateReply);
       $("#saveRecord").addEventListener("click", saveRecord);
       $("#recordList").addEventListener("click", handleRecordAction);
       $("#breathToggle").addEventListener("click", toggleBreathSession);

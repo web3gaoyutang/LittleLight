@@ -1,0 +1,451 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>微光老师 · Mood Gradient H5 原型</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root{--bg:#f6f5ff;--paper:rgba(255,255,255,.76);--paper-strong:rgba(255,255,255,.9);--ink:#171827;--text:#3e415a;--muted:#8588a1;--line:rgba(82,78,132,.12);--blue:#6ca9ff;--violet:#b78cff;--pink:#ff9ec6;--peach:#ffc8a8;--mint:#9ee7d1;--lemon:#ffe78a;--aqua:#91e5ff;--danger:#ee6e87;--shadow:0 24px 60px rgba(80,72,148,.16);--shadow-soft:0 14px 34px rgba(80,72,148,.10);--safe:env(safe-area-inset-bottom,0px)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;color:var(--ink);font-family:Inter,"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;background:radial-gradient(120% 80% at 14% 8%,rgba(183,140,255,.36),transparent 46%),radial-gradient(96% 70% at 92% 10%,rgba(145,229,255,.34),transparent 44%),radial-gradient(110% 76% at 12% 78%,rgba(255,200,168,.34),transparent 48%),linear-gradient(180deg,#fbfaff 0%,#f4f8ff 45%,#fff7f4 100%);overflow-x:hidden}button,input,textarea,select{font:inherit}button{border:0;cursor:pointer}h1,h2,h3,p{margin:0}svg{width:19px;height:19px;stroke-width:2.2}
+    .app-shell{width:min(100%,390px);min-height:100dvh;margin:0 auto;position:relative;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,.64),rgba(255,255,255,.22)),radial-gradient(120% 78% at 14% 4%,rgba(176,210,255,.48),transparent 50%),radial-gradient(110% 90% at 92% 24%,rgba(255,166,206,.34),transparent 52%),radial-gradient(130% 100% at 18% 92%,rgba(255,232,154,.32),transparent 48%),#f8f7ff;box-shadow:0 0 0 1px rgba(255,255,255,.7),0 34px 88px rgba(68,60,132,.20)}@media(max-width:430px){.app-shell{width:100vw;box-shadow:none}}
+    .page{display:none;min-height:100dvh;padding:calc(14px + env(safe-area-inset-top,0px)) 16px calc(116px + var(--safe))}.page.active{display:block}.stack{display:grid;gap:16px}.section{display:grid;gap:12px}.row{display:flex;align-items:center;gap:10px}.between{justify-content:space-between}.wrap{flex-wrap:wrap}.caption{color:var(--muted);font-size:12px;line-height:1.45}.body{color:var(--text);font-size:14px;line-height:1.55}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:14px}.eyebrow{color:#6f7190;font-size:12px;font-weight:850}.topbar h1{font-size:25px;line-height:1.12;letter-spacing:0}.avatar-btn{width:44px;height:44px;display:grid;place-items:center;color:#4a386f;background:linear-gradient(145deg,rgba(255,255,255,.84),rgba(255,255,255,.42));border:1px solid rgba(255,255,255,.86);border-radius:18px;box-shadow:0 12px 28px rgba(84,74,151,.12),inset 0 1px 0 rgba(255,255,255,.8);backdrop-filter:blur(22px) saturate(1.18);position:relative}.avatar-btn.notify::after{content:"";position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:99px;background:#ff6d93;box-shadow:0 0 0 3px rgba(255,255,255,.9)}
+    .glass{background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.42));border:1px solid rgba(255,255,255,.78);box-shadow:var(--shadow-soft),inset 0 1px 0 rgba(255,255,255,.82);backdrop-filter:blur(24px) saturate(1.16)}
+    .hero{position:relative;overflow:hidden;min-height:238px;padding:18px;border-radius:34px;color:#23213b;background:radial-gradient(80% 72% at 14% 12%,rgba(255,255,255,.58),transparent 52%),linear-gradient(138deg,rgba(176,210,255,.92) 0%,rgba(198,175,255,.88) 36%,rgba(255,174,211,.82) 68%,rgba(255,225,151,.86) 100%);box-shadow:0 28px 58px rgba(122,89,174,.24),inset 0 1px 0 rgba(255,255,255,.70);border:1px solid rgba(255,255,255,.72)}.hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 116px;gap:14px;align-items:stretch}.hero h2{font-size:31px;line-height:1.02;letter-spacing:0;margin-top:6px}.hero p{max-width:205px;color:rgba(38,37,62,.72);font-size:13px;margin-top:8px}.hero-tag{display:inline-flex;align-items:center;gap:6px;width:fit-content;padding:7px 10px;color:#5d407b;background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.76);border-radius:999px;font-size:12px;font-weight:900;backdrop-filter:blur(16px)}
+    .teacher-art{min-height:184px;border-radius:28px;position:relative;overflow:hidden;background:radial-gradient(80% 60% at 50% 18%,rgba(255,255,255,.62),transparent 60%),linear-gradient(160deg,rgba(255,255,255,.26),rgba(255,255,255,.08));border:1px solid rgba(255,255,255,.56)}.teacher-art .face{position:absolute;left:50%;top:22px;transform:translateX(-50%);width:54px;height:54px;border-radius:999px;background:linear-gradient(145deg,#ffd9bd,#ffb6c4);box-shadow:0 10px 24px rgba(116,72,156,.16)}.teacher-art .hair{position:absolute;width:64px;height:28px;left:50%;top:15px;transform:translateX(-50%);border-radius:99px 99px 24px 24px;background:#6b4b88}.teacher-art .body-shape{position:absolute;left:50%;top:82px;transform:translateX(-50%);width:82px;height:94px;border-radius:34px 34px 24px 24px;background:linear-gradient(145deg,#7a79ff,#61c8ea)}.teacher-art .book{position:absolute;right:15px;bottom:20px;width:54px;height:40px;border-radius:14px;background:linear-gradient(145deg,#fff,#ffe9a7);box-shadow:0 10px 20px rgba(84,74,151,.14)}.teacher-art .note-a,.teacher-art .note-b{position:absolute;width:28px;height:28px;border-radius:12px;background:rgba(255,255,255,.72);border:1px solid rgba(255,255,255,.8)}.teacher-art .note-a{left:13px;top:35px;transform:rotate(-8deg)}.teacher-art .note-b{left:20px;bottom:22px;transform:rotate(7deg)}
+    .mood-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.mood-chip{min-height:66px;display:grid;justify-items:center;align-content:center;gap:4px;padding:8px 4px;color:#3f405b;border-radius:22px;background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.74);box-shadow:inset 0 1px 0 rgba(255,255,255,.82),0 10px 20px rgba(93,83,154,.08);backdrop-filter:blur(18px)}.mood-chip strong{font-size:20px;line-height:1}.mood-chip span{font-size:11px;font-weight:850}.mood-chip.active{outline:2px solid rgba(122,121,255,.34);background:rgba(255,255,255,.78)}
+    .bento-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:12px}.tile{min-height:124px;display:grid;align-content:space-between;gap:10px;padding:15px;border-radius:28px;color:#24253e;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.72);box-shadow:var(--shadow-soft),inset 0 1px 0 rgba(255,255,255,.72)}.tile::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.34),rgba(255,255,255,0) 48%);pointer-events:none}.tile>*{position:relative;z-index:1}.tile h3{font-size:18px;line-height:1.18}.tile .big{font-size:30px;font-weight:950;line-height:.95}.tile.schedule{background:linear-gradient(145deg,rgba(174,209,255,.86),rgba(208,190,255,.70))}.tile.ai{background:linear-gradient(145deg,rgba(255,177,214,.76),rgba(255,223,154,.72))}.tile.todo{background:linear-gradient(145deg,rgba(164,232,211,.80),rgba(193,225,255,.72))}.tile.care{background:linear-gradient(145deg,rgba(255,232,154,.76),rgba(255,196,178,.72))}
+    .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.section-head h2{font-size:18px;letter-spacing:0}.text-btn{min-height:34px;display:inline-flex;align-items:center;gap:5px;color:#7863d6;background:transparent;font-weight:900;white-space:nowrap}.card,.task,.draft,.lesson,.todo-item,.parent-card,.sound-card,.material-card{padding:15px;border-radius:26px}.lesson,.todo-item,.parent-card,.draft,.sound-card,.material-card{display:grid;gap:9px;text-align:left;color:inherit}.lesson{background:linear-gradient(145deg,rgba(255,255,255,.76),rgba(237,247,255,.56))}.todo-item{background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,248,224,.58))}.parent-card{background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,232,245,.56))}.draft{background:linear-gradient(145deg,rgba(255,255,255,.82),rgba(239,246,255,.62))}
+    .time-pill,.tag{min-height:27px;display:inline-flex;align-items:center;gap:5px;width:fit-content;padding:5px 9px;border-radius:999px;color:#4b4567;background:rgba(255,255,255,.68);border:1px solid rgba(255,255,255,.72);font-size:12px;font-weight:900}.tag.pink{color:#9c4774;background:rgba(255,224,239,.78)}.tag.blue{color:#4262a6;background:rgba(226,238,255,.8)}.tag.green{color:#387965;background:rgba(224,249,239,.8)}.tag.yellow{color:#83652b;background:rgba(255,242,183,.8)}
+    .btn,.ghost,.icon-btn,.save-btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 14px;border-radius:18px;font-weight:920}.btn{color:#fff;background:linear-gradient(135deg,#7a79ff,#54bfe7);border:1px solid rgba(255,255,255,.42);box-shadow:0 15px 30px rgba(89,102,209,.24),inset 0 1px 0 rgba(255,255,255,.26)}.btn.sun{background:linear-gradient(135deg,#ff9ec6,#ffbf82);box-shadow:0 15px 30px rgba(221,111,145,.20),inset 0 1px 0 rgba(255,255,255,.26)}.ghost{color:#584c9e;background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.78);box-shadow:inset 0 1px 0 rgba(255,255,255,.78)}
+    input,textarea,select{width:100%;color:var(--ink);background:rgba(255,255,255,.68);border:1px solid rgba(255,255,255,.78);border-radius:22px;outline:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.82)}input,select{height:46px;padding:0 13px}textarea{min-height:114px;padding:13px;resize:vertical}input:focus,textarea:focus,select:focus{box-shadow:0 0 0 4px rgba(122,121,255,.14),inset 0 1px 0 rgba(255,255,255,.82);border-color:rgba(122,121,255,.32)}.field{display:grid;gap:7px}.field label{color:#777a96;font-size:12px;font-weight:900}.form{display:grid;gap:12px}
+    .ai-panel{display:grid;gap:12px;padding:16px;border-radius:30px;background:radial-gradient(90% 75% at 0% 0%,rgba(183,140,255,.25),transparent 54%),linear-gradient(145deg,rgba(255,255,255,.82),rgba(255,255,255,.48));border:1px solid rgba(255,255,255,.78);box-shadow:var(--shadow-soft),inset 0 1px 0 rgba(255,255,255,.82);backdrop-filter:blur(24px) saturate(1.16)}.seg{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.seg::-webkit-scrollbar{display:none}.seg button{flex:0 0 auto}.draft.active{outline:2px solid rgba(122,121,255,.22)}.draft-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .calendar-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.calendar-strip::-webkit-scrollbar{display:none}.day{flex:0 0 54px;height:68px;display:grid;place-items:center;gap:3px;border-radius:22px;color:#585b77;background:rgba(255,255,255,.58);border:1px solid rgba(255,255,255,.78);box-shadow:inset 0 1px 0 rgba(255,255,255,.82)}.day.active{color:#fff;background:linear-gradient(145deg,#7a79ff,#54bfe7);box-shadow:0 12px 24px rgba(89,102,209,.20)}.empty{padding:18px;border-radius:24px;color:var(--muted);text-align:center;background:rgba(255,255,255,.52);border:1px dashed rgba(128,124,180,.20)}
+    .breath-stage{min-height:390px;display:grid;place-items:center;text-align:center;border-radius:34px;background:radial-gradient(90% 76% at 50% 30%,rgba(158,231,209,.34),transparent 55%),linear-gradient(160deg,rgba(255,255,255,.82),rgba(238,246,255,.54));border:1px solid rgba(255,255,255,.78);box-shadow:var(--shadow-soft),inset 0 1px 0 rgba(255,255,255,.82)}.breath-core{position:relative;width:230px;height:230px;display:grid;place-items:center}.breath-ring{position:absolute;inset:18px;border-radius:999px;background:rgba(122,121,255,.12);transform:scale(.78)}.breath-ring:nth-child(2){inset:48px;background:rgba(145,229,255,.22)}.breath-ring:nth-child(3){inset:78px;background:rgba(255,158,198,.24)}.breath-core.active .breath-ring{animation:breathe 7.2s ease-in-out infinite}.breath-core.active .breath-ring:nth-child(2){animation-delay:-1.6s}.breath-core.active .breath-ring:nth-child(3){animation-delay:-3.2s}.breath-center{z-index:1;width:96px;height:96px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#7a79ff,#54bfe7);border-radius:999px;box-shadow:0 18px 34px rgba(89,102,209,.22)}@keyframes breathe{0%,100%{transform:scale(.78);opacity:.86}50%{transform:scale(1.09);opacity:.34}}
+    .bottom-nav{position:fixed;left:50%;bottom:calc(12px + var(--safe));z-index:50;width:min(calc(100% - 24px),370px);transform:translateX(-50%);display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:9px;border-radius:30px;border:1px solid rgba(255,255,255,.78);background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.48));box-shadow:0 1px 0 rgba(255,255,255,.86) inset,0 18px 44px rgba(80,72,148,.16);backdrop-filter:blur(26px) saturate(1.22)}.bottom-nav::before{content:"";position:absolute;inset:-22px -12px -14px;z-index:-1;pointer-events:none;border-radius:38px;background:linear-gradient(180deg,rgba(250,250,255,0),rgba(250,250,255,.86) 48%,rgba(250,250,255,.98));backdrop-filter:blur(10px)}.nav-btn{min-height:54px;display:grid;place-items:center;gap:2px;padding:7px 2px 6px;color:#767a96;background:transparent;border-radius:22px;font-size:11px;font-weight:900}.nav-btn.active{color:#5142a8;background:linear-gradient(145deg,rgba(234,232,255,.95),rgba(255,255,255,.72));box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 10px 22px rgba(80,72,148,.12)}
+    .modal{position:fixed;inset:0;z-index:70;display:none;align-items:flex-end;justify-content:center;padding:16px;background:rgba(42,38,74,.24);backdrop-filter:blur(10px)}.modal.visible{display:flex}.sheet{width:min(calc(100% - 20px),398px);max-height:calc(100dvh - 36px);overflow-y:auto;display:grid;gap:14px;padding:18px;border-radius:30px 30px 24px 24px}.toast{position:fixed;left:50%;top:18px;z-index:90;display:none;max-width:min(390px,calc(100vw - 32px));transform:translateX(-50%);padding:11px 14px;color:#fff;background:rgba(33,31,55,.92);border-radius:999px;box-shadow:var(--shadow)}.toast.visible{display:block}.profile-head{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}.profile-avatar{width:64px;height:64px;display:grid;place-items:center;color:#fff;border-radius:24px;font-size:25px;font-weight:950;background:linear-gradient(145deg,#7a79ff,#54bfe7)}
+  </style>
+  <style>
+    /* LOS26 middle theme: soft diffuse color with calmer liquid-glass hierarchy. */
+    :root{
+      --bg:#f7f8ff;--paper:rgba(255,255,255,.70);--paper-strong:rgba(255,255,255,.88);--ink:#182033;--text:#47516d;--muted:#7f89a4;--line:rgba(79,92,136,.13);
+      --blue:#62a6e9;--violet:#a990ea;--pink:#ee9abd;--peach:#f5b994;--mint:#8fd9c7;--lemon:#f2dd8a;--aqua:#7ed1e8;--danger:#e86c86;
+      --shadow:0 24px 58px rgba(73,91,146,.16);--shadow-soft:0 14px 34px rgba(73,91,146,.10)
+    }
+    body{
+      background:
+        linear-gradient(130deg,rgba(231,242,255,.88) 0%,rgba(249,244,255,.74) 33%,rgba(255,249,237,.82) 66%,rgba(239,252,248,.78) 100%),
+        linear-gradient(180deg,#fbfcff 0%,#f6f8ff 46%,#fff8f2 100%);
+    }
+    .app-shell{
+      width:min(100%,390px);
+      background:
+        linear-gradient(180deg,rgba(255,255,255,.70),rgba(255,255,255,.26)),
+        linear-gradient(128deg,rgba(221,239,255,.58) 0%,rgba(246,238,255,.50) 42%,rgba(255,247,232,.54) 72%,rgba(236,252,247,.44) 100%),#f8f9ff;
+    }
+    .page{padding-left:18px;padding-right:18px;gap:18px}.stack{gap:18px}.section{gap:13px}.topbar{margin-bottom:16px}.topbar h1{font-size:26px;color:#142038}.eyebrow{color:#66708b;letter-spacing:.01em}
+    .avatar-btn{border-radius:17px;color:#435376;background:linear-gradient(145deg,rgba(255,255,255,.86),rgba(255,255,255,.46));box-shadow:0 12px 26px rgba(68,91,139,.11),inset 0 1px 0 rgba(255,255,255,.86)}
+    .glass{background:linear-gradient(150deg,rgba(255,255,255,.82),rgba(255,255,255,.46));border-color:rgba(255,255,255,.84);box-shadow:0 14px 32px rgba(73,91,146,.10),inset 0 1px 0 rgba(255,255,255,.86)}
+    .hero{min-height:228px;border-radius:32px;background:linear-gradient(132deg,rgba(230,244,255,.95) 0%,rgba(238,232,255,.92) 36%,rgba(255,238,232,.88) 70%,rgba(241,251,244,.92) 100%);box-shadow:0 26px 56px rgba(89,105,160,.16),inset 0 1px 0 rgba(255,255,255,.72)}
+    .hero h2{font-size:30px;color:#172039}.hero p{color:rgba(46,54,79,.72)}.hero-tag{color:#516094;background:rgba(255,255,255,.58)}
+    .teacher-art{background:linear-gradient(160deg,rgba(255,255,255,.40),rgba(255,255,255,.16));border-color:rgba(255,255,255,.64)}.teacher-art .hair{background:#5d5888}.teacher-art .body-shape{background:linear-gradient(145deg,#758ce7,#64bfd1)}
+    .mood-chip{border-radius:21px;background:rgba(255,255,255,.61);box-shadow:inset 0 1px 0 rgba(255,255,255,.86),0 9px 18px rgba(73,91,146,.07)}.mood-chip.active{outline-color:rgba(98,166,233,.30);background:rgba(255,255,255,.84)}
+    .bento-grid{grid-template-columns:1fr 1fr;gap:12px}.tile{min-height:118px;border-radius:27px;box-shadow:0 14px 30px rgba(73,91,146,.10),inset 0 1px 0 rgba(255,255,255,.74)}.tile h3{font-size:17px}.tile .big{font-size:29px}.tile.schedule{background:linear-gradient(145deg,rgba(206,231,255,.90),rgba(220,211,255,.72))}.tile.ai{background:linear-gradient(145deg,rgba(255,210,229,.82),rgba(255,232,185,.72))}.tile.todo{background:linear-gradient(145deg,rgba(202,240,229,.86),rgba(216,237,255,.74))}.tile.care{background:linear-gradient(145deg,rgba(255,239,184,.82),rgba(255,214,202,.72))}
+    .card,.task,.draft,.lesson,.todo-item,.parent-card,.sound-card,.material-card{border-radius:25px}.lesson,.todo-item,.parent-card,.draft,.sound-card,.material-card{border:1px solid rgba(255,255,255,.80)}
+    .btn{background:linear-gradient(135deg,#6f86df,#52b8cf);box-shadow:0 14px 28px rgba(74,111,190,.20),inset 0 1px 0 rgba(255,255,255,.28)}.btn.sun{background:linear-gradient(135deg,#e890b2,#f2ad78);box-shadow:0 14px 28px rgba(209,116,139,.18),inset 0 1px 0 rgba(255,255,255,.28)}.ghost{color:#4d5d91;background:rgba(255,255,255,.66)}
+    .tag,.time-pill{background:rgba(255,255,255,.66);color:#536079}.tag.blue{color:#3d659a;background:rgba(226,241,255,.78)}.tag.pink{color:#945270;background:rgba(255,228,239,.78)}.tag.green{color:#417565;background:rgba(225,247,239,.78)}.tag.yellow{color:#80673a;background:rgba(255,243,198,.78)}.seg .tag.active{outline:2px solid rgba(98,166,233,.25);background:rgba(255,255,255,.82)}
+    .ai-panel,.breath-stage{border-radius:31px;background:linear-gradient(150deg,rgba(255,255,255,.84),rgba(246,250,255,.50));box-shadow:0 16px 36px rgba(73,91,146,.11),inset 0 1px 0 rgba(255,255,255,.86)}
+    .day{background:rgba(255,255,255,.62)}.day.active{background:linear-gradient(145deg,#6f86df,#52b8cf)}
+    .bottom-nav{width:min(calc(100% - 26px),374px);border-radius:29px;background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.50));box-shadow:0 1px 0 rgba(255,255,255,.86) inset,0 18px 42px rgba(73,91,146,.15)}.nav-btn.active{color:#3f5a94;background:linear-gradient(145deg,rgba(232,244,255,.94),rgba(255,255,255,.72))}
+  </style>
+  <style>
+    /* layout safety refinements for 390px H5 preview */
+    .topbar > div:first-child,.section-head > div:first-child,.row > div,.profile-head > div:last-child,.tile,.lesson,.todo-item,.parent-card,.draft,.material-card,.sound-card{min-width:0}
+    .topbar .avatar-btn{flex:0 0 44px}.section-head > .text-btn{flex:0 0 auto}.section-head h2,.topbar h1,.body,.caption{overflow-wrap:anywhere}
+    .hero-grid{grid-template-columns:minmax(0,1fr) minmax(94px,112px)}.teacher-art{min-width:0}.hero .row.wrap{max-width:100%}
+    .mood-strip{grid-template-columns:repeat(5,minmax(60px,1fr));overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.mood-strip::-webkit-scrollbar{display:none}.mood-chip{min-width:60px}
+    .bento-grid{align-items:stretch}.tile{width:100%;text-align:left}.tile .row.between{min-width:0}.tile svg{flex:0 0 auto}
+    .calendar-strip{margin-right:-18px;padding-right:18px}.seg{margin-right:-18px;padding-right:18px}.lesson .row.wrap,.todo-item .row.wrap,.draft-actions{overflow:hidden}.lesson .ghost,.todo-item .ghost,.draft-actions .ghost{min-width:0;flex:1 1 128px}
+    .profile-head{grid-template-columns:64px minmax(0,1fr)}.profile-head .body{max-width:100%}
+    @media(max-width:374px){.hero-grid{grid-template-columns:1fr}.teacher-art{display:none}.bento-grid{grid-template-columns:1fr}.mood-strip{grid-template-columns:repeat(5,64px)}}
+  </style>
+  <style>
+    /* small viewport shell lock */
+    @media(max-width:500px){
+      html,body{width:100%;max-width:100%;overflow-x:hidden}
+      .app-shell{width:100vw;max-width:100vw;margin:0;left:0;right:auto;box-shadow:none}
+      .bottom-nav{width:calc(100vw - 26px);max-width:374px}
+    }
+  </style>
+  <style>
+    /* final polish for airy mood gradient delivery */
+    .page{background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,0) 38%)}
+    .hero{isolation:isolate;min-height:232px;background:radial-gradient(120px 120px at 86% 22%,rgba(255,255,255,.72),transparent 64%),radial-gradient(170px 140px at 16% 92%,rgba(214,232,255,.68),transparent 68%),linear-gradient(134deg,rgba(235,246,255,.96) 0%,rgba(241,235,255,.93) 36%,rgba(255,241,236,.90) 70%,rgba(242,252,246,.94) 100%)}
+    .hero::after{content:"";position:absolute;right:-32px;bottom:-40px;width:180px;height:180px;border-radius:999px;background:radial-gradient(circle,rgba(255,232,186,.55),rgba(255,210,229,.22) 54%,transparent 72%);filter:blur(1px);z-index:0;pointer-events:none}.hero-grid{position:relative;z-index:1}.hero h2{letter-spacing:0;font-weight:950}.hero-tag{box-shadow:0 10px 22px rgba(98,120,175,.08)}
+    .teacher-art{opacity:.88;background:linear-gradient(160deg,rgba(255,255,255,.54),rgba(255,255,255,.18));box-shadow:inset 0 1px 0 rgba(255,255,255,.76),0 18px 40px rgba(109,125,168,.10)}.teacher-art .face{background:linear-gradient(145deg,#ffd0bd,#ffb9c6)}.teacher-art .body-shape{background:linear-gradient(145deg,#7795e8,#68c5d6);box-shadow:0 16px 28px rgba(86,129,190,.18)}.teacher-art .book{background:linear-gradient(145deg,rgba(255,255,255,.92),rgba(255,232,170,.78))}.teacher-art .note-a,.teacher-art .note-b{background:rgba(255,255,255,.64)}
+    .mood-chip{background:linear-gradient(145deg,rgba(255,255,255,.78),rgba(255,255,255,.48));border-color:rgba(255,255,255,.86)}.mood-chip.active{box-shadow:0 12px 26px rgba(98,166,233,.14),inset 0 1px 0 rgba(255,255,255,.90)}
+    .tile{border-color:rgba(255,255,255,.82)}.tile.schedule{background:radial-gradient(120% 92% at 0% 0%,rgba(255,255,255,.46),transparent 54%),linear-gradient(145deg,rgba(209,231,255,.88),rgba(222,216,255,.72))}.tile.ai{background:radial-gradient(120% 92% at 0% 0%,rgba(255,255,255,.44),transparent 54%),linear-gradient(145deg,rgba(255,214,231,.80),rgba(255,235,193,.74))}.tile.todo{background:radial-gradient(120% 92% at 0% 0%,rgba(255,255,255,.44),transparent 54%),linear-gradient(145deg,rgba(204,241,232,.84),rgba(219,239,255,.72))}.tile.care{background:radial-gradient(120% 92% at 0% 0%,rgba(255,255,255,.44),transparent 54%),linear-gradient(145deg,rgba(255,241,191,.82),rgba(255,219,207,.72))}
+    .lesson,.todo-item,.parent-card,.draft,.material-card,.sound-card{box-shadow:0 16px 36px rgba(73,91,146,.09),inset 0 1px 0 rgba(255,255,255,.88)}
+    i[data-lucide]:empty::before{content:attr(data-lucide);font-size:0}.icon-fallback{width:19px;height:19px;display:inline-grid;place-items:center;font-size:15px;line-height:1}.avatar-btn .icon-fallback{font-size:18px}
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <section class="page active" id="page-home" data-title="今天">
+      <div class="topbar"><div><p class="eyebrow">周三 · 第 12 周</p><h1>早上好，林老师</h1></div><button class="avatar-btn notify" type="button" id="bellBtn"><i data-lucide="bell"></i></button></div>
+      <div class="stack">
+        <article class="hero"><div class="hero-grid"><div><span class="hero-tag"><i data-lucide="sparkles"></i>今日教学心流</span><h2 id="heroTitle">温柔但高效</h2><p id="heroCopy">3 节课、2 个待办、2 位家长需要跟进。先把节奏拆小，保持一点余裕。</p><div class="row wrap" style="margin-top:16px"><button class="btn" type="button" data-jump-tab="ai"><i data-lucide="wand-sparkles"></i>AI 助手</button><button class="ghost" type="button" data-jump-tab="schedule"><i data-lucide="calendar-days"></i>今日安排</button></div></div><div class="teacher-art" aria-hidden="true"><div class="hair"></div><div class="face"></div><div class="body-shape"></div><div class="book"></div><div class="note-a"></div><div class="note-b"></div></div></div></article>
+        <section class="section"><div class="section-head"><h2>今日状态</h2><button class="text-btn" type="button" id="resetMood">重置</button></div><div class="mood-strip" id="moodStrip"><button class="mood-chip active" type="button" data-mood="steady" data-title="温柔但高效" data-copy="今天有几项关键任务，但整体可控。先处理 09:30 课程，再推进家长跟进。"><strong>🌤</strong><span>平稳</span></button><button class="mood-chip" type="button" data-mood="busy" data-title="节奏偏满" data-copy="课程与待办都在同一天出现，建议把任务拆成课前、课后、沟通三段。"><strong>⚡</strong><span>偏满</span></button><button class="mood-chip" type="button" data-mood="soft" data-title="需要缓冲" data-copy="给自己留出 5 分钟短恢复，再进入下一轮沟通，会更稳。"><strong>🌙</strong><span>缓冲</span></button><button class="mood-chip" type="button" data-mood="focus" data-title="专注推进" data-copy="适合集中处理课程材料和待办清单，减少多线程切换。"><strong>🎯</strong><span>专注</span></button><button class="mood-chip" type="button" data-mood="warm" data-title="适合沟通" data-copy="今天可以优先完成家长反馈，用温和清晰的方式减少反复解释。"><strong>💬</strong><span>沟通</span></button></div></section>
+        <section class="bento-grid"><button class="tile schedule" type="button" data-jump-tab="schedule"><div class="row between"><span class="tag blue">课程</span><i data-lucide="arrow-up-right"></i></div><div><p class="big">3</p><p class="body">今日课程</p></div></button><button class="tile todo" type="button" data-jump-tab="schedule" data-jump-target="todoList"><div class="row between"><span class="tag green">待办</span><i data-lucide="list-checks"></i></div><div><p class="big">2</p><p class="body">待处理提醒</p></div></button><button class="tile ai" type="button" data-jump-tab="ai"><div class="row between"><span class="tag pink">AI</span><i data-lucide="bot"></i></div><div><h3>生成家校回复</h3><p class="caption">3 个语气版本</p></div></button><button class="tile care" type="button" data-jump-tab="heal"><div class="row between"><span class="tag yellow">恢复</span><i data-lucide="heart-handshake"></i></div><div><h3>一分钟呼吸</h3><p class="caption">先把注意力收回来</p></div></button></section>
+        <section class="section"><div class="section-head"><h2>下一项</h2><span class="time-pill">09:30</span></div><article class="lesson glass"><div class="row between"><div><h3>高二(3)班 · 心理健康</h3><p class="body">情绪识别与压力调节 · 教学楼 B 座 402 室</p></div><span class="tag blue">课前</span></div><div class="row wrap"><button class="btn" type="button" id="prepBtn"><i data-lucide="clipboard-list"></i>课前准备</button><button class="ghost" type="button" data-jump-tab="schedule" data-jump-target="todoList"><i data-lucide="alarm-clock-plus"></i>加入待办</button></div></article></section>
+        <section class="section"><div class="section-head"><h2>需要跟进</h2><button class="text-btn" type="button" data-jump-tab="ai">去沟通</button></div><button class="parent-card glass" type="button" data-open-parent="lin"><div class="row between"><h3>林晓晓妈妈</h3><span class="tag pink">敏感</span></div><p class="body">下一步：确认睡眠、到校状态和课堂参与。</p></button><button class="parent-card glass" type="button" data-open-parent="chen"><div class="row between"><h3>陈子默爸爸</h3><span class="tag yellow">需跟进</span></div><p class="body">下一步：同步测试反馈和订正计划。</p></button></section>
+      </div>
+    </section>
+    <section class="page" id="page-ai" data-title="AI">
+      <div class="topbar"><div><p class="eyebrow">AI 回复 · 重点关注</p><h1>沟通助手</h1></div><button class="avatar-btn" type="button"><i data-lucide="sparkles"></i></button></div>
+      <div class="stack"><article class="ai-panel"><div class="section-head"><div><h2>生成家校草稿</h2><p class="caption">按家长风格和语气生成多个版本</p></div><span class="tag blue">Pro</span></div><div class="field"><label for="issueInput">沟通要点</label><textarea id="issueInput">浩宇妈妈询问孩子最近在课堂上的专注度情况，希望语气温和一点，同时给出可执行建议。</textarea></div><div class="row"><div class="field" style="flex:1"><label for="parentStyle">家长风格</label><select id="parentStyle"><option>容易焦虑</option><option>比较敏感</option><option>沟通积极</option><option>关注成绩</option></select></div><div class="field" style="flex:1"><label for="toneStyle">语气</label><select id="toneStyle"><option>温和</option><option>正式</option><option>简短</option><option>坚定但礼貌</option></select></div></div><button class="btn" type="button" id="generateDrafts"><i data-lucide="edit-3"></i>生成 3 个草稿</button></article><section class="section"><div class="section-head"><h2>可选草稿</h2><span class="tag green">自动适配</span></div><div class="stack" id="draftList"></div></section><section class="section"><div class="section-head"><h2>重点关注</h2><button class="text-btn" type="button" id="importParents"><i data-lucide="file-spreadsheet"></i>导入名单</button></div><button class="parent-card glass" type="button" data-open-parent="lin"><div class="row between"><h3>林晓晓妈妈</h3><span class="tag pink">敏感</span></div><p class="body">林晓晓 · 高二(5)班 · 睡眠与到校状态需要关注。</p></button><button class="parent-card glass" type="button" data-open-parent="chen"><div class="row between"><h3>陈子默爸爸</h3><span class="tag yellow">需跟进</span></div><p class="body">陈子默 · 高二(3)班 · 待同步测试反馈。</p></button></section></div>
+    </section>
+    <section class="page" id="page-schedule" data-title="日程">
+      <div class="topbar"><div><p class="eyebrow">课程 · 待办 · 提醒</p><h1>今日安排</h1></div><button class="avatar-btn" type="button" id="openAddItem"><i data-lucide="plus"></i></button></div>
+      <div class="stack"><section class="section"><div class="section-head"><h2>本周日程</h2><button class="text-btn" type="button" id="importSchedule"><i data-lucide="file-spreadsheet"></i>导入课表</button></div><div class="calendar-strip" id="dayStrip"><button class="day" data-day="mon"><span>一</span><strong>12</strong></button><button class="day" data-day="tue"><span>二</span><strong>13</strong></button><button class="day active" data-day="wed"><span>三</span><strong>14</strong></button><button class="day" data-day="thu"><span>四</span><strong>15</strong></button><button class="day" data-day="fri"><span>五</span><strong>16</strong></button><button class="day" data-day="sat"><span>六</span><strong>17</strong></button><button class="day" data-day="sun"><span>日</span><strong>18</strong></button></div></section><section class="section"><div class="section-head"><h2 id="courseTitle">周三课程</h2><button class="text-btn" type="button" data-open-add="course"><i data-lucide="calendar-plus"></i>添加日程</button></div><div class="stack" id="courseList"></div></section><section class="section"><div class="section-head"><h2>待办事项</h2><button class="text-btn" type="button" data-open-add="todo"><i data-lucide="alarm-clock-plus"></i>添加待办</button></div><div class="stack" id="todoList"></div></section></div>
+    </section>
+    <section class="page" id="page-heal" data-title="疗愈">
+      <div class="topbar"><div><p class="eyebrow">呼吸 · AI夸夸 · 声音</p><h1>短恢复</h1></div><button class="avatar-btn" type="button"><i data-lucide="heart"></i></button></div>
+      <div class="stack"><article class="breath-stage"><div class="stack" style="justify-items:center"><div><h2>一分钟呼吸</h2><p class="caption">把注意力交还给自己</p></div><div class="breath-core" id="breathCore"><div class="breath-ring"></div><div class="breath-ring"></div><div class="breath-ring"></div><div class="breath-center"><i data-lucide="wind"></i></div></div><button class="btn" id="breathToggle" type="button"><i data-lucide="play"></i>开始 01:00</button></div></article><article class="ai-panel"><div class="section-head"><div><h2>AI夸夸</h2><p class="caption">写下今天发生了什么</p></div><span class="tag pink">抱抱</span></div><div class="seg" id="praisePersona"><button class="tag blue active" type="button" data-persona="前辈">温柔前辈</button><button class="tag" type="button" data-persona="主任">知心主任</button><button class="tag" type="button" data-persona="同事">清醒同事</button></div><div class="form"><textarea id="praiseInput" placeholder="比如：今天课很多，还处理了家长反馈..."></textarea><button class="btn sun" type="button" id="makePraise"><i data-lucide="sparkles"></i>生成一句抱抱</button><div class="draft glass" id="praiseOutput"><p class="body">你今天已经完成了很多复杂判断。先把肩膀放下来，剩下的事情可以一件一件处理。</p></div></div></article><section class="section"><div class="section-head"><h2>白噪音</h2><span class="tag green">低打扰</span></div><button class="sound-card glass" type="button"><div class="row between"><div><h3>雨夜教案</h3><p class="caption">适合备课与批改</p></div><span class="tag blue">播放</span></div></button><button class="sound-card glass" type="button"><div class="row between"><div><h3>午后 Lo-fi</h3><p class="caption">适合短恢复</p></div><span class="tag blue">播放</span></div></button></section></div>
+    </section>
+    <section class="page" id="page-profile" data-title="我的"><div class="topbar"><div><p class="eyebrow">账号 · 素材库</p><h1>我的微光</h1></div><button class="avatar-btn" type="button"><i data-lucide="settings"></i></button></div><div class="stack"><article class="glass card profile-head"><div class="profile-avatar">林</div><div><h2>林小微</h2><p class="body">微光实验小学 · 语文 · 三年级 2 班班主任</p><div class="row wrap" style="margin-top:8px"><span class="tag green">今日提醒允许通知</span><span class="tag blue">Pro 试用</span></div></div></article><article class="tile ai" style="min-height:150px"><div class="row between"><span class="tag pink">素材</span><i data-lucide="bookmark"></i></div><div><h3>常用素材库</h3><p class="body">常用沟通模板、AI夸夸用语、班级反馈句式。</p></div></article><section class="section"><div class="section-head"><h2>数据与权益</h2><button class="text-btn" type="button">查看权益</button></div><button class="material-card glass" type="button"><div class="row between"><h3>微光 Pro</h3><span class="tag yellow">剩余 14 天</span></div><p class="body">AI 沟通、云同步、导入课表、素材库与高级提醒。</p></button><button class="material-card glass" type="button"><div class="row between"><h3>云同步</h3><span class="tag">未开启</span></div><p class="body">课表、家长档案、沟通记录备份。</p></button></section></div></section>
+    <nav class="bottom-nav" aria-label="底部导航"><button class="nav-btn active" type="button" data-tab="home"><i data-lucide="layout-dashboard"></i><span>首页</span></button><button class="nav-btn" type="button" data-tab="ai"><i data-lucide="bot"></i><span>AI</span></button><button class="nav-btn" type="button" data-tab="schedule"><i data-lucide="calendar-days"></i><span>日程</span></button><button class="nav-btn" type="button" data-tab="heal"><i data-lucide="heart-handshake"></i><span>疗愈</span></button><button class="nav-btn" type="button" data-tab="profile"><i data-lucide="user-round"></i><span>我的</span></button></nav>
+    <div class="modal" id="itemModal"><div class="sheet glass"><div class="section-head"><div><h2 id="itemModalTitle">添加待办</h2><p class="caption">保存到当前日期</p></div><button class="avatar-btn" type="button" data-close="itemModal"><i data-lucide="x"></i></button></div><div class="form"><div class="field"><label for="itemTitle">事项</label><input id="itemTitle" value="回访陈子默爸爸"></div><div class="row"><div class="field" style="flex:1"><label for="itemTime">时间</label><input id="itemTime" type="time" value="17:20"></div><div class="field" style="flex:1"><label for="itemNote">说明</label><input id="itemNote" value="同步近期课堂观察"></div></div><button class="btn" id="saveItem" type="button">保存</button></div></div></div>
+    <div class="modal" id="parentModal"><div class="sheet glass"><div class="section-head"><div><h2 id="parentModalTitle">家长档案</h2><p class="caption" id="parentModalCaption">重点关注</p></div><button class="avatar-btn" type="button" data-close="parentModal"><i data-lucide="x"></i></button></div><div class="form"><div class="field"><label for="parentRisk">关注风险</label><input id="parentRisk"></div><div class="field"><label for="parentNext">下一步动作</label><textarea id="parentNext"></textarea></div><button class="btn" type="button" data-close="parentModal">保存档案</button></div></div></div>
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+
+  <script>
+    (() => {
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+      const dayNames = { mon: '周一', tue: '周二', wed: '周三', thu: '周四', fri: '周五', sat: '周六', sun: '周日' };
+      const schedules = {
+        mon: [
+          { time: '08:20', title: '三年级(2)班 · 语文', note: '单元预习与朗读检查', tag: '课堂' },
+          { time: '15:10', title: '备课组共创', note: '下周阅读课共案', tag: '教研' }
+        ],
+        tue: [
+          { time: '10:10', title: '五年级阅读课', note: '人物描写与情绪线索', tag: '课堂' }
+        ],
+        wed: [
+          { time: '09:30', title: '高二(3)班 · 心理健康', note: '情绪识别与压力调节 · 教学楼 B 座 402 室', tag: '课前' },
+          { time: '13:40', title: '个别谈话', note: '林晓晓 · 睡眠与到校状态', tag: '关注' },
+          { time: '16:20', title: '班会素材整理', note: '把本周案例归档到素材库', tag: '资料' }
+        ],
+        thu: [
+          { time: '08:55', title: '三年级(2)班 · 语文', note: '习作讲评与范文修改', tag: '课堂' },
+          { time: '14:30', title: '家长线上沟通', note: '陈子默爸爸 · 测试反馈', tag: '沟通' }
+        ],
+        fri: [
+          { time: '09:00', title: '周反馈整理', note: '生成班级表现摘要', tag: '总结' }
+        ],
+        sat: [],
+        sun: []
+      };
+      const todos = {
+        mon: [
+          { time: '12:40', title: '补发阅读材料', note: '三年级 2 班群' }
+        ],
+        tue: [
+          { time: '17:00', title: '整理错题照片', note: '同步给备课组' }
+        ],
+        wed: [
+          { time: '11:45', title: '给林晓晓妈妈发睡眠观察', note: '语气温和，先肯定再建议' },
+          { time: '17:20', title: '回访陈子默爸爸', note: '同步测试反馈和订正计划' }
+        ],
+        thu: [
+          { time: '10:45', title: '确认下周公开课资料', note: '课件、教具、座位表' },
+          { time: '18:00', title: '发送班级周报草稿', note: '先给年级组确认' }
+        ],
+        fri: [
+          { time: '16:30', title: '收藏本周高频回复', note: '沉淀到常用素材库' }
+        ],
+        sat: [
+          { time: '20:00', title: '轻量复盘', note: '只记录 3 件有效的小事' }
+        ],
+        sun: [
+          { time: '19:30', title: '下周课程预排', note: '导入课表后检查冲突' }
+        ]
+      };
+      const parents = {
+        lin: { name: '林晓晓妈妈', caption: '林晓晓 · 高二(5)班 · 母亲 · 敏感型沟通', risk: '近期睡眠不足，到校后情绪波动，家长容易把个别表现理解为整体退步。', next: '先确认睡眠和到校状态，再同步课堂参与中的积极信号，最后给出一项可执行的家庭观察建议。' },
+        chen: { name: '陈子默爸爸', caption: '陈子默 · 高二(3)班 · 父亲 · 关注成绩', risk: '家长关注测试结果，容易追问短期提升路径，需要把反馈落到订正计划。', next: '说明本次测试暴露的问题，给出 3 天订正安排，并约定周五再次反馈。' }
+      };
+      let currentDay = 'wed';
+      let itemMode = 'todo';
+      let toastTimer = 0;
+      let breathTimer = 0;
+      let breathLeft = 60;
+      let praisePersona = '前辈';
+
+      function icons() {
+        const fallback = {
+          bell: '⌁', sparkles: '✦', 'wand-sparkles': '✦', 'calendar-days': '□', 'arrow-up-right': '↗', 'list-checks': '☷', bot: '⌘', 'heart-handshake': '♡', 'clipboard-list': '▤', 'alarm-clock-plus': '◴', 'file-spreadsheet': '▦', 'calendar-plus': '+', wind: '≋', play: '▷', pause: 'Ⅱ', 'rotate-ccw': '↻', heart: '♡', settings: '⚙', bookmark: '⌑', 'user-round': '○', x: '×', 'folder-open': '▱', 'bell-ring': '◴', 'bookmark-plus': '⌑', copy: '▣', 'message-square-plus': '▢', 'edit-3': '✎', 'layout-dashboard': '▦'
+        };
+        if (window.lucide) {
+          window.lucide.createIcons();
+          return;
+        }
+        $('i[data-lucide]').forEach((node) => {
+          if (node.dataset.fallbackReady) return;
+          const span = document.createElement('span');
+          span.className = 'icon-fallback';
+          span.textContent = fallback[node.dataset.lucide] || '•';
+          node.replaceWith(span);
+          span.dataset.fallbackReady = '1';
+        });
+      }
+
+      function toast(message) {
+        const node = $('#toast');
+        if (!node) return;
+        node.textContent = message;
+        node.classList.add('visible');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => node.classList.remove('visible'), 2200);
+      }
+
+      function switchTab(tab, target) {
+        const next = $('#page-' + tab);
+        if (!next) return;
+        $$('.page').forEach(page => page.classList.toggle('active', page === next));
+        $$('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (target) setTimeout(() => scrollToTarget(target), 180);
+      }
+
+      function scrollToTarget(id) {
+        const target = $('#' + id);
+        if (!target) return;
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const focusable = target.matches('textarea,input,select,button') ? target : target.querySelector('textarea,input,select,button');
+        if (focusable) setTimeout(() => focusable.focus({ preventScroll: true }), 260);
+      }
+
+      function openModal(id) {
+        const modal = $('#' + id);
+        if (modal) modal.classList.add('visible');
+      }
+
+      function closeModal(id) {
+        const modal = $('#' + id);
+        if (modal) modal.classList.remove('visible');
+      }
+
+      function renderSchedule(day) {
+        currentDay = day;
+        const courseTitle = $('#courseTitle');
+        const courseList = $('#courseList');
+        const todoList = $('#todoList');
+        if (courseTitle) courseTitle.textContent = dayNames[day] + '课程';
+        if (courseList) {
+          courseList.innerHTML = schedules[day].length ? schedules[day].map((item) => `
+            <article class="lesson glass">
+              <div class="row between"><span class="time-pill">${item.time}</span><span class="tag blue">${item.tag}</span></div>
+              <div><h3>${item.title}</h3><p class="body">${item.note}</p></div>
+              <div class="row wrap"><button class="ghost" type="button" data-toast="已打开课程资料占位"><i data-lucide="folder-open"></i>课件资料</button><button class="ghost" type="button" data-open-add="todo"><i data-lucide="alarm-clock-plus"></i>设待办</button></div>
+            </article>`).join('') : '<div class="empty">今天没有课程，可以留给备课和恢复。</div>';
+        }
+        if (todoList) {
+          todoList.innerHTML = todos[day].length ? todos[day].map((item) => `
+            <article class="todo-item glass">
+              <div class="row between"><span class="time-pill">${item.time}</span><span class="tag green">待办</span></div>
+              <div><h3>${item.title}</h3><p class="body">${item.note}</p></div>
+              <div class="row wrap"><button class="ghost" type="button" data-toast="已标记为稍后提醒"><i data-lucide="bell-ring"></i>稍后提醒</button><button class="ghost" type="button" data-toast="已收藏到常用事项"><i data-lucide="bookmark-plus"></i>收藏</button></div>
+            </article>`).join('') : '<div class="empty">暂无待办提醒，点击右侧添加一条。</div>';
+        }
+        icons();
+      }
+
+      function draftText(style, tone, index) {
+        const opening = {
+          '容易焦虑': ['先回应您的担心，也谢谢您这么细致地关注孩子。', '我理解您现在会比较着急，我们先把观察到的情况拆开看。', '您提到的问题很重要，我先同步目前比较确定的部分。'],
+          '比较敏感': ['先和您说结论：孩子并不是没有进步，只是状态还需要一点稳定。', '我会尽量具体地说明，避免让您只看到负面的部分。', '这件事我们可以温和推进，不需要一下子给孩子太大压力。'],
+          '沟通积极': ['谢谢您主动同步，这会让我们更快形成一致的支持方式。', '您的配合很及时，我这边也把课堂观察整理给您。', '我们可以把学校和家庭的观察合在一起看，会更准确。'],
+          '关注成绩': ['我先把表现和后续提升路径分开说明，方便您判断重点。', '这次反馈不只看结果，也看孩子最近的学习过程。', '成绩提升需要落到每天的小动作，我先给您一个可执行安排。']
+        };
+        const toneLine = {
+          '温和': '建议这两天先观察睡眠、作业启动速度和课堂后的疲惫感，不急着批评，多给一个可完成的小目标。',
+          '正式': '建议本周以稳定作息、明确任务边界和固定复盘时间为主，我会在周五继续同步课堂状态。',
+          '简短': '这周先抓一个重点：稳定作息和完成订正。我会继续观察并及时反馈。',
+          '坚定但礼貌': '目前最需要先把基础节奏稳住，家庭端建议减少临时加码，按约定计划执行后再看变化。'
+        };
+        const close = ['如果您方便，今晚可以先记录孩子入睡时间，我明天结合课堂状态再反馈一次。', '我们先按这个方向试两天，有变化我会及时同步。', '后续我会继续留意，也欢迎您把家里的观察发给我。'];
+        return `${opening[style][index]}${toneLine[tone]}${close[index]}`;
+      }
+
+      function renderDrafts() {
+        const style = $('#parentStyle')?.value || '容易焦虑';
+        const tone = $('#toneStyle')?.value || '温和';
+        const list = $('#draftList');
+        if (!list) return;
+        list.innerHTML = [0, 1, 2].map((idx) => `
+          <article class="draft glass${idx === 0 ? ' active' : ''}">
+            <div class="row between"><span class="tag ${idx === 0 ? 'blue' : idx === 1 ? 'pink' : 'green'}">版本 ${idx + 1} · ${style} · ${tone}</span><button class="text-btn" type="button" data-draft-save><i data-lucide="bookmark-plus"></i>收藏</button></div>
+            <p class="body">${draftText(style, tone, idx)}</p>
+            <div class="draft-actions"><button class="ghost" type="button" data-copy-draft><i data-lucide="copy"></i>复制</button><button class="ghost" type="button" data-toast="已发送到沟通记录"><i data-lucide="message-square-plus"></i>存为记录</button></div>
+          </article>`).join('');
+        icons();
+      }
+
+      function openItem(mode) {
+        itemMode = mode || 'todo';
+        const isCourse = itemMode === 'course';
+        $('#itemModalTitle').textContent = isCourse ? '添加日程' : '添加待办';
+        $('#itemTitle').value = isCourse ? '新增课程 / 会议' : '回访家长提醒';
+        $('#itemTime').value = isCourse ? '10:00' : '17:20';
+        $('#itemNote').value = isCourse ? '填写地点、班级或准备事项' : '填写提醒说明';
+        openModal('itemModal');
+        setTimeout(() => $('#itemTitle')?.focus(), 120);
+      }
+
+      function saveItem() {
+        const item = { time: $('#itemTime').value || '09:00', title: $('#itemTitle').value || '未命名事项', note: $('#itemNote').value || '暂无说明', tag: itemMode === 'course' ? '新增' : undefined };
+        if (itemMode === 'course') schedules[currentDay].push(item);
+        else todos[currentDay].push(item);
+        renderSchedule(currentDay);
+        closeModal('itemModal');
+        toast(itemMode === 'course' ? '已添加到当日课程' : '已添加到待办事项');
+      }
+      function openParent(key) {
+        const data = parents[key];
+        if (!data) return;
+        $('#parentModalTitle').textContent = data.name;
+        $('#parentModalCaption').textContent = data.caption;
+        $('#parentRisk').value = data.risk;
+        $('#parentNext').value = data.next;
+        openModal('parentModal');
+      }
+
+      function toggleBreath() {
+        const core = $('#breathCore');
+        const btn = $('#breathToggle');
+        if (!core || !btn) return;
+        if (breathTimer) {
+          clearInterval(breathTimer);
+          breathTimer = 0;
+          breathLeft = 60;
+          core.classList.remove('active');
+          btn.innerHTML = '<i data-lucide="play"></i>开始 01:00';
+          icons();
+          return;
+        }
+        core.classList.add('active');
+        breathLeft = 60;
+        btn.innerHTML = '<i data-lucide="pause"></i>呼吸中 01:00';
+        icons();
+        breathTimer = setInterval(() => {
+          breathLeft -= 1;
+          const mm = String(Math.floor(breathLeft / 60)).padStart(2, '0');
+          const ss = String(breathLeft % 60).padStart(2, '0');
+          btn.innerHTML = `<i data-lucide="pause"></i>呼吸中 ${mm}:${ss}`;
+          icons();
+          if (breathLeft <= 0) {
+            clearInterval(breathTimer);
+            breathTimer = 0;
+            core.classList.remove('active');
+            btn.innerHTML = '<i data-lucide="rotate-ccw"></i>再来 01:00';
+            icons();
+            try {
+              const audio = new AudioContext();
+              const oscillator = audio.createOscillator();
+              const gain = audio.createGain();
+              oscillator.type = 'sine';
+              oscillator.frequency.value = 660;
+              oscillator.connect(gain);
+              gain.connect(audio.destination);
+              gain.gain.setValueAtTime(0.001, audio.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.16, audio.currentTime + 0.05);
+              gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + 0.7);
+              oscillator.start();
+              oscillator.stop(audio.currentTime + 0.75);
+            } catch (error) {}
+            toast('一分钟呼吸完成，已经提醒你啦');
+          }
+        }, 1000);
+      }
+
+      function makePraise() {
+        const input = $('#praiseInput')?.value.trim();
+        const prefix = praisePersona === '主任' ? '我看见的是一个很负责的老师：' : praisePersona === '同事' ? '说句实在的，' : '先认真夸你一下：';
+        const content = input ? `你今天处理了“${input}”，这不是小事。` : '你今天已经完成了很多复杂判断。';
+        $('#praiseOutput').innerHTML = `<p class="body">${prefix}${content}先把标准降到可持续，剩下的事情一件一件来。</p>`;
+        toast('已生成新的 AI 夸夸');
+      }
+
+      function bind() {
+        $$('.nav-btn[data-tab]').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+        $$('[data-jump-tab]').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.jumpTab, btn.dataset.jumpTarget)));
+        $('#bellBtn')?.addEventListener('click', () => switchTab('schedule', 'todoList'));
+        $('#resetMood')?.addEventListener('click', () => {
+          const first = $('.mood-chip[data-mood="steady"]');
+          if (first) first.click();
+        });
+        $$('.mood-chip').forEach(chip => chip.addEventListener('click', () => {
+          $$('.mood-chip').forEach(item => item.classList.remove('active'));
+          chip.classList.add('active');
+          $('#heroTitle').textContent = chip.dataset.title || '温柔但高效';
+          $('#heroCopy').textContent = chip.dataset.copy || '保持一点余裕。';
+        }));
+        $('#generateDrafts')?.addEventListener('click', () => { renderDrafts(); toast('已按风格和语气生成 3 个版本'); });
+        $('#parentStyle')?.addEventListener('change', renderDrafts);
+        $('#toneStyle')?.addEventListener('change', renderDrafts);
+        $('#draftList')?.addEventListener('click', (event) => {
+          const action = event.target.closest('button');
+          if (!action) return;
+          if (action.dataset.copyDraft !== undefined) toast('已复制当前草稿');
+          if (action.dataset.draftSave !== undefined) toast('已收藏到常用沟通模板');
+        });
+        $$('.day').forEach(day => day.addEventListener('click', () => {
+          $$('.day').forEach(item => item.classList.remove('active'));
+          day.classList.add('active');
+          renderSchedule(day.dataset.day);
+        }));
+        $('#openAddItem')?.addEventListener('click', () => openItem('todo'));
+        document.addEventListener('click', (event) => {
+          const add = event.target.closest('[data-open-add]');
+          if (add) openItem(add.dataset.openAdd);
+          const toastBtn = event.target.closest('[data-toast]');
+          if (toastBtn) toast(toastBtn.dataset.toast);
+          const parent = event.target.closest('[data-open-parent]');
+          if (parent) openParent(parent.dataset.openParent);
+          const close = event.target.closest('[data-close]');
+          if (close) closeModal(close.dataset.close);
+          if (event.target.classList.contains('modal')) event.target.classList.remove('visible');
+        });
+        $('#saveItem')?.addEventListener('click', saveItem);
+        $('#importSchedule')?.addEventListener('click', () => toast('可从 Excel 导入课表：支持时间、课程、地点、备注列'));
+        $('#importParents')?.addEventListener('click', () => toast('可从 Excel 导入班级名单：支持学生、班级、家长、关系列'));
+        $('#prepBtn')?.addEventListener('click', () => toast('已打开课前准备清单占位'));
+        $('#breathToggle')?.addEventListener('click', toggleBreath);
+        $('#makePraise')?.addEventListener('click', makePraise);
+        $$('#praisePersona button').forEach(btn => btn.addEventListener('click', () => {
+          $$('#praisePersona button').forEach(item => item.classList.remove('active', 'blue'));
+          btn.classList.add('active', 'blue');
+          praisePersona = btn.dataset.persona || '前辈';
+        }));
+      }
+
+      window.MoodGradientAppLogic = true;
+      icons();
+      bind();
+      renderSchedule('wed');
+      renderDrafts();
+      const initialTab = new URLSearchParams(location.search).get('tab');
+      const initialTarget = new URLSearchParams(location.search).get('target');
+      if (initialTab && $('#page-' + initialTab)) switchTab(initialTab, initialTarget);
+    })();
+  </script>
+</body>
+</html>
+
+
+
+

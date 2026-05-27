@@ -1,0 +1,847 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>微光老师 · 手机 App 原型</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f6f9fd;
+      --app: #fbfdff;
+      --card: rgba(255, 255, 255, .9);
+      --card-2: rgba(239, 246, 255, .9);
+      --soft: #eef3f8;
+      --ink: #0f172a;
+      --text: #334155;
+      --muted: #64748b;
+      --line: rgba(15, 23, 42, .08);
+      --primary: #356fb0;
+      --primary-2: #1f4772;
+      --primary-soft: #eaf2fb;
+      --blue: #5f6aa8;
+      --blue-soft: #edf0f7;
+      --amber: #3e8fb0;
+      --amber-soft: #e8f5f7;
+      --sage: #62b8a7;
+      --sage-soft: #e9f5f2;
+      --rose: #c94f66;
+      --rose-soft: #fff1f4;
+      --cyan: #41a6b0;
+      --violet: #7c3aed;
+      --shadow: 0 24px 54px rgba(31, 63, 102, .12);
+      --shadow-soft: 0 12px 28px rgba(15, 23, 42, .07);
+      --safe: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      line-height: 1.5;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { border: 0; cursor: pointer; }
+    h1, h2, h3, p { margin: 0; }
+    svg { width: 19px; height: 19px; stroke-width: 2.15; }
+
+    .phone-shell {
+      min-height: 100dvh;
+      width: min(100%, 390px);
+      margin: 0 auto;
+      background: var(--app);
+      position: relative;
+      overflow-x: hidden;
+      box-shadow: 0 0 0 1px rgba(37,99,235,.08), 0 30px 80px rgba(15,23,42,.16);
+    }
+    @media (max-width: 390px) { .phone-shell { box-shadow: none; } }
+
+    .app-top {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: calc(12px + env(safe-area-inset-top, 0px)) 18px 12px;
+      background: rgba(248, 251, 255, .86);
+      border-bottom: 1px solid rgba(15, 23, 42, .06);
+      backdrop-filter: blur(18px);
+    }
+    .top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .hello { display: grid; gap: 2px; min-width: 0; }
+    .hello span { color: var(--muted); font-size: 12px; font-weight: 750; }
+    .hello h1 { font-size: 23px; line-height: 1.16; letter-spacing: 0; }
+    .icon-btn {
+      width: 40px; height: 40px; display: grid; place-items: center;
+      color: var(--ink); background: var(--card); border: 1px solid var(--line);
+      border-radius: 14px; position: relative;
+    }
+    .dot { position: absolute; top: 9px; right: 9px; width: 7px; height: 7px; border-radius: 99px; background: var(--rose); }
+
+    .page { display: none; padding: 16px 16px calc(92px + var(--safe)); }
+    .page.active { display: block; }
+    .stack { display: grid; gap: 14px; }
+    .section { display: grid; gap: 10px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .section-head h2 { font-size: 17px; letter-spacing: 0; }
+    .caption { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .body { color: var(--text); font-size: 14px; }
+    .row { display: flex; align-items: center; gap: 9px; }
+    .between { justify-content: space-between; }
+    .wrap { flex-wrap: wrap; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow-soft);
+      padding: 15px;
+    }
+    .card.flat { box-shadow: none; }
+    .card.tint { background: linear-gradient(180deg, #ffffff, #eaf2fb); }
+    .primary-card {
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+      background: linear-gradient(160deg, #356fb0, #41a6b0);
+      border: 0;
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .primary-card .caption, .primary-card .body { color: rgba(255,255,255,.76); }
+
+    .tag {
+      min-height: 24px; display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line);
+      color: var(--text); background: var(--card-2); font-size: 12px; font-weight: 780; white-space: nowrap;
+    }
+    .tag.green { color: var(--primary-2); background: var(--primary-soft); border-color: rgba(47,95,91,.16); }
+    .tag.blue { color: #34466f; background: var(--blue-soft); border-color: rgba(84,107,154,.18); }
+    .tag.amber { color: #805115; background: var(--amber-soft); border-color: rgba(201,138,46,.22); }
+    .tag.rose { color: #8e4239; background: var(--rose-soft); border-color: rgba(198,111,101,.22); }
+
+    .btn, .ghost, .text-btn, .save-btn {
+      min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 9px 13px; border-radius: 13px; font-weight: 820;
+    }
+    .btn { color: #fff; background: var(--primary); box-shadow: 0 10px 20px rgba(47,95,91,.18); }
+    .btn.amber { background: var(--amber); box-shadow: 0 10px 20px rgba(201,138,46,.16); }
+    .ghost { color: var(--primary-2); background: #fff; border: 1px solid var(--line); }
+    .text-btn { min-height: 34px; padding: 5px 4px; color: var(--primary-2); background: transparent; }
+    .save-btn { min-height: 34px; color: var(--primary-2); background: var(--primary-soft); border: 1px solid rgba(47,95,91,.14); }
+
+    input, textarea, select {
+      width: 100%; color: var(--ink); background: #fff; border: 1px solid var(--line);
+      border-radius: 14px; outline: none;
+    }
+    input, select { height: 44px; padding: 0 12px; }
+    textarea { min-height: 104px; padding: 12px; resize: vertical; }
+    input:focus, textarea:focus, select:focus { border-color: rgba(47,95,91,.65); box-shadow: 0 0 0 4px rgba(47,95,91,.10); }
+    .field { display: grid; gap: 7px; }
+    .field label { color: var(--muted); font-size: 12px; font-weight: 820; }
+
+    .rhythm-title { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 10px; }
+    .rhythm-title strong { display: block; font-size: 30px; line-height: 1.05; letter-spacing: 0; }
+    .rhythm-title .tag { max-width: 76px; justify-content: center; }
+    .rhythm-line { height: 7px; overflow: hidden; margin: 16px 0 10px; background: rgba(255,255,255,.20); border-radius: 99px; }
+    .rhythm-line span { display: block; height: 100%; width: 68%; background: #c7ded7; border-radius: inherit; }
+    .home-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .metric { padding: 10px; border-radius: 14px; background: rgba(255,255,255,.13); text-align: left; color: #fff; }
+    .metric strong { display: block; font-size: 21px; line-height: 1.1; }
+    .metric span { color: rgba(255,255,255,.68); font-size: 11px; }
+
+    .next-card { display: grid; gap: 14px; }
+    .time-pill { color: var(--primary-2); background: var(--primary-soft); padding: 6px 9px; border-radius: 11px; font-size: 12px; font-weight: 860; }
+    .quick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
+    .quick-action { min-height: 76px; display: grid; place-items: center; align-content: center; gap: 7px; padding: 8px 4px; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 16px; font-size: 12px; font-weight: 820; }
+    .quick-action.primary { color: var(--primary-2); background: var(--primary-soft); border-color: rgba(47,95,91,.12); }
+
+    .task, .schedule-item, .todo-item, .record, .material, .noise-row, .draft {
+      display: grid; gap: 8px; padding: 13px; color: inherit; text-align: left;
+      background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    }
+    .task:active, .quick-action:active, .draft:active { transform: scale(.99); }
+    .schedule-item { border-left: 4px solid var(--blue); }
+    .schedule-item.done { opacity: .58; }
+    .todo-item { border-left: 4px solid var(--amber); }
+    .record { border-left: 3px solid var(--line); }
+
+    .breath-card { min-height: 380px; display: grid; place-items: center; text-align: center; background: radial-gradient(circle at 50% 40%, rgba(125,151,119,.14), transparent 46%), var(--card); }
+    .breath-core { position: relative; width: 244px; height: 244px; display: grid; place-items: center; }
+    .breath-ring { position: absolute; inset: 20px; border-radius: 999px; background: rgba(125,151,119,.16); transform: scale(.74); }
+    .breath-ring:nth-child(2) { inset: 48px; background: rgba(125,151,119,.23); }
+    .breath-ring:nth-child(3) { inset: 76px; background: rgba(125,151,119,.34); }
+    .breath-core.active .breath-ring { animation: breathe 7.2s ease-in-out infinite; }
+    .breath-core.active .breath-ring:nth-child(2) { animation-delay: -1.6s; }
+    .breath-core.active .breath-ring:nth-child(3) { animation-delay: -3.2s; }
+    .breath-center { z-index: 1; width: 100px; height: 100px; display: grid; place-items: center; color: #fff; background: var(--sage); border-radius: 999px; }
+    @keyframes breathe { 0%,100% { transform: scale(.74); opacity:.74; } 50% { transform: scale(1.08); opacity:.28; } }
+
+    .note { position: relative; padding: 14px; background: #eef7f8; border: 1px solid rgba(201,138,46,.22); border-radius: 17px; }
+    .note .save-btn { position: absolute; right: 10px; top: 10px; min-width: 34px; padding: 7px; }
+    .noise-row { grid-template-columns: auto 1fr auto; align-items: center; }
+    .noise-row.active { background: var(--sage-soft); border-color: rgba(125,151,119,.34); }
+
+    .seg { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; }
+    .seg button { flex: 0 0 auto; }
+    .draft.active { border-color: rgba(47,95,91,.44); background: linear-gradient(180deg, #ffffff, #edf6f2); }
+    .draft-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .week-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    .day { flex: 0 0 54px; height: 64px; display: grid; place-items: center; gap: 2px; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
+    .day.active { color: #fff; background: var(--primary); border-color: var(--primary); }
+
+    .profile-head { display: grid; grid-template-columns: auto 1fr; gap: 13px; align-items: center; }
+    .profile-avatar { width: 64px; height: 64px; display: grid; place-items: center; color: #fff; background: var(--primary); border-radius: 20px; font-size: 25px; font-weight: 900; }
+
+    .bottom-nav { position: fixed; left: 50%; bottom: 0; z-index: 50; width: min(100%,390px); transform: translateX(-50%); display: grid; grid-template-columns: repeat(5,1fr); gap: 4px; padding: 8px 8px calc(8px + var(--safe)); background: rgba(255,255,255,.88); border-top: 1px solid var(--line); backdrop-filter: blur(18px); }
+    .bottom-nav .nav-btn { min-height: 52px; display: grid; place-items: center; gap: 2px; padding: 6px 2px; color: var(--muted); background: transparent; border-radius: 14px; font-size: 11px; font-weight: 820; }
+    .bottom-nav .nav-btn.active { color: var(--primary-2); background: var(--primary-soft); }
+
+    .modal { position: fixed; inset: 0; z-index: 70; display: none; align-items: flex-end; justify-content: center; padding: 16px; background: rgba(15,23,42,.30); backdrop-filter: blur(8px); }
+    .modal.visible { display: flex; }
+    .sheet { width: min(100%,398px); max-height: calc(100dvh - 36px); overflow-y: auto; display: grid; gap: 14px; padding: 16px; background: var(--app); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); }
+    .detail { padding: 12px; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: 15px; }
+    .form { display: grid; gap: 12px; }
+    .toast { position: fixed; left: 50%; top: 18px; z-index: 90; display: none; max-width: min(390px, calc(100vw - 32px)); transform: translateX(-50%); padding: 11px 14px; color: #fff; background: var(--ink); border-radius: 999px; box-shadow: var(--shadow); }
+    .toast.visible { display: block; }
+    .empty { padding: 16px; color: var(--muted); background: var(--soft); border: 1px dashed var(--line); border-radius: 16px; text-align: center; }
+    /* Modern commercial app theme */
+    body {
+      background: linear-gradient(145deg, #fbfcfe 0%, #eef3f8 48%, #fbfdff 100%);
+    }
+
+    .phone-shell {
+      background: linear-gradient(180deg, #fbfcfe 0%, #f4f7fb 46%, #f9fbfd 100%);
+      box-shadow: 0 0 0 1px rgba(31, 63, 102, .08), 0 34px 90px rgba(15, 23, 42, .16);
+    }
+
+    .app-top {
+      background: rgba(248, 251, 255, .82);
+      border-bottom: 1px solid rgba(15, 23, 42, .06);
+      box-shadow: 0 10px 28px rgba(15, 23, 42, .035);
+    }
+
+    .hello span { color: #64748b; }
+    .hello h1 { color: #0f172a; font-weight: 900; }
+
+    .icon-btn {
+      color: #0f172a;
+      background: rgba(255, 255, 255, .82);
+      border: 1px solid rgba(15, 23, 42, .07);
+      border-radius: 16px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+    }
+
+    .dot {
+      background: linear-gradient(135deg, #d8667a, #c94f66);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, .88);
+    }
+
+    .section-head h2 { color: #0f172a; font-weight: 900; }
+    .caption { color: #64748b; }
+    .body { color: #334155; }
+
+    .card,
+    .task,
+    .schedule-item,
+    .todo-item,
+    .record,
+    .material,
+    .noise-row,
+    .draft {
+      background: rgba(255, 255, 255, .88);
+      border: 1px solid rgba(15, 23, 42, .075);
+      box-shadow: 0 12px 26px rgba(15, 23, 42, .055);
+      backdrop-filter: blur(18px);
+    }
+
+    .card.tint {
+      background: linear-gradient(135deg, rgba(255,255,255,.94), rgba(232,242,255,.92));
+      border-color: rgba(31, 63, 102, .10);
+    }
+
+    .primary-card {
+      background: linear-gradient(135deg, #356fb0 0%, #41a6b0 56%, #89c9bb 100%);
+      border: 1px solid rgba(255, 255, 255, .34);
+      box-shadow: 0 22px 48px rgba(24, 52, 82, .20);
+      isolation: isolate;
+    }
+    .primary-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(115deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,0) 44%, rgba(255,255,255,.12) 100%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .primary-card > * { position: relative; z-index: 1; }
+    .primary-card .caption, .primary-card .body { color: rgba(255,255,255,.84); }
+
+    .rhythm-line { background: rgba(255,255,255,.26); }
+    .rhythm-line span { background: linear-gradient(90deg, #fff, #c7ded7); }
+
+    .metric {
+      background: rgba(255, 255, 255, .18);
+      border: 1px solid rgba(255, 255, 255, .22);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18);
+    }
+    .metric span { color: rgba(255,255,255,.78); }
+
+    .tag {
+      color: #334155;
+      background: rgba(241, 245, 249, .9);
+      border-color: rgba(15, 23, 42, .07);
+    }
+    .tag.green { color: #2f6f68; background: #e9f5f2; border-color: rgba(79, 159, 144, .15); }
+    .tag.blue { color: #4e557f; background: #edf0f7; border-color: rgba(91, 95, 141, .13); }
+    .tag.amber { color: #2f6a82; background: #e8f5f7; border-color: rgba(62, 143, 176, .16); }
+    .tag.rose { color: #9d3f52; background: #fff1f4; border-color: rgba(201, 79, 102, .15); }
+    .primary-card .tag.amber { color: #1f4772; background: rgba(255, 255, 255, .9); border-color: rgba(255,255,255,.46); }
+
+    .btn {
+      color: #fff;
+      background: linear-gradient(135deg, #356fb0, #41a6b0);
+      border: 1px solid rgba(255,255,255,.24);
+      box-shadow: 0 13px 26px rgba(24, 52, 82, .16);
+    }
+    .btn.amber {
+      background: linear-gradient(135deg, #5f6aa8, #41a6b0);
+      box-shadow: 0 14px 28px rgba(91, 95, 141, .16);
+    }
+    .ghost {
+      color: #1f4772;
+      background: rgba(255, 255, 255, .9);
+      border: 1px solid rgba(31, 63, 102, .12);
+      box-shadow: 0 10px 22px rgba(15, 23, 42, .045);
+    }
+    .text-btn { color: #356fb0; font-weight: 900; }
+    .save-btn {
+      color: #1f4772;
+      background: linear-gradient(135deg, #f6f9fd, #e9f5f2);
+      border-color: rgba(31, 63, 102, .11);
+    }
+
+    input, textarea, select {
+      color: #0f172a;
+      background: rgba(255, 255, 255, .92);
+      border-color: rgba(15, 23, 42, .085);
+      box-shadow: inset 0 1px 0 rgba(15, 23, 42, .02);
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: rgba(49, 95, 154, .46);
+      box-shadow: 0 0 0 4px rgba(31, 63, 102, .10);
+    }
+    .field label { color: #64748b; }
+
+    .time-pill {
+      color: #28566e;
+      background: linear-gradient(135deg, #e8f5f7, #eef7f8);
+      border: 1px solid rgba(62, 143, 176, .11);
+    }
+
+    .quick-action {
+      background: rgba(255, 255, 255, .86);
+      border-color: rgba(15, 23, 42, .07);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, .045);
+    }
+    .quick-action svg { color: #356fb0; }
+    .quick-action.primary {
+      color: #1f4772;
+      background: linear-gradient(135deg, #e9eff8, #e9f5f2);
+      border-color: rgba(31, 63, 102, .11);
+    }
+
+    .schedule-item { border-left-color: #356fb0; }
+    .todo-item { border-left-color: #41a6b0; }
+    .record { border-left-color: rgba(31, 63, 102, .18); }
+
+    .breath-card {
+      background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(236,254,255,.86));
+      border-color: rgba(62, 143, 176, .11);
+    }
+    .breath-ring { background: rgba(62, 143, 176, .11); }
+    .breath-ring:nth-child(2) { background: rgba(31, 63, 102, .10); }
+    .breath-ring:nth-child(3) { background: rgba(79, 159, 144, .15); }
+    .breath-center { background: linear-gradient(135deg, #356fb0, #62b8a7); box-shadow: 0 18px 34px rgba(31, 63, 102, .18); }
+
+    .note {
+      background: linear-gradient(135deg, #f9fbfd, #eef7f8);
+      border-color: rgba(62, 143, 176, .12);
+    }
+    .noise-row.active {
+      background: linear-gradient(135deg, #f6f9fd, #e9f5f2);
+      border-color: rgba(79, 159, 144, .16);
+    }
+    .draft.active {
+      border-color: rgba(31, 63, 102, .22);
+      background: linear-gradient(135deg, rgba(255,255,255,.96), rgba(232,242,255,.94));
+      box-shadow: 0 16px 34px rgba(31, 63, 102, .10);
+    }
+
+    .day {
+      background: rgba(255,255,255,.88);
+      border-color: rgba(15, 23, 42, .075);
+    }
+    .day.active {
+      color: #fff;
+      background: linear-gradient(135deg, #356fb0, #41a6b0);
+      border-color: rgba(31, 63, 102, .15);
+      box-shadow: 0 14px 26px rgba(31, 63, 102, .18);
+    }
+
+    .profile-avatar { background: linear-gradient(135deg, #356fb0, #41a6b0); }
+
+    .bottom-nav {
+      background: rgba(255, 255, 255, .86);
+      border-top: 1px solid rgba(15, 23, 42, .07);
+      box-shadow: 0 -18px 34px rgba(15, 23, 42, .06);
+    }
+    .bottom-nav .nav-btn { color: #64748b; }
+    .bottom-nav .nav-btn.active {
+      color: #1f4772;
+      background: linear-gradient(135deg, #e9eff8, #e9f5f2);
+    }
+
+    .modal { background: rgba(15, 23, 42, .30); }
+    .sheet {
+      background: rgba(248, 251, 255, .96);
+      border-color: rgba(15, 23, 42, .08);
+      box-shadow: 0 28px 64px rgba(15, 23, 42, .22);
+    }
+    .detail {
+      background: rgba(255, 255, 255, .88);
+      border-color: rgba(15, 23, 42, .075);
+    }
+    .toast { background: rgba(15, 23, 42, .92); }
+    .empty { background: rgba(255,255,255,.68); border-color: rgba(31, 63, 102, .12); }
+    .section-head > * { min-width: 0; }
+    .section-head .text-btn { flex: 0 0 auto; }
+    .text-btn { white-space: nowrap; }
+    .row.between > * { min-width: 0; }
+    .task h3, .card h3, .schedule-item h3, .todo-item h3 { overflow-wrap: anywhere; }
+    .next-card .row.wrap { gap: 10px; }
+    .next-card .btn, .next-card .ghost { flex: 1 1 128px; }
+    @media (max-width: 430px) {
+      .phone-shell,
+      .bottom-nav {
+        width: 100vw;
+        max-width: 100vw;
+      }
+    }
+    @media (max-width: 520px) {
+      .phone-shell {
+        margin-left: 0;
+        margin-right: 0;
+      }
+      .bottom-nav {
+        left: 0;
+        transform: none;
+      }
+    }
+    body { overflow-x: hidden; }
+    @media (max-width: 899px) {
+      .phone-shell,
+      .bottom-nav {
+        width: 100vw;
+        max-width: 100vw;
+      }
+      .phone-shell {
+        margin-left: 0;
+        margin-right: 0;
+      }
+      .bottom-nav {
+        left: 0;
+        transform: none;
+      }
+    }
+    @media (min-width: 900px) {
+      .phone-shell {
+        width: min(100%, 390px);
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .bottom-nav {
+        left: 50%;
+        width: min(100%, 390px);
+        transform: translateX(-50%);
+      }
+    }
+    html, body, .phone-shell, .sheet, .seg, .week-strip {
+      scrollbar-width: none;
+    }
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar,
+    .phone-shell::-webkit-scrollbar,
+    .sheet::-webkit-scrollbar,
+    .seg::-webkit-scrollbar,
+    .week-strip::-webkit-scrollbar {
+      display: none;
+    }
+    /* iOS 26 inspired liquid glass tuning */
+    .phone-shell {
+      background:
+        radial-gradient(circle at 16% -4%, rgba(109, 160, 221, .20), transparent 34%),
+        radial-gradient(circle at 100% 16%, rgba(122, 205, 190, .18), transparent 32%),
+        linear-gradient(180deg, #fbfdff 0%, #f4f8fd 46%, #fbfdff 100%);
+    }
+
+    .app-top,
+    .bottom-nav,
+    .card,
+    .task,
+    .schedule-item,
+    .todo-item,
+    .record,
+    .material,
+    .noise-row,
+    .draft,
+    .sheet {
+      -webkit-backdrop-filter: blur(22px) saturate(1.18);
+      backdrop-filter: blur(22px) saturate(1.18);
+    }
+
+    .card,
+    .task,
+    .schedule-item,
+    .todo-item,
+    .record,
+    .material,
+    .noise-row,
+    .draft {
+      background: linear-gradient(145deg, rgba(255,255,255,.88), rgba(248,251,255,.72));
+      border-color: rgba(255,255,255,.72);
+      box-shadow: 0 1px 0 rgba(255,255,255,.72) inset, 0 14px 30px rgba(31, 63, 102, .075);
+    }
+
+    .primary-card {
+      background:
+        radial-gradient(circle at 18% 0%, rgba(255,255,255,.22), transparent 32%),
+        linear-gradient(135deg, #356fb0 0%, #41a6b0 56%, #89c9bb 100%);
+      border-color: rgba(255,255,255,.48);
+      box-shadow: 0 1px 0 rgba(255,255,255,.44) inset, 0 24px 52px rgba(31, 87, 128, .23);
+    }
+    .primary-card::after {
+      background: linear-gradient(118deg, rgba(255,255,255,.22) 0%, rgba(255,255,255,0) 46%, rgba(255,255,255,.16) 100%);
+    }
+    .metric {
+      background: linear-gradient(145deg, rgba(255,255,255,.20), rgba(255,255,255,.10));
+      border-color: rgba(255,255,255,.30);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #356fb0, #41a6b0);
+      box-shadow: 0 1px 0 rgba(255,255,255,.32) inset, 0 13px 28px rgba(31, 87, 128, .20);
+    }
+    .btn.amber,
+    .breath-center,
+    .day.active,
+    .profile-avatar {
+      background: linear-gradient(135deg, #456fb4, #41a6b0);
+    }
+
+    .ghost,
+    .icon-btn,
+    .bottom-nav .nav-btn.active,
+    .save-btn,
+    .time-pill {
+      background: linear-gradient(145deg, rgba(255,255,255,.86), rgba(236,247,251,.68));
+      border-color: rgba(255,255,255,.72);
+      box-shadow: 0 1px 0 rgba(255,255,255,.72) inset, 0 10px 22px rgba(31, 63, 102, .055);
+    }
+
+    .bottom-nav {
+      background: rgba(255,255,255,.74);
+      border-top-color: rgba(255,255,255,.72);
+      box-shadow: 0 -18px 38px rgba(31, 63, 102, .075);
+    }
+
+    .draft.active {
+      background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(239,248,252,.82));
+      border-color: rgba(103, 166, 190, .28);
+    }
+    /* Final polish: keep glass, improve definition */
+    .card,
+    .task,
+    .schedule-item,
+    .todo-item,
+    .record,
+    .material,
+    .noise-row,
+    .draft {
+      border-color: rgba(115, 143, 171, .18);
+      box-shadow: 0 1px 0 rgba(255,255,255,.72) inset, 0 12px 28px rgba(31, 63, 102, .085);
+    }
+    .bottom-nav .nav-btn.active {
+      color: #1f4772;
+      background: linear-gradient(145deg, rgba(218, 240, 246, .84), rgba(232, 245, 242, .72));
+    }
+    .primary-card {
+      box-shadow: 0 1px 0 rgba(255,255,255,.44) inset, 0 22px 46px rgba(31, 87, 128, .24);
+    }
+    .quick-action.primary,
+    .save-btn {
+      background: linear-gradient(145deg, rgba(232, 245, 250, .86), rgba(232, 245, 242, .76));
+    }
+    /* iOS 26 layout refinement */
+    .page {
+      padding: 18px 16px calc(122px + var(--safe));
+    }
+    .stack { gap: 16px; }
+    .section { gap: 12px; }
+
+    .app-top {
+      padding: calc(13px + env(safe-area-inset-top, 0px)) 18px 13px;
+      background: rgba(251,253,255,.74);
+      border-bottom-color: rgba(255,255,255,.72);
+      box-shadow: 0 1px 0 rgba(255,255,255,.76) inset, 0 10px 30px rgba(31, 63, 102, .045);
+    }
+
+    .primary-card {
+      border-radius: 28px;
+      padding: 20px;
+    }
+    .card,
+    .task,
+    .schedule-item,
+    .todo-item,
+    .record,
+    .material,
+    .noise-row,
+    .draft {
+      border-radius: 22px;
+      padding: 15px;
+    }
+    .next-card { border-radius: 24px; }
+    .btn,
+    .ghost,
+    .save-btn {
+      min-height: 44px;
+      border-radius: 17px;
+    }
+    input,
+    textarea,
+    select {
+      border-radius: 18px;
+    }
+    .quick-action,
+    .day,
+    .time-pill,
+    .detail,
+    .empty {
+      border-radius: 19px;
+    }
+    .sheet {
+      width: min(calc(100% - 20px), 398px);
+      border-radius: 30px 30px 24px 24px;
+      padding: 18px;
+    }
+
+    .bottom-nav {
+      left: 50%;
+      bottom: calc(12px + var(--safe));
+      width: min(calc(100% - 24px), 370px);
+      min-height: 72px;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+      padding: 9px;
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: 30px;
+      background: linear-gradient(145deg, rgba(255,255,255,.78), rgba(232,245,250,.56));
+      -webkit-backdrop-filter: blur(26px) saturate(1.22);
+      backdrop-filter: blur(26px) saturate(1.22);
+      box-shadow: 0 1px 0 rgba(255,255,255,.86) inset, 0 18px 44px rgba(31, 63, 102, .16);
+    }
+    .bottom-nav .nav-btn {
+      min-height: 54px;
+      gap: 2px;
+      padding: 7px 2px 6px;
+      border-radius: 22px;
+      color: rgba(71, 85, 105, .86);
+    }
+    .bottom-nav .nav-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+    .bottom-nav .nav-btn.active {
+      color: #1f4772;
+      background: linear-gradient(145deg, rgba(218,240,246,.92), rgba(255,255,255,.72));
+      box-shadow: 0 1px 0 rgba(255,255,255,.88) inset, 0 10px 22px rgba(31, 87, 128, .12);
+    }
+
+    @media (max-width: 899px) {
+      .bottom-nav {
+        left: 12px;
+        right: 12px;
+        width: auto;
+        max-width: none;
+        transform: none;
+      }
+    }
+    @media (min-width: 900px) {
+      .bottom-nav {
+        left: 50%;
+        width: min(calc(100% - 24px), 370px);
+        transform: translateX(-50%);
+      }
+    }
+    /* Bottom liquid safe area mask */
+    .bottom-nav {
+      isolation: isolate;
+      overflow: visible;
+    }
+    .bottom-nav::before {
+      content: "";
+      position: absolute;
+      left: -14px;
+      right: -14px;
+      top: -24px;
+      bottom: -14px;
+      z-index: -1;
+      pointer-events: none;
+      border-radius: 38px;
+      background: linear-gradient(180deg, rgba(248,252,254,0), rgba(248,252,254,.88) 48%, rgba(248,252,254,.98));
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+    }
+    .phone-shell {
+      padding-bottom: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-shell">
+    <header class="app-top">
+      <div class="top-row">
+        <div class="hello"><span id="topEyebrow">周三 · 第 12 周 · 今日工作台</span><h1 id="pageTitle">早上好，林老师</h1></div>
+        <button class="icon-btn" id="jumpTodoFromBell" type="button" title="通知"><i data-lucide="bell"></i><span class="dot"></span></button>
+      </div>
+    </header>
+    <main>
+      <section class="page active" id="page-home" data-title="早上好，林老师" data-eyebrow="周三 · 第 12 周 · 今日工作台">
+        <div class="stack">
+          <article class="primary-card">
+            <div class="rhythm-title">
+              <div><p class="caption">今日节奏</p><strong id="rhythmTitle">节奏偏满</strong></div>
+              <span class="tag amber" id="rhythmBadge">偏满</span>
+            </div>
+            <div class="rhythm-line"><span id="rhythmBar"></span></div>
+            <p class="body" id="rhythmHint">3 项日程 · 2 项待办，先处理 09:30 课程</p>
+            <div class="home-metrics">
+              <button class="metric" type="button" data-jump-tab="schedule"><strong id="courseCount">3</strong><span>今日课程</span></button>
+              <button class="metric" type="button" data-jump-tab="schedule" data-jump-target="todoSection"><strong id="todoCount">2</strong><span>待办提醒</span></button>
+              <button class="metric" type="button" data-jump-tab="comm" data-jump-target="focusParents"><strong>2</strong><span>家长跟进</span></button>
+            </div>
+          </article>
+
+          <section class="section">
+            <div class="section-head"><h2>下一项</h2><span class="time-pill">09:30</span></div>
+            <article class="card next-card"><div><h3>高二(3)班 · 心理健康</h3><p class="body">教学楼 B 座 402 室 · 情绪识别与压力调节</p></div><div class="row wrap"><button class="btn" type="button" id="openLessonPrep"><i data-lucide="clipboard-list"></i>课前准备</button><button class="ghost" type="button" id="quickPrepTodo"><i data-lucide="alarm-clock-plus"></i>加入待办</button></div></article>
+          </section>
+
+          <section class="section">
+            <div class="section-head"><h2>需要跟进</h2><button class="text-btn" type="button" data-jump-tab="comm" data-jump-target="focusParents">全部</button></div>
+            <button class="task" type="button" data-jump-tab="comm" data-jump-target="focusParents"><div class="row between"><h3>林晓晓妈妈</h3><span class="tag rose">敏感</span></div><p class="body">林晓晓 · 昨天 14:30</p><p class="caption">下一步：确认睡眠、到校状态和课堂参与。</p></button>
+            <button class="task" type="button" data-jump-tab="comm" data-jump-target="focusParents"><div class="row between"><h3>陈子默爸爸</h3><span class="tag amber">需跟进</span></div><p class="body">陈子默 · 待回复留言</p><p class="caption">下一步：同步测试反馈和订正计划。</p></button>
+          </section>
+
+          <section class="section"><div class="section-head"><h2>快捷入口</h2><span class="tag green">低打扰</span></div><div class="quick-grid"><button class="quick-action primary" type="button" data-action="comm"><i data-lucide="messages-square"></i><span>AI沟通</span></button><button class="quick-action" type="button" data-action="praise"><i data-lucide="sparkles"></i><span>AI夸夸</span></button><button class="quick-action" type="button" data-action="todo"><i data-lucide="alarm-clock-plus"></i><span>待办</span></button><button class="quick-action" type="button" data-action="breath"><i data-lucide="wind"></i><span>呼吸</span></button></div></section>
+        </div>
+      </section>
+
+      <section class="page" id="page-heal" data-title="短恢复" data-eyebrow="一分钟呼吸 · AI夸夸 · 树洞">
+        <div class="stack">
+          <article class="card breath-card" id="breathSection"><div class="stack" style="justify-items:center"><div><h2>一分钟呼吸</h2><p class="caption">先把注意力还给自己</p></div><div class="breath-core" id="breathCore"><div class="breath-ring"></div><div class="breath-ring"></div><div class="breath-ring"></div><div class="breath-center"><i data-lucide="wind"></i></div></div><button class="btn" id="breathToggle" type="button"><i data-lucide="play"></i>开始 01:00</button></div></article>
+          <article class="card" id="praiseCard"><div class="section-head"><div><h2>AI夸夸</h2><p class="caption">写下今天发生了什么</p></div><span class="tag green">疗愈</span></div><div class="seg" id="personaGroup"><button class="tag green" data-persona="senior" type="button">温柔前辈</button><button class="tag" data-persona="director" type="button">知心主任</button><button class="tag" data-persona="friend" type="button">清醒同事</button></div><div class="form" style="margin-top:12px"><textarea id="praiseInput" placeholder="比如：开了很久的家长会，还被质疑..."></textarea><button class="btn amber" id="generatePraise" type="button"><i data-lucide="sparkles"></i>生成一句抱抱</button><div class="note" id="praiseOutput"><button class="save-btn" id="favoritePraise" type="button" title="收藏"><i data-lucide="bookmark-plus"></i></button><p>能坚持站在讲台上的人，本身就已经很厉害。今天先把自己照顾好，剩下的事情可以一件一件来。</p></div></div></article>
+          <article class="card flat"><div class="section-head"><h2>树洞</h2><span class="tag">仅自己可见</span></div><div class="form"><textarea id="treeInput" placeholder="写一点今天不方便说出口的话"></textarea><button class="ghost" id="treeSend" type="button"><i data-lucide="send"></i>放进树洞</button><div class="detail" id="treeOutput" style="display:none"></div></div></article>
+          <section class="section"><div class="section-head"><h2>白噪音</h2><p class="caption">轻一点，不抢注意力</p></div><button class="noise-row" type="button" data-sound="雨夜"><div class="tag green"><i data-lucide="cloud-rain"></i></div><div><h3>雨夜</h3><p class="caption">午休与放空</p></div><span class="tag">播放</span></button><button class="noise-row" type="button" data-sound="Lo-fi"><div class="tag blue"><i data-lucide="radio"></i></div><div><h3>Lo-fi</h3><p class="caption">批改作业</p></div><span class="tag">播放</span></button></section>
+        </div>
+      </section>
+
+      <section class="page" id="page-comm" data-title="家校沟通" data-eyebrow="AI 回复 · 重点关注 · 沟通记录">
+        <div class="stack">
+          <article class="card" id="commAssistant"><div class="section-head"><div><h2>AI 沟通助手</h2><p class="caption">生成多个可选草稿</p></div><span class="tag blue">Pro</span></div><div class="form"><div class="field"><label for="studentIssue">沟通要点</label><textarea id="studentIssue">浩宇妈妈询问孩子最近在课堂上的专注度情况，希望语气温和一点，同时给出可执行建议。</textarea></div><div class="row"><div class="field" style="flex:1"><label for="parentStyle">家长风格</label><select id="parentStyle"><option>容易焦虑</option><option>比较敏感</option><option>沟通积极</option><option>关注成绩</option></select></div><div class="field" style="flex:1"><label for="replyTone">语气</label><select id="replyTone"><option>温和</option><option>正式</option><option>简短</option><option>强硬但礼貌</option></select></div></div><button class="btn" id="generateReply" type="button"><i data-lucide="edit-3"></i>生成 3 个草稿</button><div class="stack" id="replyOutput"></div></div></article>
+          <section class="section" id="focusParents"><div class="section-head"><div><h2>重点关注</h2><p class="caption">任务卡式家长跟进</p></div><button class="text-btn" id="openParentImport" type="button"><i data-lucide="file-spreadsheet"></i>导入</button></div><div class="stack" id="focusParentList"><button class="task" data-parent="lin" type="button"><div class="row between"><h3>林晓晓妈妈</h3><span class="tag rose">敏感</span></div><p class="body">林晓晓 · 高二(5)班 · 昨天 14:30</p><p class="caption">下一步：确认睡眠、到校状态和课堂参与。</p></button><button class="task" data-parent="chen" type="button"><div class="row between"><h3>陈子默爸爸</h3><span class="tag amber">需跟进</span></div><p class="body">陈子默 · 高二(3)班 · 待回复留言</p><p class="caption">下一步：同步测试反馈和订正计划。</p></button></div></section>
+          <section class="section"><div class="section-head"><h2>沟通记录</h2><button class="text-btn" id="openRecordModal" type="button"><i data-lucide="plus"></i>手动添加</button></div><div class="stack" id="recordList"><div class="record"><div class="row between"><h3>林晓晓妈妈</h3><span class="caption">昨天</span></div><p class="body">同步孩子近期情绪变化，约定一周后再回访。</p></div><div class="record"><div class="row between"><h3>王浩宇妈妈</h3><span class="caption">周一</span></div><p class="body">反馈课堂专注度，建议家庭端做短时间固定练习。</p></div></div></section>
+        </div>
+      </section>
+      <section class="page" id="page-schedule" data-title="日程" data-eyebrow="轻量课表 · 待办事项">
+        <div class="stack">
+          <section class="section"><div class="section-head"><div><h2>本周日程</h2><p class="caption">横向滑动查看日期</p></div><button class="text-btn" id="openScheduleImport" type="button"><i data-lucide="file-spreadsheet"></i>导入课表</button></div><div class="week-strip" id="dayStrip"><button class="day" data-day="mon" type="button"><span>一</span><strong>12</strong></button><button class="day" data-day="tue" type="button"><span>二</span><strong>13</strong></button><button class="day active" data-day="wed" type="button"><span>三</span><strong>14</strong></button><button class="day" data-day="thu" type="button"><span>四</span><strong>15</strong></button><button class="day" data-day="fri" type="button"><span>五</span><strong>16</strong></button><button class="day" data-day="sat" type="button"><span>六</span><strong>17</strong></button><button class="day" data-day="sun" type="button"><span>日</span><strong>18</strong></button></div></section>
+          <section class="section"><div class="section-head"><div><h2>今日安排</h2><p class="caption" id="courseDayTag">周三</p></div><button class="text-btn" data-open-item="schedule" type="button"><i data-lucide="calendar-plus"></i>添加日程</button></div><div class="stack" id="courseList"></div></section>
+          <section class="section" id="todoSection"><div class="section-head"><h2>待办事项</h2><button class="text-btn" data-open-item="todo" type="button"><i data-lucide="alarm-clock-plus"></i>添加待办</button></div><div class="stack" id="todoList"></div></section>
+        </div>
+      </section>
+
+      <section class="page" id="page-profile" data-title="我的" data-eyebrow="账号 · 权益 · 常用素材库">
+        <div class="stack">
+          <article class="card profile-head"><div class="profile-avatar" id="profileAvatar">林</div><div><h2 id="profileName">林小微</h2><p class="body" id="profileRole">微光实验小学 · 小学语文 · 三年级 2 班班主任</p><div class="row wrap" style="margin-top:8px"><span class="tag green">今日提醒允许通知</span><span class="tag blue" id="memberTag">Pro 试用</span></div></div></article>
+          <button class="ghost" type="button" id="openProfileEdit"><i data-lucide="edit-3"></i>编辑资料</button>
+          <article class="card tint"><div class="section-head"><div><h2>微光 Pro</h2><p class="caption">剩余 14 天试用期</p></div><span class="tag amber">教师 AI 工作台</span></div><p class="body">享受 AI 家长沟通、常用素材库、云同步、高级提醒与短恢复工具箱。</p><div class="row wrap" style="margin-top:12px"><button class="btn amber" type="button" id="openRenewal"><i data-lucide="crown"></i>立即续费</button><button class="ghost" type="button" id="openBenefits"><i data-lucide="badge-check"></i>查看权益</button></div></article>
+          <button class="task" type="button" id="openMaterials"><div class="row between"><div><h3>常用素材库</h3><p class="caption">常用沟通模板与 AI 夸夸用语</p></div><i data-lucide="chevron-right"></i></div></button>
+          <section class="section"><div class="section-head"><h2>设置</h2><span class="caption">账号与数据</span></div><div class="task"><div class="row between"><div><h3>今日提醒允许通知</h3><p class="caption">接收今日课程和待办提醒</p></div><span class="tag green">已开启</span></div></div><div class="task"><div class="row between"><div><h3>云同步</h3><p class="caption">课表、家长档案、沟通记录备份</p></div><span class="tag">未开启</span></div></div><div class="task"><div class="row between"><div><h3>数据导出 / 隐私设置</h3><p class="caption">正式版可导出记录并配置备份范围</p></div><i data-lucide="chevron-right"></i></div></div></section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="bottom-nav" id="bottom-nav" aria-label="底部导航"><button class="nav-btn active" type="button" data-tab="home"><i data-lucide="layout-dashboard"></i><span>首页</span></button><button class="nav-btn" type="button" data-tab="heal"><i data-lucide="heart-handshake"></i><span>疗愈</span></button><button class="nav-btn" type="button" data-tab="comm"><i data-lucide="messages-square"></i><span>沟通</span></button><button class="nav-btn" type="button" data-tab="schedule"><i data-lucide="calendar-days"></i><span>日程</span></button><button class="nav-btn" type="button" data-tab="profile"><i data-lucide="user-round"></i><span>我的</span></button></nav>
+
+  <div class="modal" id="lessonPrepModal"><div class="sheet"><div class="section-head"><div><h2>课前准备</h2><p class="caption">高二(3)班 · 心理健康 · 09:30</p></div><button class="icon-btn" data-close="lessonPrepModal" type="button"><i data-lucide="x"></i></button></div><div class="detail"><strong>课件</strong><br>情绪识别与压力调节 · 18 页，建议课前 5 分钟打开投影。</div><div class="detail"><strong>互动材料</strong><br>情绪卡片 32 张，小组讨论问题 4 组，课后匿名反馈 1 份。</div><div class="detail"><strong>设备检查</strong><br>投影、音响、白板笔、情绪卡片和签到名单。</div><div class="row wrap"><button class="ghost" id="prepAddSchedule" type="button"><i data-lucide="calendar-plus"></i>加入今日安排</button><button class="btn" id="prepAddTodo" type="button"><i data-lucide="alarm-clock-plus"></i>添加课前待办</button></div></div></div>
+  <div class="modal" id="itemModal"><div class="sheet"><div class="section-head"><div><h2 id="itemModalTitle">添加待办</h2><p class="caption" id="itemModalCaption">保存到当前日期</p></div><button class="icon-btn" data-close="itemModal" type="button"><i data-lucide="x"></i></button></div><div class="form"><div class="field"><label for="itemTitle">事项</label><input id="itemTitle" value="回访陈子默爸爸"></div><div class="row"><div class="field" style="flex:1"><label for="itemTime">时间</label><input id="itemTime" type="time" value="17:20"></div><div class="field" style="flex:1"><label for="itemNote">说明</label><input id="itemNote" value="同步近期课堂观察"></div></div><button class="btn" id="saveItem" type="button"><i data-lucide="check"></i>保存</button></div></div></div>
+  <div class="modal" id="scheduleImportModal"><div class="sheet"><div class="section-head"><div><h2>导入课表</h2><p class="caption">支持 Excel 或 CSV，首行作为表头</p></div><button class="icon-btn" data-close="scheduleImportModal" type="button"><i data-lucide="x"></i></button></div><div class="detail">提醒：表头建议包含“星期/日期、时间、课程/标题、地点/备注”。导入会追加到对应日期，不覆盖已有日程。</div><div class="field"><label for="scheduleFile">选择文件</label><input id="scheduleFile" type="file" accept=".xlsx,.xls,.csv"></div><button class="btn" id="confirmScheduleImport" type="button"><i data-lucide="file-spreadsheet"></i>导入文件</button></div></div>
+  <div class="modal" id="parentImportModal"><div class="sheet"><div class="section-head"><div><h2>导入班级名单</h2><p class="caption">支持 Excel 或 CSV，首行作为表头</p></div><button class="icon-btn" data-close="parentImportModal" type="button"><i data-lucide="x"></i></button></div><div class="detail">提醒：至少包含“学生”和“家长/家长姓名”两列；建议补充“班级、关系、手机号、标签、备注”。</div><div class="field"><label for="parentFile">选择文件</label><input id="parentFile" type="file" accept=".xlsx,.xls,.csv"></div><button class="btn" id="confirmParentImport" type="button"><i data-lucide="file-spreadsheet"></i>导入文件</button></div></div>
+  <div class="modal" id="profileModal"><div class="sheet"><div class="section-head"><div><h2>编辑资料</h2><p class="caption">身份、任教信息和联系方式</p></div><button class="icon-btn" data-close="profileModal" type="button"><i data-lucide="x"></i></button></div><div class="form"><div class="row"><div class="field" style="flex:1"><label for="editName">姓名</label><input id="editName" value="林小微"></div><div class="field" style="flex:1"><label for="editSubject">任教学科</label><input id="editSubject" value="语文"></div></div><div class="field"><label for="editSchool">学校</label><input id="editSchool" value="微光实验小学"></div><div class="field"><label for="editClass">班主任班级</label><input id="editClass" value="三年级 2 班"></div><button class="btn" id="saveProfile" type="button">保存资料</button></div></div></div>
+  <div class="modal" id="renewalModal"><div class="sheet"><div class="section-head"><div><h2>续费微光 Pro</h2><p class="caption">当前试用剩余 14 天</p></div><button class="icon-btn" data-close="renewalModal" type="button"><i data-lucide="x"></i></button></div><button class="task plan active" type="button" data-plan="月度 Pro"><span class="tag">灵活</span><strong>¥18/月</strong><span class="caption">短期高频使用</span></button><button class="task plan" type="button" data-plan="年度 Pro"><span class="tag amber">推荐</span><strong>¥168/年</strong><span class="caption">含全部权益</span></button><button class="task plan" type="button" data-plan="校园团队版"><span class="tag">团队</span><strong>联系开通</strong><span class="caption">年级组协作</span></button><button class="btn amber" id="confirmRenewal" type="button"><i data-lucide="credit-card"></i>确认续费</button></div></div>
+  <div class="modal" id="benefitsModal"><div class="sheet"><div class="section-head"><div><h2>Pro 权益</h2><p class="caption">当前账号：Pro 试用</p></div><button class="icon-btn" data-close="benefitsModal" type="button"><i data-lucide="x"></i></button></div><div class="detail"><strong>AI 沟通与表扬不限量</strong><br>家校沟通、AI夸夸、文字润色和模板生成。</div><div class="detail"><strong>云同步与数据备份</strong><br>课表、家长档案、沟通记录自动同步。</div><div class="detail"><strong>高级提醒</strong><br>课程、待办、家长跟进和重复提醒统一管理。</div><button class="btn" id="renewFromBenefits" type="button">续费保留权益</button></div></div>
+  <div class="modal" id="materialsModal"><div class="sheet"><div class="section-head"><div><h2>常用素材库</h2><p class="caption">常用沟通模板与 AI 夸夸用语</p></div><button class="icon-btn" data-close="materialsModal" type="button"><i data-lucide="x"></i></button></div><div class="seg" id="materialTabs"><button class="tag green" type="button" data-filter="all">全部</button><button class="tag" type="button" data-filter="reply">沟通模板</button><button class="tag" type="button" data-filter="praise">AI夸夸</button></div><div class="stack" id="materialList"></div></div></div>
+  <div class="modal" id="parentModal"><div class="sheet"><div class="section-head"><div><h2 id="parentModalTitle">家长档案</h2><p class="caption" id="parentModalCaption">重点关注</p></div><button class="icon-btn" data-close="parentModal" type="button"><i data-lucide="x"></i></button></div><div class="form"><div class="row"><div class="field" style="flex:1"><label for="parentStudent">学生</label><input id="parentStudent"></div><div class="field" style="flex:1"><label for="parentClass">班级</label><input id="parentClass"></div></div><div class="row"><div class="field" style="flex:1"><label for="parentRelation">关系</label><input id="parentRelation"></div><div class="field" style="flex:1"><label for="parentRisk">风险</label><input id="parentRisk"></div></div><div class="field"><label for="parentNote">关注背景</label><textarea id="parentNote"></textarea></div><div class="field"><label for="parentNext">下一步动作</label><textarea id="parentNext"></textarea></div><button class="btn" type="button" data-close="parentModal">保存档案</button></div></div></div>
+  <div class="modal" id="recordModal"><div class="sheet"><div class="section-head"><div><h2>手动添加沟通记录</h2><p class="caption">后续可继续追加</p></div><button class="icon-btn" data-close="recordModal" type="button"><i data-lucide="x"></i></button></div><div class="form"><div class="field"><label for="recordParent">家长</label><input id="recordParent" value="新家长"></div><div class="field"><label for="recordContent">沟通内容</label><textarea id="recordContent" placeholder="同步孩子近期课堂状态，约定下周再回访。"></textarea></div><button class="btn" id="saveRecord" type="button">保存记录</button></div></div></div>
+  <div class="toast" id="toast" role="status"></div>
+  <script>
+    const $=(s,c=document)=>c.querySelector(s);const $$=(s,c=document)=>Array.from(c.querySelectorAll(s));
+    const dayNames={mon:"周一",tue:"周二",wed:"周三",thu:"周四",fri:"周五",sat:"周六",sun:"周日"};
+    const schedules={mon:[["08:30","早读监督","高一(2)班 · 教学楼 B102",false],["10:00","语文阅读训练","高二(3)班 · 教学楼 A303",true]],tue:[["09:20","作文讲评","高二(1)班 · 教学楼 A302",true],["15:40","教研组备课","行政楼会议室 B",false]],wed:[["08:30","早读监督","高一(2)班 · 教学楼 B102",false],["09:30","心理健康","高二(3)班 · 教学楼 B 座 402 室",true],["14:30","教研室例会","行政楼会议室 B",false]],thu:[["08:10","公开课","三年级 2 班 · 阅读策略",true],["16:00","班干部会议","教室 302",false]],fri:[["09:50","单元复习","三年级 2 班 · 错题订正",true]],sat:[],sun:[]};
+    const todos={mon:[["17:20","回访陈子默爸爸","同步期中测试反馈"]],tue:[["12:30","整理作文讲评名单","标记需要单独反馈的学生"]],wed:[["09:10","确认讲座材料","测试投影和音频"],["17:20","回访陈子默爸爸","同步期中测试反馈"]],thu:[["07:50","公开课设备检查","提前确认投影和互动卡片"]],fri:[],sat:[],sun:[]};
+    const parents={lin:{title:"林晓晓妈妈",student:"林晓晓",className:"高二(5)班",relation:"妈妈",risk:"敏感对话",note:"近期睡眠波动，需要温和确认到校状态。",next:"一周后确认睡眠、到校状态和课堂参与。"},chen:{title:"陈子默爸爸",student:"陈子默",className:"高二(3)班",relation:"爸爸",risk:"需跟进",note:"家长希望了解测试反馈和订正计划。",next:"同步期中测试反馈和错题订正计划。"}};
+    const materials=[{type:"reply",title:"家长焦虑时的回复",text:"先承接家长担心，再同步课堂事实，最后给出一个家庭端可执行的小建议。"},{type:"reply",title:"成绩波动沟通框架",text:"先说明阶段性波动正常，再拆解问题，避免直接给孩子贴标签。"},{type:"praise",title:"开完家长会后的自我鼓励",text:"你刚刚接住了很多人的情绪，这本身就是很强的专业能力。"}];
+    let currentDay="wed",itemMode="todo",breathTimer=null,breathLeft=60,toastTimer=null;
+    function initIcons(){if(window.lucide)window.lucide.createIcons()}function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("visible");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("visible"),2200)}function openModal(id){$("#"+id).classList.add("visible");initIcons()}function closeModal(id){$("#"+id).classList.remove("visible")}
+    function switchTab(tab,target){$$('.page').forEach(p=>p.classList.remove('active'));$('#page-'+tab).classList.add('active');$$('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));const p=$('#page-'+tab);$('#pageTitle').textContent=p.dataset.title;$('#topEyebrow').textContent=p.dataset.eyebrow;window.scrollTo({top:0,behavior:'smooth'});if(target)setTimeout(()=>scrollToTarget(target),150)}function scrollToTarget(id){const el=$('#'+id);if(!el)return;window.scrollTo({top:Math.max(0,el.getBoundingClientRect().top+scrollY-78),behavior:'smooth'})}
+    function updateRhythm(day=currentDay){const c=(schedules[day]||[]).length,t=(todos[day]||[]).length,score=c*2+t;let title='节奏偏满',hint=`${c} 项日程 · ${t} 项待办，先处理下一项`,bar='68%',badge='偏满';if(score<=2){title='节奏轻松';hint=`${dayNames[day]}安排较少，可以留一点空白`;bar='28%';badge='轻松'}else if(score<=5){title='节奏平稳';hint=`${c} 项日程 · ${t} 项待办，按顺序推进`;bar='48%';badge='平稳'}else if(score>8){title='节奏高压';hint=`${c} 项日程 · ${t} 项待办，建议拆小处理`;bar='92%';badge='高压'}$('#rhythmTitle').textContent=title;$('#rhythmHint').textContent=hint;$('#rhythmBar').style.width=bar;$('#rhythmBadge').textContent=badge;$('#courseCount').textContent=c;$('#todoCount').textContent=t}
+    function renderSchedule(day=currentDay){currentDay=day;$$('#dayStrip .day').forEach(b=>b.classList.toggle('active',b.dataset.day===day));$('#courseDayTag').textContent=dayNames[day];const cs=schedules[day]||[];$('#courseList').innerHTML=cs.length?cs.map(([time,title,place,done])=>`<div class="schedule-item ${done?'done':''}"><div class="row between"><h3>${title}</h3><span class="time-pill">${time}</span></div><p class="caption">${place}</p></div>`).join(''):`<div class="empty">今天没有课程安排，可以留给自己一点空白。</div>`;const td=todos[day]||[];$('#todoList').innerHTML=td.length?td.map(([time,title,note])=>`<div class="todo-item"><div class="row between"><h3>${title}</h3><span class="tag amber">${time}</span></div><p class="caption">${note}</p></div>`).join(''):`<div class="empty">今天没有待办事项。</div>`;updateRhythm(day)}
+    function openItem(mode){itemMode=mode;$('#itemModalTitle').textContent=mode==='schedule'?'添加日程':'添加待办';$('#itemModalCaption').textContent=mode==='schedule'?'保存到当前选中日期的今日安排':'保存到当前选中日期的待办事项';$('#itemTitle').value=mode==='schedule'?'新的课程安排':'回访陈子默爸爸';openModal('itemModal')}function saveItem(){const title=$('#itemTitle').value.trim()||'新事项',time=$('#itemTime').value||'17:20',note=$('#itemNote').value.trim()||'待补充说明';if(itemMode==='schedule')schedules[currentDay].push([time,title,note,false]);else todos[currentDay].push([time,title,note]);closeModal('itemModal');renderSchedule(currentDay);toast(itemMode==='schedule'?'已加入今日安排':'已加入待办事项')}
+    function addPrepSchedule(){if(!schedules[currentDay].some(i=>i[1]==='心理健康课前准备'))schedules[currentDay].push(['09:15','心理健康课前准备','投影、音响、情绪卡片',false]);closeModal('lessonPrepModal');renderSchedule(currentDay);toast('已加入今日安排')}function addPrepTodo(){todos[currentDay].push(['09:10','课前设备与材料检查','投影、音响、白板笔、情绪卡片']);closeModal('lessonPrepModal');renderSchedule(currentDay);switchTab('schedule','todoSection');toast('已添加课前待办')}
+    function fmt(n){return`00:${String(n).padStart(2,'0')}`}function setBreath(on){$('#breathToggle').innerHTML=on?`<i data-lucide="pause"></i>呼吸中 ${fmt(breathLeft)}`:`<i data-lucide="play"></i>开始 01:00`;initIcons()}function toggleBreath(){if(breathTimer){clearInterval(breathTimer);breathTimer=null;$('#breathCore').classList.remove('active');breathLeft=60;setBreath(false);return}breathLeft=60;$('#breathCore').classList.add('active');setBreath(true);breathTimer=setInterval(()=>{breathLeft-=1;if(breathLeft<=0){clearInterval(breathTimer);breathTimer=null;$('#breathCore').classList.remove('active');breathLeft=60;setBreath(false);toast('一分钟呼吸完成');return}setBreath(true)},1000)}
+    function generatePraise(){const input=$('#praiseInput').value.trim()||'今天处理了很多消息和课堂事务';const p=$('#personaGroup .tag.green')?.dataset.persona||'senior';const lead={senior:'你已经做得很稳了。',director:'从专业角度看，你今天承担了很多复杂判断。',friend:'先说结论：今天的你真的很可以。'}[p];$('#praiseOutput p').textContent=`${lead} 你提到“${input.slice(0,34)}”，这不是小事。先把肩膀放下来，剩下的可以一件一件处理。`;toast('已生成一条温柔回应')}function treeSend(){const v=$('#treeInput').value.trim();if(!v)return toast('先写一点心情');$('#treeOutput').style.display='block';$('#treeOutput').textContent='树洞已经接住了。你不需要马上变好，也不用解释清楚每一种情绪。';$('#treeInput').value='';toast('已放进树洞')}
+    function styleRule(s){return{'容易焦虑':['先承接担心','不放大问题','连续观察 3 天'],'比较敏感':['就事论事','避免贴标签','从一个小动作开始'],'沟通积极':['直接同步现状','明确家校分工','约定反馈节点'],'关注成绩':['拆解学习表现','强调阶段变化','先抓一个学习动作']}[s]}function toneRule(t){return{'温和':['您好，','我们可以先不急着下结论，','我会继续关注，也会及时和您同步。'],'正式':['您好，关于孩子近期情况，和您做一个同步：','从目前观察看，','后续我会持续记录并再次反馈。'],'简短':['您好，简短和您同步：','','我们先按这个方向试几天。'],'强硬但礼貌':['您好，这件事需要和您明确同步：','如果持续不调整，可能会影响后续状态，','希望家校两端从今天开始一起落实。']}[t]}function buildDrafts(issue,style,tone){const s=styleRule(style),t=toneRule(tone);return[{title:'先共情再推进',tag:`${tone} · ${style} · 推荐`,copy:`${t[0]}${s[0]}。${t[1]}${issue}。建议先${s[2]}，${t[2]}`},{title:'事实观察版',tag:`${tone} · ${style} · 事实清晰`,copy:`${t[0]}${issue}。目前建议把课堂观察、家庭配合和下一次反馈分开处理，表达上注意${s[1]}。${t[2]}`},{title:'行动计划版',tag:`${tone} · ${style} · 可执行`,copy:`${t[0]}接下来可以先做三步：第一确认最近一周具体表现，第二${s[2]}，第三约定下次反馈时间。${t[2]}`}]}function renderDrafts(silent=false){const issue=$('#studentIssue').value.trim()||'孩子最近课堂专注度需要关注',style=$('#parentStyle').value,tone=$('#replyTone').value,arr=buildDrafts(issue,style,tone);$('#replyOutput').innerHTML=arr.map((d,i)=>`<div class="draft ${i===0?'active':''}" data-copy="${d.copy.replace(/"/g,'&quot;')}"><span class="tag ${i===0?'amber':'blue'}">${d.tag}</span><h3>${d.title}</h3><p class="body">${d.copy}</p><div class="draft-actions"><button class="ghost" type="button" data-use-draft>使用</button><button class="save-btn" type="button" data-save-draft><i data-lucide="bookmark-plus"></i>收藏</button></div></div>`).join('');initIcons();if(silent!==true)toast(`已生成 3 个${style} · ${tone}草稿`)}function selectDraft(card){$$('#replyOutput .draft').forEach(i=>i.classList.remove('active'));card.classList.add('active');toast('已选中这个草稿')}
+    function addMaterial(type,title,text){if(!text.trim())return;if(!materials.some(i=>i.text===text))materials.unshift({type,title,text});renderMaterials();toast(type==='reply'?'已收藏到常用沟通模板':'已收藏到 AI 夸夸用语')}function renderMaterials(filter='all'){$('#materialList').innerHTML=materials.filter(i=>filter==='all'||i.type===filter).map(i=>`<div class="material"><div class="row between"><h3>${i.title}</h3><span class="tag ${i.type==='praise'?'amber':'blue'}">${i.type==='reply'?'沟通模板':'AI夸夸'}</span></div><p class="body">${i.text}</p><button class="text-btn" type="button" data-use-material="${i.type}" data-text="${i.text.replace(/"/g,'&quot;')}">${i.type==='reply'?'带入 AI 沟通助手':'去生成夸夸'}</button></div>`).join('');initIcons()}
+    function importSchedule(){const f=$('#scheduleFile').files[0];if(!f)return toast('请先选择 Excel 或 CSV 文件');schedules[currentDay].push(['15:20','导入课程',f.name,false]);closeModal('scheduleImportModal');renderSchedule(currentDay);toast('课表文件已读取，已追加到当前日期')}function importParent(){const f=$('#parentFile').files[0];if(!f)return toast('请先选择 Excel 或 CSV 文件');closeModal('parentImportModal');toast('已导入班级名单，重复学生和家长会自动跳过')}
+    function bind(){ $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));$$('[data-jump-tab]').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.jumpTab,b.dataset.jumpTarget)));$$('[data-close]').forEach(b=>b.addEventListener('click',()=>closeModal(b.dataset.close)));$$('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id)}));$$('[data-action]').forEach(b=>b.addEventListener('click',()=>{const a=b.dataset.action;if(a==='comm')switchTab('comm','commAssistant');if(a==='praise')switchTab('heal','praiseCard');if(a==='todo'){switchTab('schedule','todoSection');setTimeout(()=>openItem('todo'),180)}if(a==='breath')switchTab('heal','breathSection')}));$('#jumpTodoFromBell').addEventListener('click',()=>switchTab('schedule','todoSection'));$('#openLessonPrep').addEventListener('click',()=>openModal('lessonPrepModal'));$('#quickPrepTodo').addEventListener('click',addPrepTodo);$('#prepAddSchedule').addEventListener('click',addPrepSchedule);$('#prepAddTodo').addEventListener('click',addPrepTodo);$$('[data-open-item]').forEach(b=>b.addEventListener('click',()=>openItem(b.dataset.openItem)));$('#saveItem').addEventListener('click',saveItem);$$('#dayStrip .day').forEach(b=>b.addEventListener('click',()=>renderSchedule(b.dataset.day)));$('#openScheduleImport').addEventListener('click',()=>openModal('scheduleImportModal'));$('#confirmScheduleImport').addEventListener('click',importSchedule);$('#openParentImport').addEventListener('click',()=>openModal('parentImportModal'));$('#confirmParentImport').addEventListener('click',importParent);$('#breathToggle').addEventListener('click',toggleBreath);$$('.noise-row').forEach(n=>n.addEventListener('click',()=>{$$('.noise-row').forEach(i=>i.classList.remove('active'));n.classList.add('active');toast('正在播放：'+n.dataset.sound)}));$$('#personaGroup .tag').forEach(b=>b.addEventListener('click',()=>{$$('#personaGroup .tag').forEach(i=>i.classList.remove('green'));b.classList.add('green')}));$('#generatePraise').addEventListener('click',generatePraise);$('#favoritePraise').addEventListener('click',()=>addMaterial('praise','自定义夸夸用语',$('#praiseOutput p').textContent));$('#treeSend').addEventListener('click',treeSend);$('#generateReply').addEventListener('click',renderDrafts);$('#parentStyle').addEventListener('change',renderDrafts);$('#replyTone').addEventListener('change',renderDrafts);$('#replyOutput').addEventListener('click',e=>{const card=e.target.closest('.draft');if(!card)return;if(e.target.closest('[data-save-draft]'))addMaterial('reply','自定义沟通模板',card.dataset.copy);else selectDraft(card)});$('#focusParentList').addEventListener('click',e=>{const card=e.target.closest('[data-parent]');if(!card)return;const p=parents[card.dataset.parent];$('#parentModalTitle').textContent=p.title;$('#parentModalCaption').textContent=`${p.student} · ${p.className} · ${p.relation}`;$('#parentStudent').value=p.student;$('#parentClass').value=p.className;$('#parentRelation').value=p.relation;$('#parentRisk').value=p.risk;$('#parentNote').value=p.note;$('#parentNext').value=p.next;openModal('parentModal')});$('#openRecordModal').addEventListener('click',()=>openModal('recordModal'));$('#saveRecord').addEventListener('click',()=>{const p=$('#recordParent').value||'新家长',c=$('#recordContent').value||'已补充一条沟通记录。';$('#recordList').insertAdjacentHTML('afterbegin',`<div class="record"><div class="row between"><h3>${p}</h3><span class="caption">刚刚</span></div><p class="body">${c}</p></div>`);closeModal('recordModal');toast('沟通记录已保存')});$('#openProfileEdit').addEventListener('click',()=>openModal('profileModal'));$('#saveProfile').addEventListener('click',()=>{const n=$('#editName').value||'林小微';$('#profileName').textContent=n;$('#profileAvatar').textContent=n.slice(0,1);$('#profileRole').textContent=`${$('#editSchool').value} · 小学${$('#editSubject').value} · ${$('#editClass').value}班主任`;closeModal('profileModal');toast('资料已保存')});$('#openRenewal').addEventListener('click',()=>openModal('renewalModal'));$$('.plan').forEach(p=>p.addEventListener('click',()=>{$$('.plan').forEach(i=>i.classList.remove('active'));p.classList.add('active')}));$('#confirmRenewal').addEventListener('click',()=>{$('#memberTag').textContent='Pro 已续费';closeModal('renewalModal');toast('续费状态已更新')});$('#openBenefits').addEventListener('click',()=>openModal('benefitsModal'));$('#renewFromBenefits').addEventListener('click',()=>{closeModal('benefitsModal');openModal('renewalModal')});$('#openMaterials').addEventListener('click',()=>{renderMaterials();openModal('materialsModal')});$$('#materialTabs .tag').forEach(t=>t.addEventListener('click',()=>{$$('#materialTabs .tag').forEach(i=>i.classList.remove('green'));t.classList.add('green');renderMaterials(t.dataset.filter)}));$('#materialList').addEventListener('click',e=>{const b=e.target.closest('[data-use-material]');if(!b)return;closeModal('materialsModal');if(b.dataset.useMaterial==='reply'){switchTab('comm','commAssistant');$('#studentIssue').value=b.dataset.text}else{switchTab('heal','praiseCard');$('#praiseInput').value=b.dataset.text}})}
+    initIcons();bind();renderSchedule('wed');renderDrafts(true);renderMaterials();const initialTab=new URLSearchParams(location.search).get('tab');if(initialTab&&$('#page-'+initialTab))switchTab(initialTab);
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
