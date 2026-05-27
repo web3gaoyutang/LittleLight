@@ -518,9 +518,21 @@ AI 生成记录。
 
 ### 8.10 疗愈记录
 
+`GET /api/v1/healing/entries`
+
+支持按 `type` 过滤：`breath`、`praise`、`treehole`、`sound`。
+
 `POST /api/v1/healing/entries`
 
 用于保存 AI 夸夸、树洞、呼吸、声音播放等疗愈行为。
+
+`GET /api/v1/healing/entries/{id}`
+
+用于进入单条疗愈记录详情，后续可承载更完整的复盘内容。
+
+`DELETE /api/v1/healing/entries/{id}`
+
+用于删除老师主动清理的私密疗愈记录。
 
 ## 9. 缓存设计
 
@@ -591,6 +603,14 @@ type AIProvider interface {
 ### 11.3 API 调用
 
 统一通过 `app/api/client.js` 调用，避免页面散落 `uni.request`。
+
+当前已接入接口：
+
+- 首页：`GET /dashboard`
+- 日程：`GET/POST/PUT/DELETE /courses`、`GET/POST/PUT/DELETE /reminders`
+- 沟通：`GET/POST/PUT/DELETE /parents`、`GET/POST/PUT/DELETE /communication-records`、`POST /ai/parent-drafts`
+- 疗愈：`GET/POST/DELETE /healing/entries`、`POST /ai/praise`
+- 我的：`GET/PUT /me`、`GET/POST/DELETE /me/favorites`
 
 ## 12. 部署设计
 

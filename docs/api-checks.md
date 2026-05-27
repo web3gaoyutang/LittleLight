@@ -95,3 +95,18 @@ curl -X POST "$API/api/v1/ai/praise" \
   -H "Content-Type: application/json" \
   -d '{"persona":"温柔前辈","content":"今天课很多，还处理了家长反馈"}'
 ```
+
+## 疗愈记录
+
+```bash
+curl -H "X-User-ID: $USER_ID" "$API/api/v1/healing/entries"
+curl -H "X-User-ID: $USER_ID" "$API/api/v1/healing/entries?type=praise"
+
+curl -X POST "$API/api/v1/healing/entries" \
+  -H "Content-Type: application/json" \
+  -H "X-User-ID: $USER_ID" \
+  -d '{"type":"praise","mood":"warm","content":"今天课很多，还处理了家长反馈","aiReply":"你已经处理了很多复杂信息，先给自己一点恢复空间。"}'
+
+curl -H "X-User-ID: $USER_ID" "$API/api/v1/healing/entries/{id}"
+curl -X DELETE -H "X-User-ID: $USER_ID" "$API/api/v1/healing/entries/{id}"
+```

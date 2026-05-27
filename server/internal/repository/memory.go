@@ -38,7 +38,10 @@ type Store interface {
 	CreateCommunicationRecord(ctx context.Context, userID domain.ID, record domain.CommunicationRecord) (domain.CommunicationRecord, error)
 	UpdateCommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID, record domain.CommunicationRecord) (domain.CommunicationRecord, error)
 	DeleteCommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID) error
+	HealingEntries(ctx context.Context, userID domain.ID, entryType string) ([]domain.HealingEntry, error)
+	HealingEntry(ctx context.Context, userID domain.ID, id domain.ID) (domain.HealingEntry, error)
 	CreateHealingEntry(ctx context.Context, userID domain.ID, entry domain.HealingEntry) (domain.HealingEntry, error)
+	DeleteHealingEntry(ctx context.Context, userID domain.ID, id domain.ID) error
 	Favorites(ctx context.Context, userID domain.ID, favoriteType string) ([]domain.Favorite, error)
 	CreateFavorite(ctx context.Context, userID domain.ID, favorite domain.Favorite) (domain.Favorite, error)
 	DeleteFavorite(ctx context.Context, userID domain.ID, id domain.ID) error
@@ -85,6 +88,10 @@ func NewMemoryStore() *MemoryStore {
 		records: []domain.CommunicationRecord{
 			{ID: "record_chen", ParentID: parent2.ID, Student: "陈子默", Channel: "微信", Reason: "测试反馈", Summary: "已说明测试问题与订正方向。", Result: "家长认可 3 天订正计划。", RiskLevel: "low", FollowUpAt: now.Add(72 * time.Hour), CreatedAt: now.Add(-24 * time.Hour)},
 		},
+		healing: []domain.HealingEntry{
+			{ID: "healing_seed_1", Type: "praise", Mood: "warm", Content: "今天处理了课程和家长反馈。", AIReply: "你已经稳稳接住了很多复杂信息，先给自己一点恢复空间。", CreatedAt: now.Add(-2 * time.Hour)},
+			{ID: "healing_seed_2", Type: "breath", Mood: "calm", Content: "完成 1 分钟呼吸练习", AIReply: "已完成一次短恢复。", CreatedAt: now.Add(-4 * time.Hour)},
+		},
 		favorites: []domain.Favorite{
 			{ID: "favorite_reply_1", Type: "communication_template", Title: "先肯定再建议", Content: "先同步孩子已经做到的部分，再给出一个可执行的小建议。", CreatedAt: now},
 			{ID: "favorite_praise_1", Type: "ai_praise", Title: "忙碌后恢复", Content: "你今天处理了很多细碎但重要的事，先允许自己慢下来。", CreatedAt: now},
@@ -105,6 +112,15 @@ func (s *MemoryStore) UpdateUserProfile(ctx context.Context, userID domain.ID, p
 	profile.CreatedAt = s.profile.CreatedAt
 	if profile.Name == "" {
 		profile.Name = s.profile.Name
+	}
+	if profile.School == "" {
+		profile.School = s.profile.School
+	}
+	if profile.Stage == "" {
+		profile.Stage = s.profile.Stage
+	}
+	if profile.Subject == "" {
+		profile.Subject = s.profile.Subject
 	}
 	if profile.ProStatus == "" {
 		profile.ProStatus = s.profile.ProStatus
@@ -406,6 +422,29 @@ func (s *MemoryStore) DeleteCommunicationRecord(ctx context.Context, userID doma
 	return notFound("communication record", id)
 }
 
+func (s *MemoryStore) HealingEntries(ctx context.Context, userID domain.ID, entryType string) ([]domain.HealingEntry, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	items := make([]domain.HealingEntry, 0)
+	for _, item := range s.healing {
+		if entryType == "" || item.Type == entryType {
+			items = append(items, item)
+		}
+	}
+	return items, nil
+}
+
+func (s *MemoryStore) HealingEntry(ctx context.Context, userID domain.ID, id domain.ID) (domain.HealingEntry, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, item := range s.healing {
+		if item.ID == id {
+			return item, nil
+		}
+	}
+	return domain.HealingEntry{}, notFound("healing entry", id)
+}
+
 func (s *MemoryStore) CreateHealingEntry(ctx context.Context, userID domain.ID, entry domain.HealingEntry) (domain.HealingEntry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -414,6 +453,18 @@ func (s *MemoryStore) CreateHealingEntry(ctx context.Context, userID domain.ID, 
 	entry.CreatedAt = time.Now()
 	s.healing = append([]domain.HealingEntry{entry}, s.healing...)
 	return entry, nil
+}
+
+func (s *MemoryStore) DeleteHealingEntry(ctx context.Context, userID domain.ID, id domain.ID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.healing {
+		if s.healing[index].ID == id {
+			s.healing = append(s.healing[:index], s.healing[index+1:]...)
+			return nil
+		}
+	}
+	return notFound("healing entry", id)
 }
 
 func (s *MemoryStore) Favorites(ctx context.Context, userID domain.ID, favoriteType string) ([]domain.Favorite, error) {

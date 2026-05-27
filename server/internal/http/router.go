@@ -67,7 +67,10 @@ func (s *Server) Routes() http.Handler {
 		r.Delete("/communication-records/{id}", s.deleteCommunicationRecord)
 		r.Post("/ai/parent-drafts", s.parentDrafts)
 		r.Post("/ai/praise", s.praise)
+		r.Get("/healing/entries", s.healingEntries)
 		r.Post("/healing/entries", s.createHealingEntry)
+		r.Get("/healing/entries/{id}", s.healingEntry)
+		r.Delete("/healing/entries/{id}", s.deleteHealingEntry)
 	})
 	return r
 }
@@ -353,6 +356,16 @@ func (s *Server) praise(w http.ResponseWriter, r *http.Request) {
 	writeResult(w, data, err)
 }
 
+func (s *Server) healingEntries(w http.ResponseWriter, r *http.Request) {
+	data, err := s.store.HealingEntries(r.Context(), currentUserID(r), r.URL.Query().Get("type"))
+	writeResult(w, data, err)
+}
+
+func (s *Server) healingEntry(w http.ResponseWriter, r *http.Request) {
+	data, err := s.store.HealingEntry(r.Context(), currentUserID(r), pathID(r))
+	writeResult(w, data, err)
+}
+
 func (s *Server) createHealingEntry(w http.ResponseWriter, r *http.Request) {
 	var payload domain.HealingEntry
 	if !decodeJSON(w, r, &payload) {
@@ -360,6 +373,11 @@ func (s *Server) createHealingEntry(w http.ResponseWriter, r *http.Request) {
 	}
 	data, err := s.store.CreateHealingEntry(r.Context(), currentUserID(r), payload)
 	writeResult(w, data, err)
+}
+
+func (s *Server) deleteHealingEntry(w http.ResponseWriter, r *http.Request) {
+	err := s.store.DeleteHealingEntry(r.Context(), currentUserID(r), pathID(r))
+	writeResult(w, map[string]bool{"ok": err == nil}, err)
 }
 
 func (s *Server) invalidateDashboard(r *http.Request, userID domain.ID) {

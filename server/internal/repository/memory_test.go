@@ -177,3 +177,44 @@ func TestMemoryStoreProfileAndFavorites(t *testing.T) {
 		t.Fatalf("delete favorite: %v", err)
 	}
 }
+
+func TestMemoryStoreHealingEntries(t *testing.T) {
+	store := NewMemoryStore()
+	ctx := context.Background()
+
+	entry, err := store.CreateHealingEntry(ctx, testUserID, domain.HealingEntry{
+		Type:    "praise",
+		Mood:    "warm",
+		Content: "今天完成了很多工作",
+		AIReply: "你已经稳稳推进了很多复杂事项。",
+	})
+	if err != nil {
+		t.Fatalf("create healing entry: %v", err)
+	}
+	if entry.ID == "" || entry.CreatedAt.IsZero() {
+		t.Fatalf("unexpected healing entry: %+v", entry)
+	}
+
+	items, err := store.HealingEntries(ctx, testUserID, "praise")
+	if err != nil {
+		t.Fatalf("healing entries: %v", err)
+	}
+	if len(items) == 0 {
+		t.Fatalf("expected healing entries")
+	}
+
+	found, err := store.HealingEntry(ctx, testUserID, entry.ID)
+	if err != nil {
+		t.Fatalf("healing entry detail: %v", err)
+	}
+	if found.AIReply != entry.AIReply {
+		t.Fatalf("unexpected healing entry detail: %+v", found)
+	}
+
+	if err := store.DeleteHealingEntry(ctx, testUserID, entry.ID); err != nil {
+		t.Fatalf("delete healing entry: %v", err)
+	}
+	if _, err := store.HealingEntry(ctx, testUserID, entry.ID); err == nil {
+		t.Fatalf("expected deleted healing entry to be gone")
+	}
+}

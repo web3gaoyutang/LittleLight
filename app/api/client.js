@@ -47,5 +47,8 @@ export const api = {
   deleteRecord: (id) => request(`/communication-records/${id}`, { method: 'DELETE' }),
   parentDrafts: (data) => request('/ai/parent-drafts', { method: 'POST', data }),
   praise: (data) => request('/ai/praise', { method: 'POST', data }),
-  healingEntry: (data) => request('/healing/entries', { method: 'POST', data })
+  healingEntries: (type) => request(type ? `/healing/entries?type=${encodeURIComponent(type)}` : '/healing/entries'),
+  healingEntryDetail: (id) => request(`/healing/entries/${id}`),
+  healingEntry: (data) => request('/healing/entries', { method: 'POST', data }),
+  deleteHealingEntry: (id) => request(`/healing/entries/${id}`, { method: 'DELETE' })
 }

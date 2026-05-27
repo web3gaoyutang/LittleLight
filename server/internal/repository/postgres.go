@@ -492,6 +492,46 @@ func (s *PostgresStore) DeleteCommunicationRecord(ctx context.Context, userID do
 	return nil
 }
 
+func (s *PostgresStore) HealingEntries(ctx context.Context, userID domain.ID, entryType string) ([]domain.HealingEntry, error) {
+	query := `
+		SELECT id::text, type, COALESCE(mood, ''), COALESCE(content, ''), COALESCE(ai_reply, ''), created_at
+		FROM healing_entries
+		WHERE user_id = $1`
+	args := []any{string(userID)}
+	if entryType != "" {
+		query += " AND type = $2"
+		args = append(args, entryType)
+	}
+	query += " ORDER BY created_at DESC LIMIT 50"
+	rows, err := s.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.HealingEntry, 0)
+	for rows.Next() {
+		var item domain.HealingEntry
+		if err := rows.Scan(&item.ID, &item.Type, &item.Mood, &item.Content, &item.AIReply, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) HealingEntry(ctx context.Context, userID domain.ID, id domain.ID) (domain.HealingEntry, error) {
+	var item domain.HealingEntry
+	err := s.pool.QueryRow(ctx, `
+		SELECT id::text, type, COALESCE(mood, ''), COALESCE(content, ''), COALESCE(ai_reply, ''), created_at
+		FROM healing_entries
+		WHERE user_id = $1 AND id = $2`, string(userID), string(id)).
+		Scan(&item.ID, &item.Type, &item.Mood, &item.Content, &item.AIReply, &item.CreatedAt)
+	if isNoRows(err) {
+		return domain.HealingEntry{}, notFound("healing entry", id)
+	}
+	return item, err
+}
+
 func (s *PostgresStore) CreateHealingEntry(ctx context.Context, userID domain.ID, entry domain.HealingEntry) (domain.HealingEntry, error) {
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO healing_entries (user_id, type, mood, content, ai_reply)
@@ -499,6 +539,17 @@ func (s *PostgresStore) CreateHealingEntry(ctx context.Context, userID domain.ID
 		RETURNING id::text, created_at`, string(userID), entry.Type, entry.Mood, entry.Content, entry.AIReply).
 		Scan(&entry.ID, &entry.CreatedAt)
 	return entry, err
+}
+
+func (s *PostgresStore) DeleteHealingEntry(ctx context.Context, userID domain.ID, id domain.ID) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM healing_entries WHERE user_id = $1 AND id = $2`, string(userID), string(id))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return notFound("healing entry", id)
+	}
+	return nil
 }
 
 func (s *PostgresStore) Favorites(ctx context.Context, userID domain.ID, favoriteType string) ([]domain.Favorite, error) {

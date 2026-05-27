@@ -478,6 +478,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/AIDraft"
   /api/v1/healing/entries:
+    get:
+      tags: [Healing]
+      summary: List healing entries
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [breath, praise, treehole, sound]
+          description: Filter by healing entry type.
+      responses:
+        "200":
+          description: Healing entry list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HealingEntry"
     post:
       tags: [Healing]
       summary: Save a healing entry
@@ -494,6 +513,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealingEntry"
+  /api/v1/healing/entries/{id}:
+    get:
+      tags: [Healing]
+      summary: Get a healing entry
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Healing entry detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealingEntry"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Healing]
+      summary: Delete a healing entry
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "404":
+          $ref: "#/components/responses/NotFound"
 components:
   securitySchemes:
     DevUser:
