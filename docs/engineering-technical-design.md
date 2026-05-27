@@ -333,7 +333,39 @@ AI 生成记录。
 }
 ```
 
-### 8.3 课程
+### 8.3 我的资料与收藏
+
+`GET /api/v1/me`
+
+`PUT /api/v1/me`
+
+```json
+{
+  "name": "林小微",
+  "school": "微光实验小学",
+  "stage": "小学",
+  "subject": "语文",
+  "isHeadTeacher": true,
+  "proStatus": "trial",
+  "reminderPolicy": "low_interrupt"
+}
+```
+
+`GET /api/v1/me/favorites?type=communication_template`
+
+`POST /api/v1/me/favorites`
+
+```json
+{
+  "type": "communication_template",
+  "title": "先共情再同步",
+  "content": "我理解您对孩子状态的担心，我先同步今天观察到的具体表现，再一起看下一步。"
+}
+```
+
+`DELETE /api/v1/me/favorites/{id}`
+
+### 8.4 课程
 
 `GET /api/v1/courses?weekday=3`
 
@@ -364,7 +396,7 @@ AI 生成记录。
 
 - `POST /api/v1/courses/imports`，上传 Excel 课表。
 
-### 8.4 提醒
+### 8.5 提醒
 
 `GET /api/v1/reminders?day=2026-05-27`
 
@@ -396,7 +428,7 @@ AI 生成记录。
 }
 ```
 
-### 8.5 家长档案
+### 8.6 家长档案
 
 `GET /api/v1/parents`
 
@@ -425,7 +457,7 @@ AI 生成记录。
 
 - `POST /api/v1/parents/imports`，上传 Excel 班级名单。
 
-### 8.6 沟通记录
+### 8.7 沟通记录
 
 `GET /api/v1/communication-records?parentId=xxx`
 
@@ -450,7 +482,7 @@ AI 生成记录。
 - `PUT /api/v1/communication-records/{id}`
 - `DELETE /api/v1/communication-records/{id}`
 
-### 8.7 AI 家长回复
+### 8.8 AI 家长回复
 
 `POST /api/v1/ai/parent-drafts`
 
@@ -472,7 +504,7 @@ AI 生成记录。
 - 不给学生贴负面标签。
 - 不指责家长。
 
-### 8.8 AI 夸夸
+### 8.9 AI 夸夸
 
 `POST /api/v1/ai/praise`
 
@@ -484,7 +516,7 @@ AI 生成记录。
 }
 ```
 
-### 8.9 疗愈记录
+### 8.10 疗愈记录
 
 `POST /api/v1/healing/entries`
 
@@ -633,11 +665,12 @@ Docker Compose 中：
 - 课程、提醒、家长档案、沟通记录已具备列表、详情、新增、编辑、删除等核心 CRUD；提醒额外支持完成和延后。
 - 后端单元测试初版已补充，覆盖内存仓库 CRUD 和 AI 服务。
 - GitHub Actions 初版已补充，包含 Go 测试和 uni-app H5 构建。
-- uni-app 五个 Tab 页面骨架，日程页已接入课程/待办增删改查入口，沟通页已接入家长档案和沟通记录基础操作。
+- uni-app 五个 Tab 页面骨架，日程页已接入课程/待办增删改查入口，沟通页已接入家长档案和沟通记录基础操作，我的页已接入教师资料与收藏素材管理。
 - Go API 服务骨架。
 - V1 核心领域模型。
 - 内存仓库用于本地无数据库演示。
 - PostgreSQL 初始化迁移脚本与 API 启动时自动迁移。
+- 教师资料与收藏素材 API 已接入 `users`、`favorites` 表。
 - H5 Web/API/Redis/PostgreSQL/Docker Compose 配置。
 - Redis dashboard 缓存已接入，读取首页时优先查缓存，课程、提醒、家长写入成功后清理缓存。
 - HTTP 开发鉴权中间件已接入，支持 X-User-ID，并保留默认种子用户。

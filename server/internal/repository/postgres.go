@@ -19,6 +19,55 @@ func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore {
 	return &PostgresStore{pool: pool}
 }
 
+func (s *PostgresStore) UserProfile(ctx context.Context, userID domain.ID) (domain.UserProfile, error) {
+	var profile domain.UserProfile
+	err := s.pool.QueryRow(ctx, `
+		SELECT id::text, name, COALESCE(school, ''), COALESCE(stage, ''), COALESCE(subject, ''), is_head_teacher, pro_status, reminder_policy, created_at
+		FROM users
+		WHERE id = $1`, string(userID)).
+		Scan(&profile.ID, &profile.Name, &profile.School, &profile.Stage, &profile.Subject, &profile.IsHeadTeacher, &profile.ProStatus, &profile.ReminderPolicy, &profile.CreatedAt)
+	if isNoRows(err) {
+		return domain.UserProfile{}, notFound("user profile", userID)
+	}
+	return profile, err
+}
+
+func (s *PostgresStore) UpdateUserProfile(ctx context.Context, userID domain.ID, profile domain.UserProfile) (domain.UserProfile, error) {
+	current, err := s.UserProfile(ctx, userID)
+	if err != nil {
+		return domain.UserProfile{}, err
+	}
+	if profile.Name == "" {
+		profile.Name = current.Name
+	}
+	if profile.School == "" {
+		profile.School = current.School
+	}
+	if profile.Stage == "" {
+		profile.Stage = current.Stage
+	}
+	if profile.Subject == "" {
+		profile.Subject = current.Subject
+	}
+	if profile.ProStatus == "" {
+		profile.ProStatus = current.ProStatus
+	}
+	if profile.ReminderPolicy == "" {
+		profile.ReminderPolicy = current.ReminderPolicy
+	}
+	err = s.pool.QueryRow(ctx, `
+		UPDATE users
+		SET name = $2, school = $3, stage = $4, subject = $5, is_head_teacher = $6, pro_status = $7, reminder_policy = $8, updated_at = now()
+		WHERE id = $1
+		RETURNING id::text, name, COALESCE(school, ''), COALESCE(stage, ''), COALESCE(subject, ''), is_head_teacher, pro_status, reminder_policy, created_at`,
+		string(userID), profile.Name, profile.School, profile.Stage, profile.Subject, profile.IsHeadTeacher, profile.ProStatus, profile.ReminderPolicy).
+		Scan(&profile.ID, &profile.Name, &profile.School, &profile.Stage, &profile.Subject, &profile.IsHeadTeacher, &profile.ProStatus, &profile.ReminderPolicy, &profile.CreatedAt)
+	if isNoRows(err) {
+		return domain.UserProfile{}, notFound("user profile", userID)
+	}
+	return profile, err
+}
+
 func (s *PostgresStore) Dashboard(ctx context.Context, userID domain.ID, day time.Time) (domain.DashboardSummary, error) {
 	weekday := int(day.Weekday())
 	courses, err := s.CoursesByDay(ctx, userID, weekday)
@@ -450,6 +499,55 @@ func (s *PostgresStore) CreateHealingEntry(ctx context.Context, userID domain.ID
 		RETURNING id::text, created_at`, string(userID), entry.Type, entry.Mood, entry.Content, entry.AIReply).
 		Scan(&entry.ID, &entry.CreatedAt)
 	return entry, err
+}
+
+func (s *PostgresStore) Favorites(ctx context.Context, userID domain.ID, favoriteType string) ([]domain.Favorite, error) {
+	query := `
+		SELECT id::text, type, title, content, source_id::text, created_at
+		FROM favorites
+		WHERE user_id = $1`
+	args := []any{string(userID)}
+	if favoriteType != "" {
+		query += " AND type = $2"
+		args = append(args, favoriteType)
+	}
+	query += " ORDER BY created_at DESC"
+	rows, err := s.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.Favorite, 0)
+	for rows.Next() {
+		var item domain.Favorite
+		var sourceID sql.NullString
+		if err := rows.Scan(&item.ID, &item.Type, &item.Title, &item.Content, &sourceID, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		item.SourceID = nullableDomainID(sourceID)
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) CreateFavorite(ctx context.Context, userID domain.ID, favorite domain.Favorite) (domain.Favorite, error) {
+	err := s.pool.QueryRow(ctx, `
+		INSERT INTO favorites (user_id, type, title, content, source_id)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id::text, created_at`, string(userID), favorite.Type, favorite.Title, favorite.Content, fromDomainID(favorite.SourceID)).
+		Scan(&favorite.ID, &favorite.CreatedAt)
+	return favorite, err
+}
+
+func (s *PostgresStore) DeleteFavorite(ctx context.Context, userID domain.ID, id domain.ID) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM favorites WHERE user_id = $1 AND id = $2`, string(userID), string(id))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return notFound("favorite", id)
+	}
+	return nil
 }
 
 func nullableDomainID(value sql.NullString) *domain.ID {

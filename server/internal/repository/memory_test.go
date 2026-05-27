@@ -144,3 +144,36 @@ func TestMemoryStoreCoursesCRUD(t *testing.T) {
 		t.Fatalf("expected deleted course to be gone")
 	}
 }
+
+func TestMemoryStoreProfileAndFavorites(t *testing.T) {
+	store := NewMemoryStore()
+	ctx := context.Background()
+
+	profile, err := store.UserProfile(ctx, testUserID)
+	if err != nil {
+		t.Fatalf("profile: %v", err)
+	}
+	profile.ReminderPolicy = "normal"
+	updated, err := store.UpdateUserProfile(ctx, testUserID, profile)
+	if err != nil {
+		t.Fatalf("update profile: %v", err)
+	}
+	if updated.ReminderPolicy != "normal" {
+		t.Fatalf("unexpected profile: %+v", updated)
+	}
+
+	favorite, err := store.CreateFavorite(ctx, testUserID, domain.Favorite{Type: "communication_template", Title: "测试收藏", Content: "测试内容"})
+	if err != nil {
+		t.Fatalf("create favorite: %v", err)
+	}
+	items, err := store.Favorites(ctx, testUserID, "communication_template")
+	if err != nil {
+		t.Fatalf("favorites: %v", err)
+	}
+	if len(items) == 0 {
+		t.Fatalf("expected favorites")
+	}
+	if err := store.DeleteFavorite(ctx, testUserID, favorite.ID); err != nil {
+		t.Fatalf("delete favorite: %v", err)
+	}
+}

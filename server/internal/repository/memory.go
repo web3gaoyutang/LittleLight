@@ -13,6 +13,8 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type Store interface {
+	UserProfile(ctx context.Context, userID domain.ID) (domain.UserProfile, error)
+	UpdateUserProfile(ctx context.Context, userID domain.ID, profile domain.UserProfile) (domain.UserProfile, error)
 	Dashboard(ctx context.Context, userID domain.ID, day time.Time) (domain.DashboardSummary, error)
 	CoursesByDay(ctx context.Context, userID domain.ID, weekday int) ([]domain.Course, error)
 	Course(ctx context.Context, userID domain.ID, id domain.ID) (domain.Course, error)
@@ -37,6 +39,9 @@ type Store interface {
 	UpdateCommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID, record domain.CommunicationRecord) (domain.CommunicationRecord, error)
 	DeleteCommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID) error
 	CreateHealingEntry(ctx context.Context, userID domain.ID, entry domain.HealingEntry) (domain.HealingEntry, error)
+	Favorites(ctx context.Context, userID domain.ID, favoriteType string) ([]domain.Favorite, error)
+	CreateFavorite(ctx context.Context, userID domain.ID, favorite domain.Favorite) (domain.Favorite, error)
+	DeleteFavorite(ctx context.Context, userID domain.ID, id domain.ID) error
 }
 
 type MemoryStore struct {
@@ -46,6 +51,8 @@ type MemoryStore struct {
 	parents   []domain.ParentProfile
 	records   []domain.CommunicationRecord
 	healing   []domain.HealingEntry
+	favorites []domain.Favorite
+	profile   domain.UserProfile
 	seq       int64
 }
 
@@ -55,6 +62,17 @@ func NewMemoryStore() *MemoryStore {
 	parent2 := domain.ParentProfile{ID: "parent_chen", StudentName: "陈子默", ClassName: "高二(3)班", ParentName: "陈子默爸爸", Relationship: "父亲", CommunicationStyle: "关注成绩", RiskLevel: "low", ImportantNotes: "关注测试反馈和订正节奏。", NextAction: "周五前同步订正计划。", CreatedAt: now}
 	return &MemoryStore{
 		seq: 100,
+		profile: domain.UserProfile{
+			ID:             "00000000-0000-0000-0000-000000000001",
+			Name:           "林小微",
+			School:         "微光实验小学",
+			Stage:          "小学",
+			Subject:        "语文",
+			IsHeadTeacher:  true,
+			ProStatus:      "trial",
+			ReminderPolicy: "low_interrupt",
+			CreatedAt:      now,
+		},
 		courses: []domain.Course{
 			{ID: "course_psychology", Title: "心理健康", ClassName: "高二(3)班", Location: "教学楼 B 座 402 室", Weekday: int(now.Weekday()), StartTime: "09:30", EndTime: "10:15", Note: "情绪识别与压力调节", CreatedAt: now},
 			{ID: "course_talk", Title: "个别谈话", ClassName: "林晓晓", Location: "咨询室", Weekday: int(now.Weekday()), StartTime: "13:40", EndTime: "14:00", Note: "睡眠与到校状态", CreatedAt: now},
@@ -67,7 +85,35 @@ func NewMemoryStore() *MemoryStore {
 		records: []domain.CommunicationRecord{
 			{ID: "record_chen", ParentID: parent2.ID, Student: "陈子默", Channel: "微信", Reason: "测试反馈", Summary: "已说明测试问题与订正方向。", Result: "家长认可 3 天订正计划。", RiskLevel: "low", FollowUpAt: now.Add(72 * time.Hour), CreatedAt: now.Add(-24 * time.Hour)},
 		},
+		favorites: []domain.Favorite{
+			{ID: "favorite_reply_1", Type: "communication_template", Title: "先肯定再建议", Content: "先同步孩子已经做到的部分，再给出一个可执行的小建议。", CreatedAt: now},
+			{ID: "favorite_praise_1", Type: "ai_praise", Title: "忙碌后恢复", Content: "你今天处理了很多细碎但重要的事，先允许自己慢下来。", CreatedAt: now},
+		},
 	}
+}
+
+func (s *MemoryStore) UserProfile(ctx context.Context, userID domain.ID) (domain.UserProfile, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.profile, nil
+}
+
+func (s *MemoryStore) UpdateUserProfile(ctx context.Context, userID domain.ID, profile domain.UserProfile) (domain.UserProfile, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	profile.ID = s.profile.ID
+	profile.CreatedAt = s.profile.CreatedAt
+	if profile.Name == "" {
+		profile.Name = s.profile.Name
+	}
+	if profile.ProStatus == "" {
+		profile.ProStatus = s.profile.ProStatus
+	}
+	if profile.ReminderPolicy == "" {
+		profile.ReminderPolicy = s.profile.ReminderPolicy
+	}
+	s.profile = profile
+	return s.profile, nil
 }
 
 func (s *MemoryStore) Dashboard(ctx context.Context, userID domain.ID, day time.Time) (domain.DashboardSummary, error) {
@@ -368,6 +414,40 @@ func (s *MemoryStore) CreateHealingEntry(ctx context.Context, userID domain.ID, 
 	entry.CreatedAt = time.Now()
 	s.healing = append([]domain.HealingEntry{entry}, s.healing...)
 	return entry, nil
+}
+
+func (s *MemoryStore) Favorites(ctx context.Context, userID domain.ID, favoriteType string) ([]domain.Favorite, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	items := make([]domain.Favorite, 0)
+	for _, item := range s.favorites {
+		if favoriteType == "" || item.Type == favoriteType {
+			items = append(items, item)
+		}
+	}
+	return items, nil
+}
+
+func (s *MemoryStore) CreateFavorite(ctx context.Context, userID domain.ID, favorite domain.Favorite) (domain.Favorite, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.seq++
+	favorite.ID = domain.ID(fmt.Sprintf("favorite_%d", s.seq))
+	favorite.CreatedAt = time.Now()
+	s.favorites = append([]domain.Favorite{favorite}, s.favorites...)
+	return favorite, nil
+}
+
+func (s *MemoryStore) DeleteFavorite(ctx context.Context, userID domain.ID, id domain.ID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for index := range s.favorites {
+		if s.favorites[index].ID == id {
+			s.favorites = append(s.favorites[:index], s.favorites[index+1:]...)
+			return nil
+		}
+	}
+	return notFound("favorite", id)
 }
 
 func atToday(value string) time.Time {

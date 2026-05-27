@@ -5,14 +5,15 @@ import "time"
 type ID string
 
 type UserProfile struct {
-	ID             ID     `json:"id"`
-	Name           string `json:"name"`
-	School         string `json:"school"`
-	Stage          string `json:"stage"`
-	Subject        string `json:"subject"`
-	IsHeadTeacher  bool   `json:"isHeadTeacher"`
-	ProStatus      string `json:"proStatus"`
-	ReminderPolicy string `json:"reminderPolicy"`
+	ID             ID        `json:"id"`
+	Name           string    `json:"name"`
+	School         string    `json:"school"`
+	Stage          string    `json:"stage"`
+	Subject        string    `json:"subject"`
+	IsHeadTeacher  bool      `json:"isHeadTeacher"`
+	ProStatus      string    `json:"proStatus"`
+	ReminderPolicy string    `json:"reminderPolicy"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 type Course struct {
@@ -73,6 +74,15 @@ type HealingEntry struct {
 	Mood      string    `json:"mood"`
 	Content   string    `json:"content"`
 	AIReply   string    `json:"aiReply"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type Favorite struct {
+	ID        ID        `json:"id"`
+	Type      string    `json:"type"`
+	Title     string    `json:"title"`
+	Content   string    `json:"content"`
+	SourceID  *ID       `json:"sourceId,omitempty"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 

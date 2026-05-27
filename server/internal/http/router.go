@@ -37,6 +37,11 @@ func (s *Server) Routes() http.Handler {
 
 	r.Get("/healthz", s.health)
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/me", s.userProfile)
+		r.Put("/me", s.updateUserProfile)
+		r.Get("/me/favorites", s.favorites)
+		r.Post("/me/favorites", s.createFavorite)
+		r.Delete("/me/favorites/{id}", s.deleteFavorite)
 		r.Get("/dashboard", s.dashboard)
 		r.Get("/courses", s.courses)
 		r.Post("/courses", s.createCourse)
@@ -69,6 +74,39 @@ func (s *Server) Routes() http.Handler {
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "time": time.Now().Format(time.RFC3339)})
+}
+
+func (s *Server) userProfile(w http.ResponseWriter, r *http.Request) {
+	data, err := s.store.UserProfile(r.Context(), currentUserID(r))
+	writeResult(w, data, err)
+}
+
+func (s *Server) updateUserProfile(w http.ResponseWriter, r *http.Request) {
+	var payload domain.UserProfile
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	data, err := s.store.UpdateUserProfile(r.Context(), currentUserID(r), payload)
+	writeResult(w, data, err)
+}
+
+func (s *Server) favorites(w http.ResponseWriter, r *http.Request) {
+	data, err := s.store.Favorites(r.Context(), currentUserID(r), r.URL.Query().Get("type"))
+	writeResult(w, data, err)
+}
+
+func (s *Server) createFavorite(w http.ResponseWriter, r *http.Request) {
+	var payload domain.Favorite
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	data, err := s.store.CreateFavorite(r.Context(), currentUserID(r), payload)
+	writeResult(w, data, err)
+}
+
+func (s *Server) deleteFavorite(w http.ResponseWriter, r *http.Request) {
+	err := s.store.DeleteFavorite(r.Context(), currentUserID(r), pathID(r))
+	writeResult(w, map[string]bool{"ok": err == nil}, err)
 }
 
 func (s *Server) dashboard(w http.ResponseWriter, r *http.Request) {

@@ -10,6 +10,24 @@ curl "$API/healthz"
 curl -H "X-User-ID: $USER_ID" "$API/api/v1/dashboard?day=2026-05-27"
 ```
 
+## 我的资料与收藏
+
+```bash
+curl -H "X-User-ID: $USER_ID" "$API/api/v1/me"
+
+curl -X PUT "$API/api/v1/me" \
+  -H "Content-Type: application/json" \
+  -H "X-User-ID: $USER_ID" \
+  -d '{"name":"林小微","school":"微光实验小学","stage":"小学","subject":"语文","isHeadTeacher":true,"proStatus":"trial","reminderPolicy":"low_interrupt"}'
+
+curl -H "X-User-ID: $USER_ID" "$API/api/v1/me/favorites"
+
+curl -X POST "$API/api/v1/me/favorites" \
+  -H "Content-Type: application/json" \
+  -H "X-User-ID: $USER_ID" \
+  -d '{"type":"communication_template","title":"先共情再同步","content":"我理解您对孩子状态的担心，我先同步今天观察到的具体表现，再一起看下一步。"}'
+```
+
 ## 课程
 
 ```bash

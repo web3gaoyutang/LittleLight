@@ -17,6 +17,11 @@ export function request(path, options = {}) {
 }
 
 export const api = {
+  me: () => request('/me'),
+  updateMe: (data) => request('/me', { method: 'PUT', data }),
+  favorites: (type) => request(type ? `/me/favorites?type=${encodeURIComponent(type)}` : '/me/favorites'),
+  createFavorite: (data) => request('/me/favorites', { method: 'POST', data }),
+  deleteFavorite: (id) => request(`/me/favorites/${id}`, { method: 'DELETE' }),
   dashboard: (day) => request(day ? `/dashboard?day=${encodeURIComponent(day)}` : '/dashboard'),
   courses: (weekday) => request(`/courses?weekday=${weekday}`),
   course: (id) => request(`/courses/${id}`),

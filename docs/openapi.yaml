@@ -12,6 +12,7 @@ security:
   - DevUser: []
 tags:
   - name: Health
+  - name: Me
   - name: Dashboard
   - name: Courses
   - name: Reminders
@@ -32,6 +33,77 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /api/v1/me:
+    get:
+      tags: [Me]
+      summary: Get current teacher profile
+      responses:
+        "200":
+          description: Current teacher profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+    put:
+      tags: [Me]
+      summary: Update current teacher profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileInput"
+      responses:
+        "200":
+          description: Updated teacher profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+  /api/v1/me/favorites:
+    get:
+      tags: [Me]
+      summary: List favorites
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: Filter by favorite type.
+      responses:
+        "200":
+          description: Favorite list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Favorite"
+    post:
+      tags: [Me]
+      summary: Create a favorite item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteInput"
+      responses:
+        "200":
+          description: Created favorite
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Favorite"
+  /api/v1/me/favorites/{id}:
+    delete:
+      tags: [Me]
+      summary: Delete a favorite item
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
   /api/v1/dashboard:
     get:
       tags: [Dashboard]
@@ -476,6 +548,60 @@ components:
       properties:
         error:
           type: string
+    UserProfile:
+      allOf:
+        - $ref: "#/components/schemas/UserProfileInput"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/ID"
+            createdAt:
+              type: string
+              format: date-time
+    UserProfileInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        school:
+          type: string
+        stage:
+          type: string
+        subject:
+          type: string
+        isHeadTeacher:
+          type: boolean
+        proStatus:
+          type: string
+          enum: [free, trial, pro, expired]
+        reminderPolicy:
+          type: string
+          enum: [normal, low_interrupt]
+    Favorite:
+      allOf:
+        - $ref: "#/components/schemas/FavoriteInput"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/ID"
+            createdAt:
+              type: string
+              format: date-time
+    FavoriteInput:
+      type: object
+      required: [type, title, content]
+      properties:
+        type:
+          type: string
+          enum: [communication_template, ai_praise, class_feedback]
+        title:
+          type: string
+        content:
+          type: string
+        sourceId:
+          type: string
+          nullable: true
     Course:
       allOf:
         - $ref: "#/components/schemas/CourseInput"
