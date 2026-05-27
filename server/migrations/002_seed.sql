@@ -25,3 +25,16 @@ VALUES
 ('40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'praise', 'warm', '今天处理了课程和家长反馈。', '你已经稳稳接住了很多复杂信息，先给自己一点恢复空间。'),
 ('40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'breath', 'calm', '完成 1 分钟呼吸练习', '已完成一次短恢复。')
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO ai_generations (id, user_id, scenario, input, output, safety_label, token_usage)
+VALUES
+(
+  '50000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000001',
+  'praise',
+  '{"persona":"温柔前辈","content":"今天处理了课程和家长反馈。"}'::jsonb,
+  '{"draft":{"content":"你已经稳稳接住了很多复杂信息，先给自己一点恢复空间。"}}'::jsonb,
+  'self_care',
+  0
+)
+ON CONFLICT (id) DO NOTHING;

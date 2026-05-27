@@ -218,3 +218,37 @@ func TestMemoryStoreHealingEntries(t *testing.T) {
 		t.Fatalf("expected deleted healing entry to be gone")
 	}
 }
+
+func TestMemoryStoreAIGenerations(t *testing.T) {
+	store := NewMemoryStore()
+	ctx := context.Background()
+
+	generation, err := store.CreateAIGeneration(ctx, testUserID, domain.AIGeneration{
+		Scenario:    "parent_drafts",
+		Input:       map[string]any{"issue": "孩子连续三天没交作业"},
+		Output:      map[string]any{"drafts": []any{map[string]any{"content": "先同步观察，再给出建议。"}}},
+		SafetyLabel: "teacher_review_required",
+	})
+	if err != nil {
+		t.Fatalf("create ai generation: %v", err)
+	}
+	if generation.ID == "" || generation.CreatedAt.IsZero() {
+		t.Fatalf("unexpected ai generation: %+v", generation)
+	}
+
+	items, err := store.AIGenerations(ctx, testUserID, "parent_drafts")
+	if err != nil {
+		t.Fatalf("ai generations: %v", err)
+	}
+	if len(items) == 0 {
+		t.Fatalf("expected ai generations")
+	}
+
+	found, err := store.AIGeneration(ctx, testUserID, generation.ID)
+	if err != nil {
+		t.Fatalf("ai generation detail: %v", err)
+	}
+	if found.Scenario != "parent_drafts" || found.SafetyLabel != "teacher_review_required" {
+		t.Fatalf("unexpected ai generation detail: %+v", found)
+	}
+}

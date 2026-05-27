@@ -252,7 +252,7 @@ AI 生成记录。
 
 核心字段：
 
-- scenario：praise / parent_reply / communication_summary。
+- scenario：parent_drafts / praise。后续可扩展 communication_summary。
 - input：生成输入。
 - output：生成结果。
 - safety_label：安全标签。
@@ -497,6 +497,8 @@ AI 生成记录。
 
 返回多个版本：温和、正式、简短、坚定但礼貌。
 
+生成成功后写入 `ai_generations`，记录 `scenario=parent_drafts`、输入参数、候选草稿、`teacher_review_required` 安全标记。
+
 安全要求：
 
 - 输出默认需要老师确认。
@@ -516,7 +518,25 @@ AI 生成记录。
 }
 ```
 
-### 8.10 疗愈记录
+生成成功后写入 `ai_generations`，记录 `scenario=praise`、输入参数、生成内容和 `self_care` 安全标记。疗愈页保存 AI 夸夸时会再写入 `healing_entries`，两张表分别服务“AI 质量复盘”和“用户疗愈历史”。
+
+### 8.10 AI 生成审计
+
+`GET /api/v1/ai/generations`
+
+按当前用户返回最近 50 条 AI 生成记录，支持 `scenario=parent_drafts|praise` 过滤。
+
+`GET /api/v1/ai/generations/{id}`
+
+返回单条 AI 生成记录，包含输入、输出、安全标签、token 用量和创建时间。
+
+用途：
+
+- 质量复盘：检查家校沟通草稿是否符合安全策略。
+- 成本统计：后续真实模型接入后记录 token 用量。
+- 素材沉淀：老师可从生成结果中收藏常用模板或夸夸语。
+
+### 8.11 疗愈记录
 
 `GET /api/v1/healing/entries`
 
@@ -568,7 +588,7 @@ type AIProvider interface {
 
 - 敏感家校沟通输出必须保留 `teacher_review_required` 标签。
 - AI 不直接发送消息给家长。
-- 所有 AI 生成都应落表，便于质量复盘和成本统计。
+- 所有 AI 生成都写入 `ai_generations`，便于质量复盘和成本统计。
 - Prompt 中必须禁止攻击性、污名化、绝对化表达。
 
 ### 10.3 成本策略
@@ -610,7 +630,7 @@ type AIProvider interface {
 - 日程：`GET/POST/PUT/DELETE /courses`、`GET/POST/PUT/DELETE /reminders`
 - 沟通：`GET/POST/PUT/DELETE /parents`、`GET/POST/PUT/DELETE /communication-records`、`POST /ai/parent-drafts`
 - 疗愈：`GET/POST/DELETE /healing/entries`、`POST /ai/praise`
-- 我的：`GET/PUT /me`、`GET/POST/DELETE /me/favorites`
+- 我的：`GET/PUT /me`、`GET/POST/DELETE /me/favorites`、`GET /ai/generations`
 
 ## 12. 部署设计
 

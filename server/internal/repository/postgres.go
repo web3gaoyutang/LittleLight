@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -552,6 +553,71 @@ func (s *PostgresStore) DeleteHealingEntry(ctx context.Context, userID domain.ID
 	return nil
 }
 
+func (s *PostgresStore) AIGenerations(ctx context.Context, userID domain.ID, scenario string) ([]domain.AIGeneration, error) {
+	query := `
+		SELECT id::text, scenario, input, output, safety_label, token_usage, created_at
+		FROM ai_generations
+		WHERE user_id = $1`
+	args := []any{string(userID)}
+	if scenario != "" {
+		query += " AND scenario = $2"
+		args = append(args, scenario)
+	}
+	query += " ORDER BY created_at DESC LIMIT 50"
+	rows, err := s.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.AIGeneration, 0)
+	for rows.Next() {
+		item, err := scanAIGeneration(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) AIGeneration(ctx context.Context, userID domain.ID, id domain.ID) (domain.AIGeneration, error) {
+	row := s.pool.QueryRow(ctx, `
+		SELECT id::text, scenario, input, output, safety_label, token_usage, created_at
+		FROM ai_generations
+		WHERE user_id = $1 AND id = $2`, string(userID), string(id))
+	item, err := scanAIGeneration(row)
+	if isNoRows(err) {
+		return domain.AIGeneration{}, notFound("ai generation", id)
+	}
+	return item, err
+}
+
+func (s *PostgresStore) CreateAIGeneration(ctx context.Context, userID domain.ID, generation domain.AIGeneration) (domain.AIGeneration, error) {
+	if generation.Input == nil {
+		generation.Input = map[string]any{}
+	}
+	if generation.Output == nil {
+		generation.Output = map[string]any{}
+	}
+	if generation.SafetyLabel == "" {
+		generation.SafetyLabel = "teacher_review_required"
+	}
+	input, err := json.Marshal(generation.Input)
+	if err != nil {
+		return domain.AIGeneration{}, err
+	}
+	output, err := json.Marshal(generation.Output)
+	if err != nil {
+		return domain.AIGeneration{}, err
+	}
+	err = s.pool.QueryRow(ctx, `
+		INSERT INTO ai_generations (user_id, scenario, input, output, safety_label, token_usage)
+		VALUES ($1, $2, $3::jsonb, $4::jsonb, $5, $6)
+		RETURNING id::text, created_at`, string(userID), generation.Scenario, string(input), string(output), generation.SafetyLabel, generation.TokenUsage).
+		Scan(&generation.ID, &generation.CreatedAt)
+	return generation, err
+}
+
 func (s *PostgresStore) Favorites(ctx context.Context, userID domain.ID, favoriteType string) ([]domain.Favorite, error) {
 	query := `
 		SELECT id::text, type, title, content, source_id::text, created_at
@@ -639,6 +705,31 @@ func nullableTime(value time.Time) any {
 
 func isNoRows(err error) bool {
 	return errors.Is(err, sql.ErrNoRows) || errors.Is(err, pgx.ErrNoRows)
+}
+
+type aiGenerationScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanAIGeneration(row aiGenerationScanner) (domain.AIGeneration, error) {
+	var item domain.AIGeneration
+	var inputRaw, outputRaw []byte
+	if err := row.Scan(&item.ID, &item.Scenario, &inputRaw, &outputRaw, &item.SafetyLabel, &item.TokenUsage, &item.CreatedAt); err != nil {
+		return domain.AIGeneration{}, err
+	}
+	item.Input = map[string]any{}
+	if len(inputRaw) > 0 {
+		if err := json.Unmarshal(inputRaw, &item.Input); err != nil {
+			return domain.AIGeneration{}, err
+		}
+	}
+	item.Output = map[string]any{}
+	if len(outputRaw) > 0 {
+		if err := json.Unmarshal(outputRaw, &item.Output); err != nil {
+			return domain.AIGeneration{}, err
+		}
+	}
+	return item, nil
 }
 
 var _ Store = (*PostgresStore)(nil)

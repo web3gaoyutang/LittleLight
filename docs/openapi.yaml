@@ -443,7 +443,6 @@ paths:
     post:
       tags: [AI]
       summary: Generate parent communication drafts
-      security: []
       requestBody:
         required: true
         content:
@@ -463,7 +462,6 @@ paths:
     post:
       tags: [AI]
       summary: Generate an AI praise sentence
-      security: []
       requestBody:
         required: true
         content:
@@ -477,6 +475,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AIDraft"
+  /api/v1/ai/generations:
+    get:
+      tags: [AI]
+      summary: List AI generation audit records
+      parameters:
+        - name: scenario
+          in: query
+          schema:
+            type: string
+            enum: [parent_drafts, praise]
+          description: Filter by AI generation scenario.
+      responses:
+        "200":
+          description: AI generation audit record list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AIGeneration"
+  /api/v1/ai/generations/{id}:
+    get:
+      tags: [AI]
+      summary: Get an AI generation audit record
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: AI generation audit record detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIGeneration"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/healing/entries:
     get:
       tags: [Healing]
@@ -822,6 +855,27 @@ components:
           type: string
         safety:
           type: string
+    AIGeneration:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        scenario:
+          type: string
+          enum: [parent_drafts, praise]
+        input:
+          type: object
+          additionalProperties: true
+        output:
+          type: object
+          additionalProperties: true
+        safetyLabel:
+          type: string
+        tokenUsage:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
     ParentDraftRequest:
       type: object
       required: [issue]

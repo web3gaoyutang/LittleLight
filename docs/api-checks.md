@@ -88,12 +88,18 @@ curl -X POST "$API/api/v1/communication-records" \
 
 ```bash
 curl -X POST "$API/api/v1/ai/parent-drafts" \
+  -H "X-User-ID: $USER_ID" \
   -H "Content-Type: application/json" \
   -d '{"issue":"孩子最近课堂专注度下降","parentStyle":"容易焦虑","tone":"温和"}'
 
 curl -X POST "$API/api/v1/ai/praise" \
+  -H "X-User-ID: $USER_ID" \
   -H "Content-Type: application/json" \
   -d '{"persona":"温柔前辈","content":"今天课很多，还处理了家长反馈"}'
+
+curl -H "X-User-ID: $USER_ID" "$API/api/v1/ai/generations"
+curl -H "X-User-ID: $USER_ID" "$API/api/v1/ai/generations?scenario=praise"
+curl -H "X-User-ID: $USER_ID" "$API/api/v1/ai/generations/{id}"
 ```
 
 ## 疗愈记录

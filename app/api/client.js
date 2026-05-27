@@ -45,6 +45,8 @@ export const api = {
   createRecord: (data) => request('/communication-records', { method: 'POST', data }),
   updateRecord: (id, data) => request(`/communication-records/${id}`, { method: 'PUT', data }),
   deleteRecord: (id) => request(`/communication-records/${id}`, { method: 'DELETE' }),
+  aiGenerations: (scenario) => request(scenario ? `/ai/generations?scenario=${encodeURIComponent(scenario)}` : '/ai/generations'),
+  aiGeneration: (id) => request(`/ai/generations/${id}`),
   parentDrafts: (data) => request('/ai/parent-drafts', { method: 'POST', data }),
   praise: (data) => request('/ai/praise', { method: 'POST', data }),
   healingEntries: (type) => request(type ? `/healing/entries?type=${encodeURIComponent(type)}` : '/healing/entries'),

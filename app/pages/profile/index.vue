@@ -43,6 +43,19 @@
     </view>
 
     <view class="section-head row between">
+      <text class="section-title">AI 生成记录</text>
+      <text class="caption">{{ aiLogs.length }} 条</text>
+    </view>
+    <view v-for="log in aiLogs" :key="log.id" class="card">
+      <view class="row between">
+        <text class="tag">{{ scenarioText(log.scenario) }}</text>
+        <text class="caption">{{ formatTime(log.createdAt) }}</text>
+      </view>
+      <text class="body">{{ outputPreview(log) }}</text>
+      <text class="caption block">安全标记：{{ log.safetyLabel }}</text>
+    </view>
+
+    <view class="section-head row between">
       <text class="section-title">数据与权益</text>
       <button class="ghost-btn small" @tap="showBenefits">查看权益</button>
     </view>
@@ -71,6 +84,7 @@ import { showToast } from '../../utils/ui'
 
 const profile = ref({})
 const favorites = ref([])
+const aiLogs = ref([])
 
 const avatarText = computed(() => (profile.value.name || '微').slice(0, 1))
 const roleText = computed(() => profile.value.isHeadTeacher ? `${profile.value.stage || '学段'}班主任` : (profile.value.stage || '任课老师'))
@@ -82,6 +96,7 @@ onShow(load)
 async function load() {
   profile.value = await api.me()
   favorites.value = await api.favorites()
+  aiLogs.value = await api.aiGenerations()
 }
 
 async function editProfile() {
@@ -132,6 +147,25 @@ function renewPro() {
 
 function favoriteTypeText(type) {
   return ({ communication_template: '沟通模板', ai_praise: 'AI夸夸', class_feedback: '班级反馈' })[type] || '素材'
+}
+
+function scenarioText(scenario) {
+  return ({ parent_drafts: '家校草稿', praise: 'AI夸夸' })[scenario] || 'AI 生成'
+}
+
+function outputPreview(log) {
+  const output = log.output || {}
+  if (output.content) return output.content
+  if (output.draft?.content) return output.draft.content
+  if (Array.isArray(output.drafts) && output.drafts[0]?.content) return output.drafts[0].content
+  return '已生成内容，进入详情后可做质量复盘。'
+}
+
+function formatTime(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 </script>
 

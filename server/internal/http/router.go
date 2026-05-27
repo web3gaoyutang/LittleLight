@@ -65,6 +65,8 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/communication-records/{id}", s.communicationRecord)
 		r.Put("/communication-records/{id}", s.updateCommunicationRecord)
 		r.Delete("/communication-records/{id}", s.deleteCommunicationRecord)
+		r.Get("/ai/generations", s.aiGenerations)
+		r.Get("/ai/generations/{id}", s.aiGeneration)
 		r.Post("/ai/parent-drafts", s.parentDrafts)
 		r.Post("/ai/praise", s.praise)
 		r.Get("/healing/entries", s.healingEntries)
@@ -344,6 +346,14 @@ func (s *Server) parentDrafts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data, err := s.ai.GenerateParentDrafts(r.Context(), payload)
+	if err == nil {
+		_, err = s.store.CreateAIGeneration(r.Context(), currentUserID(r), domain.AIGeneration{
+			Scenario:    "parent_drafts",
+			Input:       map[string]any{"issue": payload.Issue, "parentStyle": payload.ParentStyle, "tone": payload.Tone, "studentName": payload.StudentName},
+			Output:      map[string]any{"drafts": data},
+			SafetyLabel: "teacher_review_required",
+		})
+	}
 	writeResult(w, data, err)
 }
 
@@ -353,6 +363,24 @@ func (s *Server) praise(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data, err := s.ai.GeneratePraise(r.Context(), payload)
+	if err == nil {
+		_, err = s.store.CreateAIGeneration(r.Context(), currentUserID(r), domain.AIGeneration{
+			Scenario:    "praise",
+			Input:       map[string]any{"persona": payload.Persona, "content": payload.Content, "mood": payload.Mood},
+			Output:      map[string]any{"draft": data},
+			SafetyLabel: data.Safety,
+		})
+	}
+	writeResult(w, data, err)
+}
+
+func (s *Server) aiGenerations(w http.ResponseWriter, r *http.Request) {
+	data, err := s.store.AIGenerations(r.Context(), currentUserID(r), r.URL.Query().Get("scenario"))
+	writeResult(w, data, err)
+}
+
+func (s *Server) aiGeneration(w http.ResponseWriter, r *http.Request) {
+	data, err := s.store.AIGeneration(r.Context(), currentUserID(r), pathID(r))
 	writeResult(w, data, err)
 }
 

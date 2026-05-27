@@ -42,6 +42,9 @@ type Store interface {
 	HealingEntry(ctx context.Context, userID domain.ID, id domain.ID) (domain.HealingEntry, error)
 	CreateHealingEntry(ctx context.Context, userID domain.ID, entry domain.HealingEntry) (domain.HealingEntry, error)
 	DeleteHealingEntry(ctx context.Context, userID domain.ID, id domain.ID) error
+	AIGenerations(ctx context.Context, userID domain.ID, scenario string) ([]domain.AIGeneration, error)
+	AIGeneration(ctx context.Context, userID domain.ID, id domain.ID) (domain.AIGeneration, error)
+	CreateAIGeneration(ctx context.Context, userID domain.ID, generation domain.AIGeneration) (domain.AIGeneration, error)
 	Favorites(ctx context.Context, userID domain.ID, favoriteType string) ([]domain.Favorite, error)
 	CreateFavorite(ctx context.Context, userID domain.ID, favorite domain.Favorite) (domain.Favorite, error)
 	DeleteFavorite(ctx context.Context, userID domain.ID, id domain.ID) error
@@ -54,6 +57,7 @@ type MemoryStore struct {
 	parents   []domain.ParentProfile
 	records   []domain.CommunicationRecord
 	healing   []domain.HealingEntry
+	aiLogs    []domain.AIGeneration
 	favorites []domain.Favorite
 	profile   domain.UserProfile
 	seq       int64
@@ -91,6 +95,9 @@ func NewMemoryStore() *MemoryStore {
 		healing: []domain.HealingEntry{
 			{ID: "healing_seed_1", Type: "praise", Mood: "warm", Content: "今天处理了课程和家长反馈。", AIReply: "你已经稳稳接住了很多复杂信息，先给自己一点恢复空间。", CreatedAt: now.Add(-2 * time.Hour)},
 			{ID: "healing_seed_2", Type: "breath", Mood: "calm", Content: "完成 1 分钟呼吸练习", AIReply: "已完成一次短恢复。", CreatedAt: now.Add(-4 * time.Hour)},
+		},
+		aiLogs: []domain.AIGeneration{
+			{ID: "ai_generation_seed_1", Scenario: "praise", Input: map[string]any{"persona": "温柔前辈", "content": "今天处理了课程和家长反馈。"}, Output: map[string]any{"content": "你已经稳稳接住了很多复杂信息，先给自己一点恢复空间。"}, SafetyLabel: "self_care", TokenUsage: 0, CreatedAt: now.Add(-2 * time.Hour)},
 		},
 		favorites: []domain.Favorite{
 			{ID: "favorite_reply_1", Type: "communication_template", Title: "先肯定再建议", Content: "先同步孩子已经做到的部分，再给出一个可执行的小建议。", CreatedAt: now},
@@ -465,6 +472,48 @@ func (s *MemoryStore) DeleteHealingEntry(ctx context.Context, userID domain.ID, 
 		}
 	}
 	return notFound("healing entry", id)
+}
+
+func (s *MemoryStore) AIGenerations(ctx context.Context, userID domain.ID, scenario string) ([]domain.AIGeneration, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	items := make([]domain.AIGeneration, 0)
+	for _, item := range s.aiLogs {
+		if scenario == "" || item.Scenario == scenario {
+			items = append(items, item)
+		}
+	}
+	return items, nil
+}
+
+func (s *MemoryStore) AIGeneration(ctx context.Context, userID domain.ID, id domain.ID) (domain.AIGeneration, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	for _, item := range s.aiLogs {
+		if item.ID == id {
+			return item, nil
+		}
+	}
+	return domain.AIGeneration{}, notFound("ai generation", id)
+}
+
+func (s *MemoryStore) CreateAIGeneration(ctx context.Context, userID domain.ID, generation domain.AIGeneration) (domain.AIGeneration, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.seq++
+	generation.ID = domain.ID(fmt.Sprintf("ai_generation_%d", s.seq))
+	generation.CreatedAt = time.Now()
+	if generation.Input == nil {
+		generation.Input = map[string]any{}
+	}
+	if generation.Output == nil {
+		generation.Output = map[string]any{}
+	}
+	if generation.SafetyLabel == "" {
+		generation.SafetyLabel = "teacher_review_required"
+	}
+	s.aiLogs = append([]domain.AIGeneration{generation}, s.aiLogs...)
+	return generation, nil
 }
 
 func (s *MemoryStore) Favorites(ctx context.Context, userID domain.ID, favoriteType string) ([]domain.Favorite, error) {

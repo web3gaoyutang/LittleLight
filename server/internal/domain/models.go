@@ -95,6 +95,16 @@ type AIDraft struct {
 	Safety   string `json:"safety"`
 }
 
+type AIGeneration struct {
+	ID          ID             `json:"id"`
+	Scenario    string         `json:"scenario"`
+	Input       map[string]any `json:"input"`
+	Output      map[string]any `json:"output"`
+	SafetyLabel string         `json:"safetyLabel"`
+	TokenUsage  int            `json:"tokenUsage"`
+	CreatedAt   time.Time      `json:"createdAt"`
+}
+
 type DashboardSummary struct {
 	TodayLabel      string          `json:"todayLabel"`
 	CoursesCount    int             `json:"coursesCount"`
