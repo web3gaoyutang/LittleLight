@@ -22,7 +22,7 @@ npm install
 npm run dev:h5
 ```
 
-完整技术文档见：`docs/engineering-technical-design.md`。
+完整技术文档见：`docs/engineering-technical-design.md`。机器可读 API 契约见：`docs/openapi.yaml`。部署运行手册见：`docs/deployment-runbook.md`。
 
 ## 当前能力
 

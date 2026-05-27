@@ -45,6 +45,8 @@ LittleLight/
     nginx/default.conf         # H5 静态资源与 API 反向代理配置
   docs/
     engineering-technical-design.md
+    openapi.yaml
+    deployment-runbook.md
     glimmer-teacher-product-design-spec.md
     teacher-healing-management-prd.md
   prototype/                   # H5 原型与视觉参考
@@ -295,6 +297,8 @@ AI 生成记录。
 基础路径：`/api/v1`
 
 开发阶段鉴权：所有业务接口支持请求头 `X-User-ID`。未传时默认使用种子用户 `00000000-0000-0000-0000-000000000001`。正式登录接入后，该中间件应替换为 JWT / Session 校验。
+
+机器可读契约：`docs/openapi.yaml`。后端路由、前端 `app/api/client.js` 和手工检查清单应以该文件保持一致。
 
 ### 8.1 健康检查
 

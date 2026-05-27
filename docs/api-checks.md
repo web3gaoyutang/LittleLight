@@ -1,6 +1,6 @@
 # API 手工检查示例
 
-以下命令默认服务运行在 `http://localhost:8080`，开发用户通过 `X-User-ID` 指定。
+以下命令默认服务运行在 `http://localhost:8080`，开发用户通过 `X-User-ID` 指定。完整 API 契约见 `docs/openapi.yaml`。
 
 ```bash
 export API=http://localhost:8080
