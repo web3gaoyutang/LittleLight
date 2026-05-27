@@ -154,6 +154,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Course"
+  /api/v1/courses/imports:
+    post:
+      tags: [Courses]
+      summary: Import courses from .xlsx or .csv
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Course import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
   /api/v1/courses/{id}:
     get:
       tags: [Courses]
@@ -327,6 +349,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ParentProfile"
+  /api/v1/parents/imports:
+    post:
+      tags: [Parents]
+      summary: Import parent profiles from .xlsx or .csv
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Parent profile import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
   /api/v1/parents/{id}:
     get:
       tags: [Parents]
@@ -679,6 +723,17 @@ components:
         sourceId:
           type: string
           nullable: true
+    ImportResult:
+      type: object
+      properties:
+        imported:
+          type: integer
+        skipped:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
     Course:
       allOf:
         - $ref: "#/components/schemas/CourseInput"

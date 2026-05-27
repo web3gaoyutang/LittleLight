@@ -3,6 +3,8 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -45,6 +47,7 @@ func (s *Server) Routes() http.Handler {
 		r.Get("/dashboard", s.dashboard)
 		r.Get("/courses", s.courses)
 		r.Post("/courses", s.createCourse)
+		r.Post("/courses/imports", s.importCourses)
 		r.Get("/courses/{id}", s.course)
 		r.Put("/courses/{id}", s.updateCourse)
 		r.Delete("/courses/{id}", s.deleteCourse)
@@ -57,6 +60,7 @@ func (s *Server) Routes() http.Handler {
 		r.Post("/reminders/{id}/snooze", s.snoozeReminder)
 		r.Get("/parents", s.parents)
 		r.Post("/parents", s.createParent)
+		r.Post("/parents/imports", s.importParents)
 		r.Get("/parents/{id}", s.parent)
 		r.Put("/parents/{id}", s.updateParent)
 		r.Delete("/parents/{id}", s.deleteParent)
@@ -177,6 +181,27 @@ func (s *Server) deleteCourse(w http.ResponseWriter, r *http.Request) {
 		s.invalidateDashboard(r, userID)
 	}
 	writeResult(w, map[string]bool{"ok": err == nil}, err)
+}
+
+func (s *Server) importCourses(w http.ResponseWriter, r *http.Request) {
+	file, filename, ok := readUpload(w, r)
+	if !ok {
+		return
+	}
+	courses, result := service.ParseCoursesImport(filename, file)
+	userID := currentUserID(r)
+	for _, course := range courses {
+		if _, err := s.store.CreateCourse(r.Context(), userID, course); err != nil {
+			result.Skipped++
+			result.Errors = append(result.Errors, fmt.Sprintf("%s 导入失败：%v", course.Title, err))
+			continue
+		}
+		result.Imported++
+	}
+	if result.Imported > 0 {
+		s.invalidateDashboard(r, userID)
+	}
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (s *Server) reminders(w http.ResponseWriter, r *http.Request) {
@@ -300,6 +325,27 @@ func (s *Server) deleteParent(w http.ResponseWriter, r *http.Request) {
 		s.invalidateDashboard(r, userID)
 	}
 	writeResult(w, map[string]bool{"ok": err == nil}, err)
+}
+
+func (s *Server) importParents(w http.ResponseWriter, r *http.Request) {
+	file, filename, ok := readUpload(w, r)
+	if !ok {
+		return
+	}
+	parents, result := service.ParseParentsImport(filename, file)
+	userID := currentUserID(r)
+	for _, parent := range parents {
+		if _, err := s.store.CreateParent(r.Context(), userID, parent); err != nil {
+			result.Skipped++
+			result.Errors = append(result.Errors, fmt.Sprintf("%s 导入失败：%v", parent.StudentName, err))
+			continue
+		}
+		result.Imported++
+	}
+	if result.Imported > 0 {
+		s.invalidateDashboard(r, userID)
+	}
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (s *Server) communicationRecords(w http.ResponseWriter, r *http.Request) {
@@ -446,6 +492,26 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
 		return false
 	}
 	return true
+}
+
+func readUpload(w http.ResponseWriter, r *http.Request) ([]byte, string, bool) {
+	r.Body = http.MaxBytesReader(w, r.Body, 5<<20)
+	if err := r.ParseMultipartForm(5 << 20); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "invalid upload", "detail": err.Error()})
+		return nil, "", false
+	}
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "missing file field"})
+		return nil, "", false
+	}
+	defer file.Close()
+	data, err := io.ReadAll(file)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{"error": "read upload failed", "detail": err.Error()})
+		return nil, "", false
+	}
+	return data, header.Filename, true
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {

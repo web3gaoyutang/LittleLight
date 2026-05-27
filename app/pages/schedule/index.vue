@@ -17,7 +17,7 @@
 
     <view class="section-head row between">
       <text class="section-title">本周日程</text>
-      <button class="ghost-btn small" @tap="importSchedule">导入 Excel 课表</button>
+      <button class="ghost-btn small" @tap="importSchedule">导入课表</button>
     </view>
     <view class="section-head row between compact">
       <text class="caption">当日课程</text>
@@ -131,8 +131,18 @@ async function removeReminder(id) {
 function importSchedule() {
   uni.chooseFile({
     count: 1,
-    extension: ['.xlsx', '.xls'],
-    success: () => showToast('已选择 Excel，后续将进入导入确认')
+    extension: ['.xlsx', '.csv'],
+    success: async (res) => {
+      const file = res.tempFiles?.[0]
+      const uploadFile = file?.path || file?.file || file
+      if (!uploadFile) {
+        showToast('未读取到文件')
+        return
+      }
+      const result = await api.importCourses(uploadFile)
+      showToast(`已导入 ${result.imported || 0} 条课表，跳过 ${result.skipped || 0} 条`)
+      await load()
+    }
   })
 }
 

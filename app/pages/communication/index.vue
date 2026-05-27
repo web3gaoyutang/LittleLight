@@ -29,7 +29,10 @@
 
     <view class="section-head row between">
       <text class="section-title">重点关注</text>
-      <button class="primary-btn small" @tap="addParent">新增家长</button>
+      <view class="row action-row">
+        <button class="ghost-btn small" @tap="importParents">导入名单</button>
+        <button class="primary-btn small" @tap="addParent">新增家长</button>
+      </view>
     </view>
     <view v-for="parent in parents" :key="parent.id" class="card" @tap="selectParent(parent)">
       <view class="row between">
@@ -106,6 +109,24 @@ async function addParent() {
   parents.value.unshift(parent)
   activeParent.value = parent
   showToast('已新增家长档案')
+}
+
+function importParents() {
+  uni.chooseFile({
+    count: 1,
+    extension: ['.xlsx', '.csv'],
+    success: async (res) => {
+      const file = res.tempFiles?.[0]
+      const uploadFile = file?.path || file?.file || file
+      if (!uploadFile) {
+        showToast('未读取到文件')
+        return
+      }
+      const result = await api.importParents(uploadFile)
+      showToast(`已导入 ${result.imported || 0} 位家长，跳过 ${result.skipped || 0} 条`)
+      await load()
+    }
+  })
 }
 
 async function editParent(parent) {

@@ -38,6 +38,10 @@ curl -X POST "$API/api/v1/courses" \
   -H "X-User-ID: $USER_ID" \
   -d '{"title":"心理健康","className":"高二(3)班","location":"教学楼 B 座 402 室","weekday":3,"startTime":"09:30","endTime":"10:15","note":"情绪识别与压力调节"}'
 
+curl -X POST "$API/api/v1/courses/imports" \
+  -H "X-User-ID: $USER_ID" \
+  -F "file=@./courses.csv"
+
 curl -X PUT "$API/api/v1/courses/{id}" \
   -H "Content-Type: application/json" \
   -H "X-User-ID: $USER_ID" \
@@ -75,6 +79,10 @@ curl -X POST "$API/api/v1/parents" \
   -H "Content-Type: application/json" \
   -H "X-User-ID: $USER_ID" \
   -d '{"studentName":"林晓晓","className":"高二(5)班","parentName":"林晓晓妈妈","relationship":"母亲","contact":"13800000000","communicationStyle":"比较敏感","riskLevel":"medium","importantNotes":"近期睡眠不足","nextAction":"同步课堂参与中的积极信号"}'
+
+curl -X POST "$API/api/v1/parents/imports" \
+  -H "X-User-ID: $USER_ID" \
+  -F "file=@./parents.csv"
 
 curl -H "X-User-ID: $USER_ID" "$API/api/v1/communication-records?parentId={parentId}"
 
