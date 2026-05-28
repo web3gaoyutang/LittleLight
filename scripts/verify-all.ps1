@@ -105,6 +105,12 @@ Invoke-Step "OpenAPI contract shape" {
     Assert-FileContains -Path $openapi -Pattern "(?m)^\s{4}Course:" -Message "Course schema is missing from OpenAPI."
 }
 
+Invoke-Step "H5 API environment shape" {
+    $appEnv = Join-Path $RepoRoot "app\.env.example"
+    Assert-FileContains -Path $appEnv -Pattern "(?m)^VITE_API_BASE_URL=/api/v1$" -Message "H5 default API base should stay same-origin for Docker nginx proxy."
+    Assert-FileContains -Path $appEnv -Pattern "(?m)^VITE_DEV_API_TARGET=http://localhost:8080$" -Message "H5 dev API proxy target is missing."
+}
+
 Invoke-Step "Docker Compose config" {
     docker compose -f $ComposeFile config --quiet
 }

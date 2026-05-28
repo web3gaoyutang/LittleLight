@@ -137,7 +137,7 @@ npm ci
 npm run dev:h5
 ```
 
-H5 默认端口在 `manifest.json` 中配置为 `5173`，并代理 `/api` 到 `http://localhost:8080`。
+H5 默认端口为 `5173`，客户端默认请求同源 `/api/v1`。本地开发时 Vite 会把 `/api` 代理到 `VITE_DEV_API_TARGET`，未配置时默认为 `http://localhost:8080`；Docker H5 产物则通过 nginx 同源反向代理访问 API 容器，避免把本机 `localhost` 写进生产包。
 
 ### 4.3 后端本地开发
 

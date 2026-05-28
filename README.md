@@ -31,6 +31,8 @@ npm ci
 npm run dev:h5
 ```
 
+前端默认请求同源 `/api/v1`；本地开发代理目标可在 `app/.env` 中用 `VITE_DEV_API_TARGET` 覆盖。
+
 完整技术文档见：`docs/engineering-technical-design.md`。机器可读 API 契约见：`docs/openapi.yaml`。部署运行手册见：`docs/deployment-runbook.md`。
 
 ## 当前能力
