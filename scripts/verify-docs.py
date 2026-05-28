@@ -39,6 +39,12 @@ CHECKS = {
         "down migration",
         "docker-build",
         "readyz",
+        "日志与排障",
+        "docker compose -f deploy/docker-compose.yml logs -f api",
+        "PostgreSQL unavailable",
+        "Redis unavailable",
+        "LLM parent drafts failed",
+        "H5 cannot reach API",
     ],
     "docs/database-schema.md": [
         "users",

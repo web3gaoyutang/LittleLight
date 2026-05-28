@@ -198,7 +198,95 @@ docker compose -f deploy/docker-compose.yml exec -T redis redis-cli FLUSHDB
 
 当前迁移脚本保持向前幂等，但还没有独立 down migration。涉及删字段、改字段类型、批量重写数据的变更必须先创建备份，并在发布说明中写明恢复步骤。
 
-## 10. 常用运维命令
+## 10. 日志与排障
+
+### 10.1 日志入口
+
+Go API 使用标准输出和标准错误输出记录运行日志；Docker Compose 环境中统一通过容器日志查看。常用入口：
+
+```bash
+docker compose -f deploy/docker-compose.yml logs -f api
+docker compose -f deploy/docker-compose.yml logs -f web
+docker compose -f deploy/docker-compose.yml logs -f postgres
+docker compose -f deploy/docker-compose.yml logs -f redis
+```
+
+API 启动日志应重点确认以下信号：
+
+- PostgreSQL connected：API 已连接持久化数据库。
+- migrations applied：SQL 迁移已按 `MIGRATIONS_DIR` 执行完成。
+- Redis connected：dashboard 缓存依赖可用。
+- listening：HTTP 服务已开始监听 `HTTP_ADDR`。
+
+如果 `APP_ENV=local` 且 PostgreSQL 不可用，API 会降级到内存仓库，便于本地先验证接口形态；如果 `APP_ENV=docker` 或 `APP_ENV=prod`，数据库连接或迁移失败会让 API 退出，避免部署环境静默丢失持久化能力。
+
+### 10.2 Readiness 诊断
+
+`/healthz` 只证明 API 进程仍可响应；依赖状态以 `/readyz` 为准：
+
+```bash
+curl http://localhost:8080/readyz
+curl http://localhost:8081/readyz
+```
+
+正常返回：
+
+```json
+{
+  "status": "ok",
+  "dependencies": {
+    "postgres": "ok",
+    "redis": "ok"
+  }
+}
+```
+
+如果 PostgreSQL 或 Redis 不可用，`/readyz` 会返回 `503`，并在 `dependencies` 中给出具体依赖错误。排查顺序建议为：先看 API 日志，再看对应依赖容器日志，最后进入容器做连接检查。
+
+### 10.3 常见故障
+
+PostgreSQL unavailable：
+
+```bash
+docker compose -f deploy/docker-compose.yml ps postgres
+docker compose -f deploy/docker-compose.yml logs -f postgres
+docker compose -f deploy/docker-compose.yml exec postgres psql -U littlelight -d littlelight -c "select 1;"
+```
+
+常见原因包括 `DATABASE_URL` 主机名错误、数据库容器未 healthy、数据卷权限异常、迁移 SQL 失败。Docker/Prod 环境中出现该问题时优先修复数据库或迁移，不建议切换到内存仓库。
+
+Redis unavailable：
+
+```bash
+docker compose -f deploy/docker-compose.yml ps redis
+docker compose -f deploy/docker-compose.yml logs -f redis
+docker compose -f deploy/docker-compose.yml exec redis redis-cli PING
+```
+
+Redis 只承载 dashboard 缓存和后续临时状态，不是业务事实来源。Redis 短暂异常会影响缓存命中和 readiness；数据以 PostgreSQL 为准。
+
+Migration failed：
+
+```bash
+docker compose -f deploy/docker-compose.yml logs -f api
+docker compose -f deploy/docker-compose.yml exec postgres psql -U littlelight -d littlelight -c "\dt"
+```
+
+确认 `MIGRATIONS_DIR` 是否指向 `/app/migrations`，确认镜像中是否包含 `server/migrations`，并检查新增 SQL 是否保持幂等。涉及破坏性结构变化时，先按备份章节导出 PostgreSQL。
+
+LLM parent drafts failed：
+
+API 调用真实 LLM 失败时会记录 `llm parent drafts failed` 或 `llm praise failed`，随后回退到本地 mock 生成，保证家校沟通草稿和 AI 夸夸主流程仍可验证。排查时只检查本地 `.env` 或部署密钥中的 `LLM_API_KEY`、`LLM_BASE_URL`、`LLM_MODEL`，不要把真实 key 写入 Git 跟踪文件。
+
+Docker Hub unavailable：
+
+如果构建阶段卡在基础镜像拉取或出现 `auth.docker.io` 超时，先在 `.env` 覆盖 `GO_IMAGE`、`NODE_IMAGE`、`NGINX_IMAGE`、`POSTGRES_IMAGE`、`REDIS_IMAGE` 为可访问镜像源；同时可运行 `.\scripts\verify-all.ps1 -IncludeDockerLogic -SkipH5Build` 验证 PostgreSQL、Redis 和 API 业务逻辑，完整镜像构建继续由 GitHub Actions 的 `docker-build` job 兜底。
+
+H5 cannot reach API：
+
+H5 开发环境先检查 `app/.env.example` 中的 `VITE_DEV_API_TARGET`，Docker 环境先检查 `deploy/nginx/default.conf` 是否代理 `/api/`、`/healthz`、`/readyz`。浏览器中访问 `http://localhost:8081/readyz` 应能透传 API readiness。
+
+## 11. 常用运维命令
 
 ```bash
 docker compose -f deploy/docker-compose.yml ps
@@ -214,7 +302,7 @@ docker compose -f deploy/docker-compose.yml down
 docker compose -f deploy/docker-compose.yml down -v
 ```
 
-## 11. CI 验证
+## 12. CI 验证
 
 GitHub Actions 会执行：
 
