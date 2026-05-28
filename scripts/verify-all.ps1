@@ -99,10 +99,7 @@ function Assert-LocalSecretsAreNotTracked {
 }
 
 Invoke-Step "OpenAPI contract shape" {
-    $openapi = Join-Path $RepoRoot "docs\openapi.yaml"
-    Assert-FileContains -Path $openapi -Pattern "(?m)^openapi:\s*3\." -Message "OpenAPI version header is missing."
-    Assert-FileContains -Path $openapi -Pattern "(?m)^\s{2}/api/v1/dashboard:" -Message "Dashboard path is missing from OpenAPI."
-    Assert-FileContains -Path $openapi -Pattern "(?m)^\s{4}Course:" -Message "Course schema is missing from OpenAPI."
+    python (Join-Path $RepoRoot "scripts\verify-docs.py")
 }
 
 Invoke-Step "H5 API environment shape" {

@@ -219,6 +219,7 @@ docker compose -f deploy/docker-compose.yml down -v
 GitHub Actions 会执行：
 
 - OpenAPI YAML 解析检查。
+- 文档覆盖检查，避免部署手册、数据库说明和关键环境示例漂移。
 - Docker Compose 配置解析检查。
 - Go 依赖下载和 `go test ./...`。
 - 前端 API client 请求封装测试。
