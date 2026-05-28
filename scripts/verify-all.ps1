@@ -111,6 +111,13 @@ Invoke-Step "H5 API environment shape" {
     Assert-FileContains -Path $appEnv -Pattern "(?m)^VITE_DEV_API_TARGET=http://localhost:8080$" -Message "H5 dev API proxy target is missing."
 }
 
+Invoke-Step "Backend env example shape" {
+    $envExample = Join-Path $RepoRoot ".env.example"
+    foreach ($key in @("APP_ENV", "HTTP_ADDR", "DATABASE_URL", "REDIS_ADDR", "REDIS_DB", "MIGRATIONS_DIR", "AI_PROVIDER", "LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL")) {
+        Assert-FileContains -Path $envExample -Pattern "(?m)^$key=" -Message "$key is missing from .env.example."
+    }
+}
+
 Invoke-Step "Docker Compose config" {
     docker compose -f $ComposeFile config --quiet
 }

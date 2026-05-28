@@ -102,7 +102,9 @@ LLM_MODEL=gpt-4o-mini
 脚本默认执行：
 
 - OpenAPI 契约关键结构检查。
+- H5 API 默认值和后端 `.env.example` 关键变量检查。
 - Docker Compose 配置解析。
+- Web 网关 readiness 配置检查。
 - Go 后端测试。
 - uni-app H5 生产构建。
 - 本地 `.env` 中的 LLM 配置未被写入 Git 跟踪文件检查。

@@ -724,7 +724,7 @@ Docker Compose 中：
 - 工程目录拆分：`app/`、`server/`、`deploy/`、`docs/`。
 - PostgreSQL repository 已接入，覆盖 Dashboard、课程、提醒、家长档案、沟通记录、疗愈记录。
 - 课程、提醒、家长档案、沟通记录已具备列表、详情、新增、编辑、删除等核心 CRUD；提醒额外支持完成和延后。
-- 后端单元测试初版已补充，覆盖 HTTP 路由、微信模拟登录、`X-User-ID` 开发鉴权、内存仓库 CRUD 和 AI 服务。
+- 后端单元测试初版已补充，覆盖配置加载、HTTP 路由、微信模拟登录、`X-User-ID` 开发鉴权、内存仓库 CRUD 和 AI 服务。
 - GitHub Actions 初版已补充，包含 OpenAPI 解析、Docker Compose 配置解析、Go 测试和 uni-app H5 构建。
 - Go/Node 依赖锁已补齐：`server/go.sum`、`app/package-lock.json` 已提交，CI 与 Docker Web 镜像使用锁文件进行可复现安装。
 - uni-app 五个 Tab 页面骨架，日程页已接入课程/待办增删改查入口，沟通页已接入家长档案、家长详情和沟通记录基础操作，我的页已接入教师资料与收藏素材管理。
@@ -737,7 +737,7 @@ Docker Compose 中：
 - Redis dashboard 缓存已接入，读取首页时优先查缓存，课程、提醒、家长写入成功后清理缓存。
 - API readiness 检查已接入：`/healthz` 表示进程存活，`/readyz` 会检查 PostgreSQL 与 Redis；Docker API 容器使用 `/readyz` 作为健康检查，H5 Web 容器等待 API healthy 后启动，并通过 nginx 暴露同源 `/healthz` 与 `/readyz`。
 - 本地逻辑验证脚本已补充并通过：PostgreSQL 与 Redis 由 Docker Compose 提供，本机 Go API 连接容器完成健康检查、业务写入查询、数据库落库和 Redis 缓存键验证。
-- 本地统一回归脚本已补充：`scripts/verify-all.ps1` 可串联 OpenAPI、Docker Compose、Go 测试、H5 构建、密钥入库检查，并可通过 `-IncludeDockerLogic` 串联 Docker 业务逻辑验证。
+- 本地统一回归脚本已补充：`scripts/verify-all.ps1` 可串联 OpenAPI、前后端环境示例、Docker Compose、Web 网关 readiness、Go 测试、H5 构建、密钥入库检查，并可通过 `-IncludeDockerLogic` 串联 Docker 业务逻辑验证。
 - 微信模拟登录已接入，前端“我的”页可发起模拟登录并保存登录态；HTTP 开发鉴权中间件支持 `X-User-ID` 并保留默认种子用户。
 - Excel/CSV 课表导入和班级名单导入已接入前端入口与后端解析接口；当前支持 `.xlsx` 与 `.csv`，暂不解析老式二进制 `.xls`。
 - 详细技术文档。
