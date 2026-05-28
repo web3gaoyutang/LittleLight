@@ -165,6 +165,14 @@ go run ./cmd/api
 | LLM_API_KEY | sk-xxx | OpenAI-compatible LLM API Key；只放本地 `.env` 或部署密钥，不提交仓库 |
 | LLM_BASE_URL | https://llmapi.example.com | OpenAI-compatible Base URL；服务会请求 `{LLM_BASE_URL}/v1/chat/completions` |
 | LLM_MODEL | gpt-4o-mini | LLM 模型名；未设置时使用默认值 |
+| GO_IMAGE | golang:1.22-alpine | Go API 构建阶段基础镜像，可替换为镜像代理或内网镜像 |
+| ALPINE_IMAGE | alpine:3.20 | Go API 运行阶段基础镜像 |
+| NODE_IMAGE | node:20-alpine | H5 构建阶段基础镜像 |
+| NGINX_IMAGE | nginx:1.27-alpine | H5 静态站点运行镜像 |
+| POSTGRES_IMAGE | postgres:16-alpine | PostgreSQL 服务镜像 |
+| REDIS_IMAGE | redis:7-alpine | Redis 服务镜像 |
+| GOPROXY | https://goproxy.cn,direct | Docker 构建 Go API 时使用的 Go module 代理 |
+| NPM_REGISTRY | https://registry.npmjs.org/ | Docker 构建 H5 时使用的 npm registry |
 
 ## 6. 核心领域模型
 

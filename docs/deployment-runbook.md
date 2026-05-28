@@ -19,6 +19,35 @@ docker compose -f deploy/docker-compose.yml up --build
 - `deploy/web.Dockerfile`：构建 uni-app H5，并用 nginx 托管 `dist` 静态资源。
 - `deploy/server.Dockerfile`：构建 Go API，并复制 `server/migrations` 到 `/app/migrations`。
 
+### 2.1 镜像源与弱网构建
+
+默认配置直接使用 Docker Hub 官方基础镜像。如果本机访问 Docker Hub 较慢或公司环境要求走内网镜像，可在仓库根目录 `.env` 中覆盖以下变量：
+
+```text
+GO_IMAGE=golang:1.22-alpine
+ALPINE_IMAGE=alpine:3.20
+NODE_IMAGE=node:20-alpine
+NGINX_IMAGE=nginx:1.27-alpine
+POSTGRES_IMAGE=postgres:16-alpine
+REDIS_IMAGE=redis:7-alpine
+GOPROXY=https://goproxy.cn,direct
+NPM_REGISTRY=https://registry.npmjs.org/
+```
+
+示例：如果已有内网 registry 镜像，可只替换镜像地址，不需要改 Dockerfile：
+
+```text
+GO_IMAGE=registry.example.com/library/golang:1.22-alpine
+NODE_IMAGE=registry.example.com/library/node:20-alpine
+NGINX_IMAGE=registry.example.com/library/nginx:1.27-alpine
+ALPINE_IMAGE=registry.example.com/library/alpine:3.20
+POSTGRES_IMAGE=registry.example.com/library/postgres:16-alpine
+REDIS_IMAGE=registry.example.com/library/redis:7-alpine
+NPM_REGISTRY=https://registry.npmmirror.com/
+```
+
+`.env` 已被 Git 忽略，可放本机真实镜像源、LLM 密钥和部署私有配置；`.env.example` 只保留安全默认值。
+
 ## 3. 健康检查
 
 ```bash

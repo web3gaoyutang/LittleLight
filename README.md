@@ -16,6 +16,9 @@
 # 启动 H5、API、PostgreSQL、Redis。若 Docker Hub 拉取基础镜像受限，可先用下面的本地逻辑验证。
 docker compose -f deploy/docker-compose.yml up --build
 
+# Docker Hub 访问较慢时，可在 .env 中覆盖 GO_IMAGE、NODE_IMAGE、NGINX_IMAGE、
+# ALPINE_IMAGE、POSTGRES_IMAGE、REDIS_IMAGE、GOPROXY、NPM_REGISTRY。
+
 # 使用 Docker 中的 PostgreSQL/Redis + 本机 Go API 做逻辑验证
 powershell -ExecutionPolicy Bypass -File .\scripts\verify-docker.ps1
 
@@ -35,6 +38,7 @@ npm run dev:h5
 - API 启动时会按 `MIGRATIONS_DIR` 自动执行 SQL 迁移，Docker 环境默认使用 `/app/migrations`。
 - `APP_ENV=local` 迁移失败时会降级到内存仓库；Docker/生产环境迁移失败会直接退出。
 - `deploy/docker-compose.yml` 可编排 H5 Web、API、PostgreSQL、Redis；H5 默认访问 `http://localhost:8081`。
+- Docker 基础镜像、Go 代理和 npm registry 支持通过 `.env` 覆盖，便于弱网或内网镜像环境构建。
 - API 提供 `/healthz` 进程健康检查和 `/readyz` 依赖就绪检查；Docker API 容器使用 `/readyz` 作为 healthcheck。
 - `.github/workflows/engineering-checks.yml` 包含 Go 测试和 H5 构建检查。
 

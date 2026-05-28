@@ -1,12 +1,16 @@
-FROM golang:1.22-alpine AS builder
+ARG GO_IMAGE=golang:1.22-alpine
+ARG ALPINE_IMAGE=alpine:3.20
+
+FROM ${GO_IMAGE} AS builder
 WORKDIR /src/server
-ENV GOPROXY=https://goproxy.cn,direct
+ARG GOPROXY=https://goproxy.cn,direct
+ENV GOPROXY=${GOPROXY}
 COPY server/go.mod server/go.sum ./
 RUN go mod download
 COPY server/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/littlelight-api ./cmd/api
 
-FROM alpine:3.20
+FROM ${ALPINE_IMAGE}
 RUN apk add --no-cache curl && adduser -D -g '' appuser
 WORKDIR /app
 COPY --from=builder /out/littlelight-api /app/littlelight-api
