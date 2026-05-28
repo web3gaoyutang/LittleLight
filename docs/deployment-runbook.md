@@ -221,6 +221,7 @@ GitHub Actions 会执行：
 - OpenAPI YAML 解析检查。
 - Docker Compose 配置解析检查。
 - Go 依赖下载和 `go test ./...`。
+- 前端 API client 请求封装测试。
 - uni-app H5 依赖锁安装和 `npm run build:h5`。
 - Go API 与 H5 Web Docker 镜像构建检查，不推送镜像。
 
