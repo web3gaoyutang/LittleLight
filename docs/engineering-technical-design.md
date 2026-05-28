@@ -724,8 +724,8 @@ Docker Compose 中：
 - 工程目录拆分：`app/`、`server/`、`deploy/`、`docs/`。
 - PostgreSQL repository 已接入，覆盖 Dashboard、课程、提醒、家长档案、沟通记录、疗愈记录。
 - 课程、提醒、家长档案、沟通记录已具备列表、详情、新增、编辑、删除等核心 CRUD；提醒额外支持完成和延后。
-- 后端单元测试初版已补充，覆盖内存仓库 CRUD 和 AI 服务。
-- GitHub Actions 初版已补充，包含 Go 测试和 uni-app H5 构建。
+- 后端单元测试初版已补充，覆盖 HTTP 路由、微信模拟登录、`X-User-ID` 开发鉴权、内存仓库 CRUD 和 AI 服务。
+- GitHub Actions 初版已补充，包含 OpenAPI 解析、Docker Compose 配置解析、Go 测试和 uni-app H5 构建。
 - Go/Node 依赖锁已补齐：`server/go.sum`、`app/package-lock.json` 已提交，CI 与 Docker Web 镜像使用锁文件进行可复现安装。
 - uni-app 五个 Tab 页面骨架，日程页已接入课程/待办增删改查入口，沟通页已接入家长档案、家长详情和沟通记录基础操作，我的页已接入教师资料与收藏素材管理。
 - Go API 服务骨架。

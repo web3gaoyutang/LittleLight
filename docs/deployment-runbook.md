@@ -130,6 +130,7 @@ docker compose -f deploy/docker-compose.yml down -v
 GitHub Actions 会执行：
 
 - OpenAPI YAML 解析检查。
+- Docker Compose 配置解析检查。
 - Go 依赖下载和 `go test ./...`。
 - uni-app H5 依赖锁安装和 `npm run build:h5`。
 

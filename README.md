@@ -40,7 +40,7 @@ npm run dev:h5
 - `deploy/docker-compose.yml` 可编排 H5 Web、API、PostgreSQL、Redis；H5 默认访问 `http://localhost:8081`。
 - Docker 基础镜像、Go 代理和 npm registry 支持通过 `.env` 覆盖，便于弱网或内网镜像环境构建。
 - API 提供 `/healthz` 进程健康检查和 `/readyz` 依赖就绪检查；Docker API 容器使用 `/readyz` 作为 healthcheck。
-- `.github/workflows/engineering-checks.yml` 包含 Go 测试和 H5 构建检查。
+- `.github/workflows/engineering-checks.yml` 包含 OpenAPI、Docker Compose 配置、Go 测试和 H5 构建检查。
 
 ## 本地环境说明
 
