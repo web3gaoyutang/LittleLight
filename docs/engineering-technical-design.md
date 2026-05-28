@@ -302,7 +302,7 @@ AI 生成记录。
 
 基础路径：`/api/v1`
 
-开发阶段鉴权：所有业务接口支持请求头 `X-User-ID`。未传时默认使用种子用户 `00000000-0000-0000-0000-000000000001`。正式登录接入后，该中间件应替换为 JWT / Session 校验。
+开发阶段鉴权：当前提供 `POST /api/v1/auth/wechat/mock` 作为微信模拟登录入口，返回模拟 `sessionToken`、`openId` 和当前教师资料；前端保存 `userId` 并在后续请求中携带 `X-User-ID`。未传时后端仍默认使用种子用户 `00000000-0000-0000-0000-000000000001`，便于接口调试。后续接入真实微信登录时，可保持前端调用形态不变，将 mock code 换成微信 code 并由后端换取 openid/session。
 
 机器可读契约：`docs/openapi.yaml`。后端路由、前端 `app/src/api/client.js` 和手工检查清单应以该文件保持一致。
 
@@ -687,7 +687,7 @@ Docker Compose 中：
 ### P0
 
 - 接入真实 PostgreSQL repository。当前已提供 `PostgresStore`，服务启动时 PostgreSQL 可用则使用持久化仓库，否则 fallback 到内存仓库。
-- 完成登录和用户鉴权。
+- 完成真实微信登录和用户鉴权；当前已完成微信模拟登录闭环。
 - 完成课程、提醒、家长档案、沟通记录 CRUD。
 - 完成 AI Provider 抽象和真实模型接入。
 - 完成 uni-app 页面接口联调。
@@ -728,14 +728,14 @@ Docker Compose 中：
 - H5 Web/API/Redis/PostgreSQL/Docker Compose 配置。
 - Redis dashboard 缓存已接入，读取首页时优先查缓存，课程、提醒、家长写入成功后清理缓存。
 - 本地逻辑验证脚本已补充并通过：PostgreSQL 与 Redis 由 Docker Compose 提供，本机 Go API 连接容器完成健康检查、业务写入查询、数据库落库和 Redis 缓存键验证。
-- HTTP 开发鉴权中间件已接入，支持 X-User-ID，并保留默认种子用户。
+- 微信模拟登录已接入，前端“我的”页可发起模拟登录并保存登录态；HTTP 开发鉴权中间件支持 `X-User-ID` 并保留默认种子用户。
 - Excel/CSV 课表导入和班级名单导入已接入前端入口与后端解析接口；当前支持 `.xlsx` 与 `.csv`，暂不解析老式二进制 `.xls`。
 - 详细技术文档。
 
 待完成：
 
 - 完整 Web/API Docker 镜像构建仍依赖 Docker Hub 基础镜像可拉取；若 `auth.docker.io` 网络不可用，先使用 `scripts/verify-docker.ps1` 验证数据库、缓存和后端业务逻辑。
-- 正式用户鉴权尚未接入，当前为开发鉴权中间件：`X-User-ID` 或默认种子用户。
+- 真实微信 code 换 session 尚未接入；当前为微信模拟登录 + `X-User-ID` 开发态。
 
 
 

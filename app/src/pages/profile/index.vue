@@ -20,6 +20,16 @@
       </view>
     </view>
 
+    <view class="card login-card">
+      <view class="row between">
+        <view>
+          <text class="section-title">微信模拟登录</text>
+          <text class="body block">{{ loginText }}</text>
+        </view>
+        <button class="primary-btn small" @tap="mockWechatLogin">{{ loginButtonText }}</button>
+      </view>
+    </view>
+
     <view class="material">
       <view class="row between">
         <text class="tag">素材</text>
@@ -85,18 +95,32 @@ import { showToast } from '../../utils/ui'
 const profile = ref({})
 const favorites = ref([])
 const aiLogs = ref([])
+const wechatSession = ref(null)
 
 const avatarText = computed(() => (profile.value.name || '微').slice(0, 1))
 const roleText = computed(() => profile.value.isHeadTeacher ? `${profile.value.stage || '学段'}班主任` : (profile.value.stage || '任课老师'))
 const proText = computed(() => ({ free: '免费版', trial: 'Pro 试用', pro: 'Pro 已开通', expired: 'Pro 已过期' })[profile.value.proStatus] || '免费版')
 const reminderText = computed(() => profile.value.reminderPolicy === 'low_interrupt' ? '低打扰提醒' : '普通提醒')
+const loginText = computed(() => wechatSession.value?.openId ? `已登录：${wechatSession.value.openId}` : '用于开发阶段模拟微信授权，后续替换为真实微信登录。')
+const loginButtonText = computed(() => wechatSession.value?.openId ? '重新登录' : '微信登录')
 
 onShow(load)
 
 async function load() {
+  wechatSession.value = api.currentWechatSession()
   profile.value = await api.me()
   favorites.value = await api.favorites()
   aiLogs.value = await api.aiGenerations()
+}
+
+async function mockWechatLogin() {
+  const session = await api.wechatMockLogin({
+    code: `dev-${Date.now()}`,
+    nickName: profile.value.name || '林小微'
+  })
+  wechatSession.value = session
+  profile.value = session.profile || profile.value
+  showToast('微信模拟登录成功')
 }
 
 async function editProfile() {
@@ -175,6 +199,7 @@ function formatTime(value) {
 .header, .section-head { padding: 0 32rpx 12rpx; }
 .profile { display: flex; gap: 24rpx; align-items: center; }
 .profile-main { flex: 1; min-width: 0; }
+.login-card { background: rgba(255,255,255,.72); }
 .avatar { width: 112rpx; height: 112rpx; border-radius: 36rpx; background: linear-gradient(145deg,#6f86df,#52b8cf); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 44rpx; font-weight: 950; }
 .block { display: block; margin: 8rpx 0 16rpx; }
 .tag-row { flex-wrap: wrap; }

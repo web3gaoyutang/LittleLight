@@ -1,4 +1,11 @@
 const BASE_URL = import.meta.env?.VITE_API_BASE_URL || '/api/v1'
+const USER_ID_KEY = 'littlelight_user_id'
+const WECHAT_SESSION_KEY = 'littlelight_wechat_session'
+
+function authHeader() {
+  const userId = uni.getStorageSync(USER_ID_KEY)
+  return userId ? { 'X-User-ID': userId } : {}
+}
 
 export function request(path, options = {}) {
   return new Promise((resolve, reject) => {
@@ -6,7 +13,7 @@ export function request(path, options = {}) {
       url: BASE_URL + path,
       method: options.method || 'GET',
       data: options.data,
-      header: { 'Content-Type': 'application/json', ...(options.header || {}) },
+      header: { 'Content-Type': 'application/json', ...authHeader(), ...(options.header || {}) },
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data)
         else reject(res.data || res)
@@ -21,7 +28,7 @@ export function upload(path, file, name = 'file') {
     const options = {
       url: BASE_URL + path,
       name,
-      header: {},
+      header: authHeader(),
       success: (res) => {
         let data = res.data
         try {
@@ -44,7 +51,21 @@ export function upload(path, file, name = 'file') {
   })
 }
 
+function saveWechatSession(session) {
+  if (session?.userId) {
+    uni.setStorageSync(USER_ID_KEY, session.userId)
+    uni.setStorageSync(WECHAT_SESSION_KEY, session)
+  }
+  return session
+}
+
+export function currentWechatSession() {
+  return uni.getStorageSync(WECHAT_SESSION_KEY) || null
+}
+
 export const api = {
+  wechatMockLogin: (data = {}) => request('/auth/wechat/mock', { method: 'POST', data }).then(saveWechatSession),
+  currentWechatSession,
   me: () => request('/me'),
   updateMe: (data) => request('/me', { method: 'PUT', data }),
   favorites: (type) => request(type ? `/me/favorites?type=${encodeURIComponent(type)}` : '/me/favorites'),

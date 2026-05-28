@@ -16,6 +16,14 @@ type UserProfile struct {
 	CreatedAt      time.Time `json:"createdAt"`
 }
 
+type WechatSession struct {
+	UserID       ID          `json:"userId"`
+	SessionToken string      `json:"sessionToken"`
+	OpenID       string      `json:"openId"`
+	Profile      UserProfile `json:"profile"`
+	ExpiresAt    time.Time   `json:"expiresAt"`
+}
+
 type Course struct {
 	ID        ID        `json:"id"`
 	Title     string    `json:"title"`
@@ -87,12 +95,12 @@ type Favorite struct {
 }
 
 type AIDraft struct {
-	ID       ID     `json:"id"`
-	Version  string `json:"version"`
-	Tone     string `json:"tone"`
-	Style    string `json:"style"`
-	Content  string `json:"content"`
-	Safety   string `json:"safety"`
+	ID      ID     `json:"id"`
+	Version string `json:"version"`
+	Tone    string `json:"tone"`
+	Style   string `json:"style"`
+	Content string `json:"content"`
+	Safety  string `json:"safety"`
 }
 
 type AIGeneration struct {
@@ -106,14 +114,14 @@ type AIGeneration struct {
 }
 
 type DashboardSummary struct {
-	TodayLabel      string          `json:"todayLabel"`
-	CoursesCount    int             `json:"coursesCount"`
-	RemindersCount  int             `json:"remindersCount"`
-	FollowUpsCount  int             `json:"followUpsCount"`
-	NextCourse      *Course         `json:"nextCourse,omitempty"`
-	Reminders       []Reminder      `json:"reminders"`
-	FocusParents    []ParentProfile `json:"focusParents"`
-	Rhythm          RhythmState     `json:"rhythm"`
+	TodayLabel     string          `json:"todayLabel"`
+	CoursesCount   int             `json:"coursesCount"`
+	RemindersCount int             `json:"remindersCount"`
+	FollowUpsCount int             `json:"followUpsCount"`
+	NextCourse     *Course         `json:"nextCourse,omitempty"`
+	Reminders      []Reminder      `json:"reminders"`
+	FocusParents   []ParentProfile `json:"focusParents"`
+	Rhythm         RhythmState     `json:"rhythm"`
 }
 
 type RhythmState struct {

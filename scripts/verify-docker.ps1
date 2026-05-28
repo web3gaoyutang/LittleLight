@@ -98,6 +98,13 @@ try {
 
     Wait-Health
 
+    $login = Invoke-ApiJson -Method "POST" -Path "/api/v1/auth/wechat/mock" -Body @{
+        code = "verify-$RunID"
+        nickName = "Docker Verify Teacher"
+    }
+    Assert-True ([string]$login.userId -ne "") "Wechat mock login user id is empty."
+    Assert-True ([string]$login.sessionToken -ne "") "Wechat mock login token is empty."
+
     $dashboard = Invoke-ApiJson -Method "GET" -Path "/api/v1/dashboard?day=$Day"
     Assert-True ($dashboard.todayLabel -eq $Day) "Dashboard day mismatch."
 

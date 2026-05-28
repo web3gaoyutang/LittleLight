@@ -39,6 +39,7 @@ func (s *Server) Routes() http.Handler {
 
 	r.Get("/healthz", s.health)
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Post("/auth/wechat/mock", s.wechatMockLogin)
 		r.Get("/me", s.userProfile)
 		r.Put("/me", s.updateUserProfile)
 		r.Get("/me/favorites", s.favorites)
@@ -83,6 +84,41 @@ func (s *Server) Routes() http.Handler {
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "time": time.Now().Format(time.RFC3339)})
+}
+
+func (s *Server) wechatMockLogin(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Code      string `json:"code"`
+		NickName  string `json:"nickName"`
+		AvatarURL string `json:"avatarUrl"`
+	}
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	userID := demoUserID
+	profile, err := s.store.UserProfile(r.Context(), userID)
+	if err != nil {
+		writeResult(w, nil, err)
+		return
+	}
+	nickName := strings.TrimSpace(payload.NickName)
+	if nickName != "" && nickName != profile.Name {
+		profile.Name = nickName
+		if updated, err := s.store.UpdateUserProfile(r.Context(), userID, profile); err == nil {
+			profile = updated
+		}
+	}
+	tokenSeed := strings.TrimSpace(payload.Code)
+	if tokenSeed == "" {
+		tokenSeed = "dev"
+	}
+	writeJSON(w, http.StatusOK, domain.WechatSession{
+		UserID:       userID,
+		SessionToken: fmt.Sprintf("mock-wechat-%s-%d", tokenSeed, time.Now().Unix()),
+		OpenID:       "mock-openid-littlelight-teacher",
+		Profile:      profile,
+		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
+	})
 }
 
 func (s *Server) userProfile(w http.ResponseWriter, r *http.Request) {
