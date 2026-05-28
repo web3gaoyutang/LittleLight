@@ -54,9 +54,62 @@ jobs:
         working-directory: app
         run: npm run build:h5
 
-  docker-build:
+  integration:
     runs-on: ubuntu-latest
     needs: [docs, server, app]
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: littlelight
+          POSTGRES_PASSWORD: littlelight
+          POSTGRES_DB: littlelight
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U littlelight -d littlelight"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Start API
+        working-directory: server
+        env:
+          APP_ENV: docker
+          HTTP_ADDR: :8080
+          DATABASE_URL: postgres://littlelight:littlelight@localhost:5432/littlelight?sslmode=disable
+          REDIS_ADDR: localhost:6379
+          REDIS_DB: 0
+          MIGRATIONS_DIR: migrations
+          AI_PROVIDER: mock
+        run: |
+          go run ./cmd/api > ../api-smoke.log 2>&1 &
+          echo $! > ../api-smoke.pid
+      - name: Run API smoke test
+        run: node scripts/api-smoke.mjs
+      - name: Show API logs on failure
+        if: failure()
+        run: cat api-smoke.log || true
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [docs, server, app, integration]
     steps:
       - uses: actions/checkout@v4
       - name: Build API image

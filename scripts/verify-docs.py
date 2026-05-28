@@ -67,6 +67,8 @@ CHECKS = {
         "verify-all.ps1",
         "docker-build",
         "scripts/verify-docker.ps1",
+        "scripts/api-smoke.mjs",
+        "integration",
     ],
 }
 

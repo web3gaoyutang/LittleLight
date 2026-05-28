@@ -8,7 +8,8 @@
 | --- | --- | --- |
 | 本地快速回归 | `powershell -ExecutionPolicy Bypass -File .\scripts\verify-all.ps1` | OpenAPI、环境示例、Compose、Web readiness、文档覆盖、Go 测试、前端 API client 测试、H5 构建、密钥检查 |
 | 本地业务逻辑回归 | `powershell -ExecutionPolicy Bypass -File .\scripts\verify-all.ps1 -IncludeDockerLogic` | 快速回归 + Docker PostgreSQL/Redis + 本机 API 主业务写读链路 |
-| CI 回归 | `.github/workflows/engineering-checks.yml` | OpenAPI、文档覆盖、Compose、Go 测试、前端 API client 测试、H5 构建、Web/API Docker 镜像构建 |
+| API smoke 回归 | `node scripts/api-smoke.mjs` | 运行中 API 的 health/readiness、微信模拟登录、首页、课程、待办、家长、沟通、AI、疗愈、收藏链路 |
+| CI 回归 | `.github/workflows/engineering-checks.yml` | OpenAPI、文档覆盖、Compose、Go 测试、前端 API client 测试、H5 构建、API smoke、Web/API Docker 镜像构建 |
 
 ## 目标到证据映射
 
@@ -30,6 +31,7 @@
 | 配置加载测试 | LLM 自动模式、旧 key 兼容、Redis DB 容错正常 | `server/internal/config/config_test.go` |
 | 前端 API client 测试 | base URL、鉴权头、微信模拟登录态、上传解析正常 | `app/scripts/test-api-client.mjs` |
 | Docker 逻辑验证 | PostgreSQL/Redis/API 主业务链路能本地闭环 | `scripts/verify-docker.ps1` |
+| CI API smoke | GitHub Actions 启动 PostgreSQL/Redis 与 Go API 后，真实 HTTP 主链路可用 | `.github/workflows/engineering-checks.yml`、`scripts/api-smoke.mjs` |
 | 文档覆盖检查 | 关键文档和环境示例未被漏删 | `scripts/verify-docs.py` |
 | 敏感信息检查 | 本地 LLM key/base URL 未进入 Git 跟踪文件 | `scripts/verify-all.ps1` |
 
@@ -44,6 +46,6 @@
 在声明工程阶段完成前，至少需要以下证据同时成立：
 
 1. `scripts/verify-all.ps1 -IncludeDockerLogic` 通过。
-2. GitHub Actions 全部 job 通过，尤其是 `docker-build`。
+2. GitHub Actions 全部 job 通过，尤其是 `integration` 和 `docker-build`。
 3. `docs/engineering-technical-design.md`、`docs/openapi.yaml`、`docs/database-schema.md`、`docs/deployment-runbook.md` 和本文档均为最新。
 4. `rg "真实密钥|LLM_API_KEY实际值|sk-"` 不应在 Git 跟踪文件中命中真实密钥。
