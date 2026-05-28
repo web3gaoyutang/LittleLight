@@ -21,13 +21,15 @@
 ```text
 LittleLight/
   app/                         # uni-app 客户端工程
-    pages/                     # 5 个 Tab 页面
-    api/                       # API 请求封装
-    utils/                     # UI 与通用工具
-    static/                    # 公共样式与静态资源
-    manifest.json              # uni-app 应用配置
-    pages.json                 # 页面与 TabBar 配置
+    src/
+      pages/                   # 5 个 Tab 页面
+      api/                     # API 请求封装
+      utils/                   # UI 与通用工具
+      static/                  # 公共样式与静态资源
+      manifest.json            # uni-app 应用配置
+      pages.json               # 页面与 TabBar 配置
     package.json               # 前端依赖与脚本
+    package-lock.json          # 前端依赖锁
   server/                      # Go 后端工程
     cmd/api/                   # API 服务入口
     internal/config/           # 环境变量配置
@@ -131,7 +133,7 @@ H5 容器使用 `deploy/web.Dockerfile` 构建 uni-app H5 产物，并由 nginx 
 
 ```bash
 cd app
-npm install
+npm ci
 npm run dev:h5
 ```
 
@@ -158,8 +160,11 @@ go run ./cmd/api
 | REDIS_PASSWORD | 空 | Redis 密码 |
 | REDIS_DB | 0 | Redis DB |
 | MIGRATIONS_DIR | server/migrations / /app/migrations | SQL 迁移目录；Docker 容器内使用 `/app/migrations` |
-| AI_PROVIDER | mock / openai / qwen | AI 供应商 |
-| AI_API_KEY | sk-xxx | AI API Key |
+| AI_PROVIDER | 空 / mock / llm / openai / qwen | AI 供应商；留空时会根据 LLM 配置自动判断 |
+| AI_API_KEY | sk-xxx | 兼容旧配置；未设置 `LLM_API_KEY` 时作为 LLM Key 兜底 |
+| LLM_API_KEY | sk-xxx | OpenAI-compatible LLM API Key；只放本地 `.env` 或部署密钥，不提交仓库 |
+| LLM_BASE_URL | https://llmapi.example.com | OpenAI-compatible Base URL；服务会请求 `{LLM_BASE_URL}/v1/chat/completions` |
+| LLM_MODEL | gpt-4o-mini | LLM 模型名；未设置时使用默认值 |
 
 ## 6. 核心领域模型
 
@@ -299,7 +304,7 @@ AI 生成记录。
 
 开发阶段鉴权：所有业务接口支持请求头 `X-User-ID`。未传时默认使用种子用户 `00000000-0000-0000-0000-000000000001`。正式登录接入后，该中间件应替换为 JWT / Session 校验。
 
-机器可读契约：`docs/openapi.yaml`。后端路由、前端 `app/api/client.js` 和手工检查清单应以该文件保持一致。
+机器可读契约：`docs/openapi.yaml`。后端路由、前端 `app/src/api/client.js` 和手工检查清单应以该文件保持一致。
 
 ### 8.1 健康检查
 
@@ -630,7 +635,7 @@ type AIProvider interface {
 
 ### 11.3 API 调用
 
-统一通过 `app/api/client.js` 调用，避免页面散落 `uni.request`。
+统一通过 `app/src/api/client.js` 调用，避免页面散落 `uni.request`。
 
 当前已接入接口：
 
@@ -713,6 +718,7 @@ Docker Compose 中：
 - 课程、提醒、家长档案、沟通记录已具备列表、详情、新增、编辑、删除等核心 CRUD；提醒额外支持完成和延后。
 - 后端单元测试初版已补充，覆盖内存仓库 CRUD 和 AI 服务。
 - GitHub Actions 初版已补充，包含 Go 测试和 uni-app H5 构建。
+- Go/Node 依赖锁已补齐：`server/go.sum`、`app/package-lock.json` 已提交，CI 与 Docker Web 镜像使用锁文件进行可复现安装。
 - uni-app 五个 Tab 页面骨架，日程页已接入课程/待办增删改查入口，沟通页已接入家长档案、家长详情和沟通记录基础操作，我的页已接入教师资料与收藏素材管理。
 - Go API 服务骨架。
 - V1 核心领域模型。
@@ -721,16 +727,14 @@ Docker Compose 中：
 - 教师资料与收藏素材 API 已接入 `users`、`favorites` 表。
 - H5 Web/API/Redis/PostgreSQL/Docker Compose 配置。
 - Redis dashboard 缓存已接入，读取首页时优先查缓存，课程、提醒、家长写入成功后清理缓存。
+- 本地逻辑验证脚本已补充并通过：PostgreSQL 与 Redis 由 Docker Compose 提供，本机 Go API 连接容器完成健康检查、业务写入查询、数据库落库和 Redis 缓存键验证。
 - HTTP 开发鉴权中间件已接入，支持 X-User-ID，并保留默认种子用户。
 - Excel/CSV 课表导入和班级名单导入已接入前端入口与后端解析接口；当前支持 `.xlsx` 与 `.csv`，暂不解析老式二进制 `.xls`。
 - 详细技术文档。
 
 待完成：
 
-- 本机未安装 Go 和 Docker，当前未在本机实际启动容器。
-- Go 依赖需要在有网络和 Go 环境的机器上执行 `go mod download` 生成 `go.sum`。
-- uni-app 依赖需要执行 `npm install` 后才能运行 H5。
-- PostgreSQL repository 和启动迁移已接入，但当前本机缺 Go/Docker，尚未完成本地容器级联调。
+- 完整 Web/API Docker 镜像构建仍依赖 Docker Hub 基础镜像可拉取；若 `auth.docker.io` 网络不可用，先使用 `scripts/verify-docker.ps1` 验证数据库、缓存和后端业务逻辑。
 - 正式用户鉴权尚未接入，当前为开发鉴权中间件：`X-User-ID` 或默认种子用户。
 
 

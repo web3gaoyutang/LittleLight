@@ -7,13 +7,14 @@
                     "build:h5":  "vite build"
                 },
     "dependencies":  {
-                         "@dcloudio/uni-app":  "latest",
-                         "@dcloudio/uni-ui":  "latest",
+                         "@dcloudio/uni-app":  "3.0.0-4020920240930001",
+                         "@dcloudio/uni-h5":  "3.0.0-4020920240930001",
+                         "@dcloudio/uni-ui":  "1.5.8",
                          "vue":  "^3.4.0",
                          "pinia":  "^2.1.7"
                      },
     "devDependencies":  {
-                            "@dcloudio/vite-plugin-uni":  "latest",
+                            "@dcloudio/vite-plugin-uni":  "3.0.0-4020920240930001",
                             "vite":  "^5.0.0"
                         }
 }

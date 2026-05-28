@@ -15,9 +15,21 @@ type Config struct {
 	MigrationsDir string
 	AIProvider    string
 	AIAPIKey      string
+	LLMAPIKey     string
+	LLMBaseURL    string
+	LLMModel      string
 }
 
 func Load() Config {
+	llmAPIKey := env("LLM_API_KEY", env("AI_API_KEY", ""))
+	llmBaseURL := env("LLM_BASE_URL", "")
+	aiProvider := env("AI_PROVIDER", "")
+	if aiProvider == "" {
+		aiProvider = "mock"
+		if llmAPIKey != "" && llmBaseURL != "" {
+			aiProvider = "llm"
+		}
+	}
 	return Config{
 		AppEnv:        env("APP_ENV", "local"),
 		HTTPAddr:      env("HTTP_ADDR", ":8080"),
@@ -26,8 +38,11 @@ func Load() Config {
 		RedisPassword: env("REDIS_PASSWORD", ""),
 		RedisDB:       envInt("REDIS_DB", 0),
 		MigrationsDir: env("MIGRATIONS_DIR", "server/migrations"),
-		AIProvider:    env("AI_PROVIDER", "mock"),
+		AIProvider:    aiProvider,
 		AIAPIKey:      env("AI_API_KEY", ""),
+		LLMAPIKey:     llmAPIKey,
+		LLMBaseURL:    llmBaseURL,
+		LLMModel:      env("LLM_MODEL", "gpt-4o-mini"),
 	}
 }
 

@@ -1,6 +1,7 @@
 FROM golang:1.22-alpine AS builder
 WORKDIR /src/server
-COPY server/go.mod ./
+ENV GOPROXY=https://goproxy.cn,direct
+COPY server/go.mod server/go.sum ./
 RUN go mod download
 COPY server/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/littlelight-api ./cmd/api

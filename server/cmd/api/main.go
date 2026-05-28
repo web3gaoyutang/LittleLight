@@ -48,7 +48,13 @@ func main() {
 		log.Printf("redis connected, dashboard cache enabled")
 	}
 
-	server := httpapi.NewServer(store, service.NewAIService(), dashboardCache)
+	ai := service.NewAIService(service.AIOptions{
+		Provider: cfg.AIProvider,
+		APIKey:   cfg.LLMAPIKey,
+		BaseURL:  cfg.LLMBaseURL,
+		Model:    cfg.LLMModel,
+	})
+	server := httpapi.NewServer(store, ai, dashboardCache)
 	log.Printf("littlelight api listening on %s", cfg.HTTPAddr)
 	if err := http.ListenAndServe(cfg.HTTPAddr, server.Routes()); err != nil {
 		log.Fatal(err)

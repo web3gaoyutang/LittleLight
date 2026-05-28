@@ -32,3 +32,14 @@ func TestAIServiceGeneratePraise(t *testing.T) {
 		t.Fatalf("unexpected praise: %+v", draft)
 	}
 }
+
+func TestAIServiceFallsBackWhenLLMUnavailable(t *testing.T) {
+	ai := NewAIService(AIOptions{Provider: "llm", APIKey: "test-key", BaseURL: "http://127.0.0.1:1", Model: "test-model"})
+	drafts, err := ai.GenerateParentDrafts(context.Background(), ParentDraftRequest{Issue: "孩子最近专注度下降", ParentStyle: "容易焦虑", Tone: "温和"})
+	if err != nil {
+		t.Fatalf("fallback should not return error: %v", err)
+	}
+	if len(drafts) < 3 || drafts[0].Content == "" {
+		t.Fatalf("expected mock fallback drafts, got %+v", drafts)
+	}
+}

@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: LittleLight Teacher API
   version: 0.1.0
-  description: 微光老师工程 API 契约，覆盖当前 MVP 的工作台、课表、待办、家校沟通、疗愈和 AI mock 能力。
+  description: 微光老师工程 API 契约，覆盖当前 MVP 的工作台、课表、待办、家校沟通、疗愈和 AI 能力。
 servers:
   - url: http://localhost:8080
     description: local API
