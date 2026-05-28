@@ -146,6 +146,16 @@ Invoke-Step "Go tests" {
     }
 }
 
+Invoke-Step "API client tests" {
+    $npm = Resolve-Npm
+    Push-Location $AppDir
+    try {
+        & $npm run test:api
+    } finally {
+        Pop-Location
+    }
+}
+
 if (-not $SkipH5Build) {
     Invoke-Step "uni-app H5 build" {
         $npm = Resolve-Npm

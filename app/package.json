@@ -4,7 +4,8 @@
     "private":  true,
     "scripts":  {
                     "dev:h5":  "vite --host 0.0.0.0",
-                    "build:h5":  "vite build"
+                    "build:h5":  "vite build",
+                    "test:api":  "node scripts/test-api-client.mjs"
                 },
     "dependencies":  {
                          "@dcloudio/uni-app":  "3.0.0-4020920240930001",

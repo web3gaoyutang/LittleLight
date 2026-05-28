@@ -45,6 +45,9 @@ jobs:
       - name: Install dependencies
         working-directory: app
         run: npm ci
+      - name: Test API client
+        working-directory: app
+        run: npm run test:api
       - name: Build H5
         working-directory: app
         run: npm run build:h5
