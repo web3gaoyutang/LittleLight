@@ -6,8 +6,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/web3gaoyutang/littlelight/server/internal/domain"
 	"github.com/web3gaoyutang/littlelight/server/internal/repository"
 	"github.com/web3gaoyutang/littlelight/server/internal/service"
@@ -155,6 +160,26 @@ func TestRoutesInvalidJSONAndNotFound(t *testing.T) {
 	assertStatus(t, response, http.StatusNotFound)
 }
 
+func TestRoutesMatchOpenAPIContract(t *testing.T) {
+	server := newTestServer()
+	routes, ok := server.(chi.Routes)
+	if !ok {
+		t.Fatalf("test server does not expose chi routes")
+	}
+
+	registered := map[string]bool{}
+	if err := chi.Walk(routes, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		registered[method+" "+route] = true
+		return nil
+	}); err != nil {
+		t.Fatalf("walk routes: %v", err)
+	}
+
+	documented := parseOpenAPIOperations(t)
+	assertOperationSetEqual(t, "OpenAPI operation missing backend route", documented, registered)
+	assertOperationSetEqual(t, "Backend route missing OpenAPI operation", registered, documented)
+}
+
 func newTestServer() http.Handler {
 	store := repository.NewMemoryStore()
 	ai := service.NewAIService()
@@ -199,5 +224,48 @@ func decodeResponse(t *testing.T, response *httptest.ResponseRecorder, target an
 	t.Helper()
 	if err := json.NewDecoder(response.Body).Decode(target); err != nil {
 		t.Fatalf("decode response: %v body=%s", err, response.Body.String())
+	}
+}
+
+func parseOpenAPIOperations(t *testing.T) map[string]bool {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", "docs", "openapi.yaml"))
+	if err != nil {
+		t.Fatalf("read OpenAPI contract: %v", err)
+	}
+	operations := map[string]bool{}
+	var currentPath string
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(line, "  /") && strings.HasSuffix(trimmed, ":") {
+			currentPath = strings.TrimSuffix(trimmed, ":")
+			continue
+		}
+		if currentPath == "" || !strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "      ") || !strings.HasSuffix(trimmed, ":") {
+			continue
+		}
+		method := strings.ToUpper(strings.TrimSuffix(trimmed, ":"))
+		switch method {
+		case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch:
+			operations[method+" "+currentPath] = true
+		}
+	}
+	if len(operations) == 0 {
+		t.Fatalf("no operations parsed from OpenAPI contract")
+	}
+	return operations
+}
+
+func assertOperationSetEqual(t *testing.T, message string, expected map[string]bool, actual map[string]bool) {
+	t.Helper()
+	missing := make([]string, 0)
+	for operation := range expected {
+		if !actual[operation] {
+			missing = append(missing, operation)
+		}
+	}
+	if len(missing) > 0 {
+		sort.Strings(missing)
+		t.Fatalf("%s:\n%s", message, strings.Join(missing, "\n"))
 	}
 }
