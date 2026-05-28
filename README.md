@@ -13,12 +13,15 @@
 ## 快速开始
 
 ```bash
-# 启动 H5、API、PostgreSQL、Redis
+# 启动 H5、API、PostgreSQL、Redis。若 Docker Hub 拉取基础镜像受限，可先用下面的本地逻辑验证。
 docker compose -f deploy/docker-compose.yml up --build
+
+# 使用 Docker 中的 PostgreSQL/Redis + 本机 Go API 做逻辑验证
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-docker.ps1
 
 # 启动 uni-app H5
 cd app
-npm install
+npm ci
 npm run dev:h5
 ```
 
@@ -27,13 +30,20 @@ npm run dev:h5
 ## 当前能力
 
 - `app/` 提供 uni-app + Vue 3 五个 Tab 页面骨架，日程页和沟通页已接入核心 API。
-- `server/` 提供 Go HTTP API，包含 Dashboard、课程、提醒、家长档案、沟通记录、疗愈记录和 AI mock 服务。
+- `server/` 提供 Go HTTP API，包含 Dashboard、课程、提醒、家长档案、沟通记录、疗愈记录、AI 服务和微信模拟登录。
 - PostgreSQL 负责持久化业务数据，Redis 负责首页工作台缓存。
 - API 启动时会按 `MIGRATIONS_DIR` 自动执行 SQL 迁移，Docker 环境默认使用 `/app/migrations`。
 - `APP_ENV=local` 迁移失败时会降级到内存仓库；Docker/生产环境迁移失败会直接退出。
 - `deploy/docker-compose.yml` 可编排 H5 Web、API、PostgreSQL、Redis；H5 默认访问 `http://localhost:8081`。
+- API 提供 `/healthz` 进程健康检查和 `/readyz` 依赖就绪检查；Docker API 容器使用 `/readyz` 作为 healthcheck。
 - `.github/workflows/engineering-checks.yml` 包含 Go 测试和 H5 构建检查。
 
 ## 本地环境说明
 
-当前机器未安装 `go`、`npm`、`docker` 时，无法直接运行 `go test ./...`、`npm run build:h5` 或 Docker Compose 联调。CI 或具备这些工具的开发机应作为运行级验证入口。
+当前本机已支持 Go、Node 和 Docker 验证。基础回归命令：
+
+```bash
+cd server && go test ./...
+cd ../app && npm run build:h5
+cd .. && docker compose -f deploy/docker-compose.yml config --quiet
+```

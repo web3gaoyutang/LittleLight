@@ -97,6 +97,10 @@ try {
     } -ArgumentList $RepoRoot, $toolPath, $HttpAddr, $env:LLM_API_KEY, $env:LLM_BASE_URL, $env:LLM_MODEL
 
     Wait-Health
+    $ready = Invoke-RestMethod -Uri "$Api/readyz" -TimeoutSec 5
+    Assert-True ($ready.status -eq "ok") "API readiness check did not pass."
+    Assert-True ($ready.dependencies.postgres -eq "ok") "PostgreSQL readiness did not pass."
+    Assert-True ($ready.dependencies.redis -eq "ok") "Redis readiness did not pass."
 
     $login = Invoke-ApiJson -Method "POST" -Path "/api/v1/auth/wechat/mock" -Body @{
         code = "verify-$RunID"

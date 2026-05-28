@@ -7,10 +7,11 @@ COPY server/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -o /out/littlelight-api ./cmd/api
 
 FROM alpine:3.20
-RUN adduser -D -g '' appuser
+RUN apk add --no-cache curl && adduser -D -g '' appuser
 WORKDIR /app
 COPY --from=builder /out/littlelight-api /app/littlelight-api
 COPY server/migrations /app/migrations
 USER appuser
 EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 CMD curl -fsS http://127.0.0.1:8080/readyz || exit 1
 ENTRYPOINT ["/app/littlelight-api"]

@@ -23,6 +23,7 @@ docker compose -f deploy/docker-compose.yml up --build
 
 ```bash
 curl http://localhost:8080/healthz
+curl http://localhost:8080/readyz
 curl http://localhost:8081/healthz
 ```
 
@@ -31,6 +32,8 @@ curl http://localhost:8081/healthz
 ```json
 { "status": "ok", "time": "2026-05-27T14:00:00+08:00" }
 ```
+
+`/healthz` 只表示 API 进程可响应；`/readyz` 会检查 PostgreSQL 和 Redis。Docker Compose 中 API 容器使用 `/readyz` 作为 healthcheck。
 
 ## 4. 本地 Docker 逻辑验证
 
@@ -44,7 +47,7 @@ PostgreSQL 和 Redis 均由 Docker Compose 提供，本机不需要单独安装�
 
 - `docker compose -f deploy/docker-compose.yml up -d postgres redis`
 - 启动本机 Go API，并连接 Docker 中的 PostgreSQL 与 Redis。
-- 等待 `http://localhost:8080/healthz` 返回正常。
+- 等待 `http://localhost:8080/healthz` 与 `http://localhost:8080/readyz` 返回正常。
 - 通过 API 写入并读取课程、待办事项、家长档案、沟通记录、AI 草稿、疗愈记录和收藏素材。
 - 进入 PostgreSQL 容器确认业务数据已落库。
 - 进入 Redis 容器确认首页 dashboard 缓存键已生成。

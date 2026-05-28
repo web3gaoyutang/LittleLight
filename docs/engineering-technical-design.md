@@ -727,6 +727,7 @@ Docker Compose 中：
 - 教师资料与收藏素材 API 已接入 `users`、`favorites` 表。
 - H5 Web/API/Redis/PostgreSQL/Docker Compose 配置。
 - Redis dashboard 缓存已接入，读取首页时优先查缓存，课程、提醒、家长写入成功后清理缓存。
+- API readiness 检查已接入：`/healthz` 表示进程存活，`/readyz` 会检查 PostgreSQL 与 Redis；Docker API 容器使用 `/readyz` 作为健康检查。
 - 本地逻辑验证脚本已补充并通过：PostgreSQL 与 Redis 由 Docker Compose 提供，本机 Go API 连接容器完成健康检查、业务写入查询、数据库落库和 Redis 缓存键验证。
 - 微信模拟登录已接入，前端“我的”页可发起模拟登录并保存登录态；HTTP 开发鉴权中间件支持 `X-User-ID` 并保留默认种子用户。
 - Excel/CSV 课表导入和班级名单导入已接入前端入口与后端解析接口；当前支持 `.xlsx` 与 `.csv`，暂不解析老式二进制 `.xls`。

@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,10 +23,16 @@ type Server struct {
 	store          repository.Store
 	ai             *service.AIService
 	dashboardCache *cache.DashboardCache
+	readiness      []DependencyCheck
 }
 
-func NewServer(store repository.Store, ai *service.AIService, dashboardCache *cache.DashboardCache) *Server {
-	return &Server{store: store, ai: ai, dashboardCache: dashboardCache}
+type DependencyCheck struct {
+	Name  string
+	Check func(context.Context) error
+}
+
+func NewServer(store repository.Store, ai *service.AIService, dashboardCache *cache.DashboardCache, readiness ...DependencyCheck) *Server {
+	return &Server{store: store, ai: ai, dashboardCache: dashboardCache, readiness: readiness}
 }
 
 func (s *Server) Routes() http.Handler {
@@ -38,6 +45,7 @@ func (s *Server) Routes() http.Handler {
 	r.Use(withUser)
 
 	r.Get("/healthz", s.health)
+	r.Get("/readyz", s.ready)
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/wechat/mock", s.wechatMockLogin)
 		r.Get("/me", s.userProfile)
@@ -84,6 +92,32 @@ func (s *Server) Routes() http.Handler {
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "time": time.Now().Format(time.RFC3339)})
+}
+
+func (s *Server) ready(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
+	dependencies := map[string]string{}
+	ready := true
+	for _, dependency := range s.readiness {
+		if dependency.Name == "" || dependency.Check == nil {
+			continue
+		}
+		if err := dependency.Check(ctx); err != nil {
+			ready = false
+			dependencies[dependency.Name] = err.Error()
+			continue
+		}
+		dependencies[dependency.Name] = "ok"
+	}
+	status := http.StatusOK
+	payloadStatus := "ok"
+	if !ready {
+		status = http.StatusServiceUnavailable
+		payloadStatus = "unavailable"
+	}
+	writeJSON(w, status, map[string]any{"status": payloadStatus, "dependencies": dependencies, "time": time.Now().Format(time.RFC3339)})
 }
 
 func (s *Server) wechatMockLogin(w http.ResponseWriter, r *http.Request) {

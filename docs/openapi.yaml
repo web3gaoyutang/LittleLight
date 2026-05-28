@@ -34,6 +34,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /readyz:
+    get:
+      tags: [Health]
+      security: []
+      summary: Readiness check
+      responses:
+        "200":
+          description: Service and dependencies are ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+        "503":
+          description: One or more required dependencies are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
   /api/v1/auth/wechat/mock:
     post:
       tags: [Auth]
@@ -681,6 +699,22 @@ components:
         status:
           type: string
           example: ok
+        time:
+          type: string
+          format: date-time
+    ReadinessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            postgres: ok
+            redis: ok
         time:
           type: string
           format: date-time
