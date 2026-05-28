@@ -137,6 +137,13 @@ Invoke-Step "Deployment runbook coverage" {
     }
 }
 
+Invoke-Step "Database schema document coverage" {
+    $schemaDoc = Join-Path $RepoRoot "docs\database-schema.md"
+    foreach ($keyword in @("users", "courses", "parent_profiles", "reminders", "communication_records", "healing_entries", "ai_generations", "favorites", "idx_courses_user_weekday", "002_seed.sql")) {
+        Assert-FileContains -Path $schemaDoc -Pattern $keyword -Message "database schema document should cover $keyword."
+    }
+}
+
 Invoke-Step "Go tests" {
     Push-Location $ServerDir
     try {

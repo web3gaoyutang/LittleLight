@@ -47,6 +47,7 @@ LittleLight/
     nginx/default.conf         # H5 静态资源与 API 反向代理配置
   docs/
     engineering-technical-design.md
+    database-schema.md
     openapi.yaml
     deployment-runbook.md
     glimmer-teacher-product-design-spec.md
@@ -681,6 +682,7 @@ Docker Compose 中：
 - 关键表启用 PITR 或云数据库备份。
 - Redis 不作为唯一事实来源，只做缓存和临时任务状态。
 - Docker Compose 发布流程、PostgreSQL 备份恢复和回滚步骤记录在 `docs/deployment-runbook.md`。
+- PostgreSQL 表结构、索引、种子数据和迁移约定记录在 `docs/database-schema.md`。
 
 ## 13. 安全与隐私
 
@@ -733,6 +735,7 @@ Docker Compose 中：
 - V1 核心领域模型。
 - 内存仓库用于本地无数据库演示。
 - PostgreSQL 初始化迁移脚本与 API 启动时自动迁移。
+- 数据库 schema 文档已补充，覆盖表结构、索引、种子数据和迁移约定。
 - 教师资料与收藏素材 API 已接入 `users`、`favorites` 表。
 - H5 Web/API/Redis/PostgreSQL/Docker Compose 配置。
 - Redis dashboard 缓存已接入，读取首页时优先查缓存，课程、提醒、家长写入成功后清理缓存。
