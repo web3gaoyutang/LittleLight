@@ -52,6 +52,16 @@ CHECKS = {
         "idx_courses_user_weekday",
         "002_seed.sql",
     ],
+    "docs/engineering-verification-matrix.md": [
+        "uni-app",
+        "Golang",
+        "PostgreSQL",
+        "Redis",
+        "Docker",
+        "verify-all.ps1",
+        "docker-build",
+        "scripts/verify-docker.ps1",
+    ],
 }
 
 

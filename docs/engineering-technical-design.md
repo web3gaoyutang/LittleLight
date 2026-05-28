@@ -47,6 +47,7 @@ LittleLight/
     nginx/default.conf         # H5 静态资源与 API 反向代理配置
   docs/
     engineering-technical-design.md
+    engineering-verification-matrix.md
     database-schema.md
     openapi.yaml
     deployment-runbook.md
@@ -742,6 +743,7 @@ Docker Compose 中：
 - API readiness 检查已接入：`/healthz` 表示进程存活，`/readyz` 会检查 PostgreSQL 与 Redis；Docker API 容器使用 `/readyz` 作为健康检查，H5 Web 容器等待 API healthy 后启动，并通过 nginx 暴露同源 `/healthz` 与 `/readyz`。
 - 本地逻辑验证脚本已补充并通过：PostgreSQL 与 Redis 由 Docker Compose 提供，本机 Go API 连接容器完成健康检查、业务写入查询、数据库落库和 Redis 缓存键验证。
 - 本地统一回归脚本已补充：`scripts/verify-all.ps1` 可串联 OpenAPI、前后端环境示例、Docker Compose、Web 网关 readiness、部署手册覆盖、数据库 schema 文档覆盖、Go 测试、前端 API client 测试、H5 构建、密钥入库检查，并可通过 `-IncludeDockerLogic` 串联 Docker 业务逻辑验证。
+- 工程验证矩阵已补充：`docs/engineering-verification-matrix.md` 将目标要求映射到证据文件、验证命令和剩余风险。
 - 部署运行手册已覆盖启动、健康检查、发布、PostgreSQL 备份恢复、Redis 缓存处理、回滚和 CI 验证。
 - 微信模拟登录已接入，前端“我的”页可发起模拟登录并保存登录态；HTTP 开发鉴权中间件支持 `X-User-ID` 并保留默认种子用户。
 - Excel/CSV 课表导入和班级名单导入已接入前端入口与后端解析接口；当前支持 `.xlsx` 与 `.csv`，暂不解析老式二进制 `.xls`。
