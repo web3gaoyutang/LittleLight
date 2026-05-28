@@ -26,6 +26,17 @@ CHECKS = {
         "LLM_BASE_URL=",
         "LLM_MODEL=",
     ],
+    "README.md": [
+        "uni-app + Vue 3",
+        "Golang HTTP API",
+        "PostgreSQL",
+        "Redis",
+        "Docker Compose",
+        "scripts\\verify-all.ps1",
+        "scripts/api-smoke.mjs",
+        "integration",
+        "docs/engineering-technical-design.md",
+    ],
     "deploy/nginx/default.conf": [
         "location /readyz",
     ],
