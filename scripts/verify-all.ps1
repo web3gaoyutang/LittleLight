@@ -115,6 +115,14 @@ Invoke-Step "Docker Compose config" {
     docker compose -f $ComposeFile config --quiet
 }
 
+Invoke-Step "Web gateway readiness config" {
+    $nginxConfig = Join-Path $RepoRoot "deploy\nginx\default.conf"
+    $composeConfig = Join-Path $RepoRoot "deploy\docker-compose.yml"
+    Assert-FileContains -Path $nginxConfig -Pattern "location /readyz" -Message "nginx should proxy /readyz to the API service."
+    Assert-FileContains -Path $composeConfig -Pattern "condition: service_healthy" -Message "web service should wait for API health before starting."
+    Assert-FileContains -Path $composeConfig -Pattern "http://localhost/healthz" -Message "web service healthcheck should call the nginx health endpoint."
+}
+
 Invoke-Step "Go tests" {
     Push-Location $ServerDir
     try {

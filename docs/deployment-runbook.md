@@ -62,7 +62,7 @@ curl http://localhost:8081/healthz
 { "status": "ok", "time": "2026-05-27T14:00:00+08:00" }
 ```
 
-`/healthz` 只表示 API 进程可响应；`/readyz` 会检查 PostgreSQL 和 Redis。Docker Compose 中 API 容器使用 `/readyz` 作为 healthcheck。
+`/healthz` 只表示 API 进程可响应；`/readyz` 会检查 PostgreSQL 和 Redis。H5 Web 容器会通过 nginx 代理 `/healthz` 和 `/readyz` 到 API，Compose 中 API 容器使用 `/readyz` 作为 healthcheck，Web 容器等待 API healthy 后再启动并使用 `/healthz` 做自身 healthcheck。
 
 ## 4. 本地 Docker 逻辑验证
 

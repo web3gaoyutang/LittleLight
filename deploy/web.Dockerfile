@@ -10,6 +10,7 @@ COPY app/ ./
 RUN npm run build:h5
 
 FROM ${NGINX_IMAGE}
+RUN apk add --no-cache curl
 COPY deploy/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /src/app/dist /usr/share/nginx/html
 EXPOSE 80
