@@ -1,0 +1,1067 @@
+openapi: 3.0.3
+info:
+  title: LittleLight Teacher API
+  version: 0.1.0
+  description: 微光老师工程 API 契约，覆盖当前 MVP 的工作台、课表、待办、家校沟通、疗愈和 AI 能力。
+servers:
+  - url: http://localhost:8080
+    description: local API
+  - url: http://localhost:8081
+    description: docker web gateway
+security:
+  - DevUser: []
+tags:
+  - name: Health
+  - name: Auth
+  - name: Me
+  - name: Dashboard
+  - name: Courses
+  - name: Reminders
+  - name: Parents
+  - name: CommunicationRecords
+  - name: AI
+  - name: Healing
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      security: []
+      summary: Health check
+      responses:
+        "200":
+          description: Service health state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /readyz:
+    get:
+      tags: [Health]
+      security: []
+      summary: Readiness check
+      responses:
+        "200":
+          description: Service and dependencies are ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+        "503":
+          description: One or more required dependencies are unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+  /api/v1/auth/wechat/mock:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Mock WeChat login for development
+      description: 开发阶段微信模拟登录；后续真实微信登录可复用同样响应结构。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WechatMockLoginInput"
+      responses:
+        "200":
+          description: Mock WeChat session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WechatSession"
+  /api/v1/me:
+    get:
+      tags: [Me]
+      summary: Get current teacher profile
+      responses:
+        "200":
+          description: Current teacher profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+    put:
+      tags: [Me]
+      summary: Update current teacher profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileInput"
+      responses:
+        "200":
+          description: Updated teacher profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+  /api/v1/me/favorites:
+    get:
+      tags: [Me]
+      summary: List favorites
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: Filter by favorite type.
+      responses:
+        "200":
+          description: Favorite list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Favorite"
+    post:
+      tags: [Me]
+      summary: Create a favorite item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FavoriteInput"
+      responses:
+        "200":
+          description: Created favorite
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Favorite"
+  /api/v1/me/favorites/{id}:
+    delete:
+      tags: [Me]
+      summary: Delete a favorite item
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+  /api/v1/dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Get today's dashboard summary
+      parameters:
+        - $ref: "#/components/parameters/Day"
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /api/v1/courses:
+    get:
+      tags: [Courses]
+      summary: List courses by weekday
+      parameters:
+        - name: weekday
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 6
+          description: 0 is Sunday, 6 is Saturday.
+      responses:
+        "200":
+          description: Course list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Course"
+    post:
+      tags: [Courses]
+      summary: Create a course
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseInput"
+      responses:
+        "200":
+          description: Created course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+  /api/v1/courses/imports:
+    post:
+      tags: [Courses]
+      summary: Import courses from .xlsx or .csv
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Course import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+  /api/v1/courses/{id}:
+    get:
+      tags: [Courses]
+      summary: Get a course
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Course detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Courses]
+      summary: Update a course
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CourseInput"
+      responses:
+        "200":
+          description: Updated course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+    delete:
+      tags: [Courses]
+      summary: Delete a course
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+  /api/v1/reminders:
+    get:
+      tags: [Reminders]
+      summary: List reminders by day
+      parameters:
+        - $ref: "#/components/parameters/Day"
+      responses:
+        "200":
+          description: Reminder list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reminder"
+    post:
+      tags: [Reminders]
+      summary: Create a reminder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReminderInput"
+      responses:
+        "200":
+          description: Created reminder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reminder"
+  /api/v1/reminders/{id}:
+    get:
+      tags: [Reminders]
+      summary: Get a reminder
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Reminder detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reminder"
+    put:
+      tags: [Reminders]
+      summary: Update a reminder
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReminderInput"
+      responses:
+        "200":
+          description: Updated reminder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reminder"
+    delete:
+      tags: [Reminders]
+      summary: Soft-delete a reminder
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+  /api/v1/reminders/{id}/complete:
+    post:
+      tags: [Reminders]
+      summary: Mark a reminder as done
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+  /api/v1/reminders/{id}/snooze:
+    post:
+      tags: [Reminders]
+      summary: Snooze a reminder
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [until]
+              properties:
+                until:
+                  type: string
+                  format: date-time
+      responses:
+        "200":
+          description: Snoozed reminder
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reminder"
+  /api/v1/parents:
+    get:
+      tags: [Parents]
+      summary: List parent profiles
+      responses:
+        "200":
+          description: Parent profile list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ParentProfile"
+    post:
+      tags: [Parents]
+      summary: Create a parent profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParentProfileInput"
+      responses:
+        "200":
+          description: Created parent profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentProfile"
+  /api/v1/parents/imports:
+    post:
+      tags: [Parents]
+      summary: Import parent profiles from .xlsx or .csv
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: Parent profile import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+  /api/v1/parents/{id}:
+    get:
+      tags: [Parents]
+      summary: Get a parent profile
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Parent profile detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentProfile"
+    put:
+      tags: [Parents]
+      summary: Update a parent profile
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParentProfileInput"
+      responses:
+        "200":
+          description: Updated parent profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParentProfile"
+    delete:
+      tags: [Parents]
+      summary: Delete a parent profile
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+  /api/v1/communication-records:
+    get:
+      tags: [CommunicationRecords]
+      summary: List communication records
+      parameters:
+        - name: parentId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Communication record list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CommunicationRecord"
+    post:
+      tags: [CommunicationRecords]
+      summary: Create a communication record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommunicationRecordInput"
+      responses:
+        "200":
+          description: Created communication record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunicationRecord"
+  /api/v1/communication-records/{id}:
+    get:
+      tags: [CommunicationRecords]
+      summary: Get a communication record
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Communication record detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunicationRecord"
+    put:
+      tags: [CommunicationRecords]
+      summary: Update a communication record
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommunicationRecordInput"
+      responses:
+        "200":
+          description: Updated communication record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunicationRecord"
+    delete:
+      tags: [CommunicationRecords]
+      summary: Delete a communication record
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+  /api/v1/ai/parent-drafts:
+    post:
+      tags: [AI]
+      summary: Generate parent communication drafts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParentDraftRequest"
+      responses:
+        "200":
+          description: Draft list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AIDraft"
+  /api/v1/ai/praise:
+    post:
+      tags: [AI]
+      summary: Generate an AI praise sentence
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PraiseRequest"
+      responses:
+        "200":
+          description: Praise draft
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIDraft"
+  /api/v1/ai/generations:
+    get:
+      tags: [AI]
+      summary: List AI generation audit records
+      parameters:
+        - name: scenario
+          in: query
+          schema:
+            type: string
+            enum: [parent_drafts, praise]
+          description: Filter by AI generation scenario.
+      responses:
+        "200":
+          description: AI generation audit record list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AIGeneration"
+  /api/v1/ai/generations/{id}:
+    get:
+      tags: [AI]
+      summary: Get an AI generation audit record
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: AI generation audit record detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIGeneration"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/healing/entries:
+    get:
+      tags: [Healing]
+      summary: List healing entries
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [breath, praise, treehole, sound]
+          description: Filter by healing entry type.
+      responses:
+        "200":
+          description: Healing entry list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HealingEntry"
+    post:
+      tags: [Healing]
+      summary: Save a healing entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HealingEntryInput"
+      responses:
+        "200":
+          description: Created healing entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealingEntry"
+  /api/v1/healing/entries/{id}:
+    get:
+      tags: [Healing]
+      summary: Get a healing entry
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Healing entry detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealingEntry"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Healing]
+      summary: Delete a healing entry
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "404":
+          $ref: "#/components/responses/NotFound"
+components:
+  securitySchemes:
+    DevUser:
+      type: apiKey
+      in: header
+      name: X-User-ID
+      description: 开发阶段鉴权；未传时后端使用默认种子用户。
+  parameters:
+    ID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    Day:
+      name: day
+      in: query
+      schema:
+        type: string
+        format: date
+      example: "2026-05-27"
+  responses:
+    OK:
+      description: Boolean operation result
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok:
+                type: boolean
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    ID:
+      type: string
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        time:
+          type: string
+          format: date-time
+    ReadinessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            postgres: ok
+            redis: ok
+        time:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+    WechatMockLoginInput:
+      type: object
+      properties:
+        code:
+          type: string
+          description: 模拟微信 code；真实微信登录接入后替换为 wx.login 返回的 code。
+        nickName:
+          type: string
+          description: 模拟微信昵称。
+        avatarUrl:
+          type: string
+          description: 模拟微信头像。
+    WechatSession:
+      type: object
+      properties:
+        userId:
+          $ref: "#/components/schemas/ID"
+        sessionToken:
+          type: string
+        openId:
+          type: string
+        profile:
+          $ref: "#/components/schemas/UserProfile"
+        expiresAt:
+          type: string
+          format: date-time
+    UserProfile:
+      allOf:
+        - $ref: "#/components/schemas/UserProfileInput"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/ID"
+            createdAt:
+              type: string
+              format: date-time
+    UserProfileInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        school:
+          type: string
+        stage:
+          type: string
+        subject:
+          type: string
+        isHeadTeacher:
+          type: boolean
+        proStatus:
+          type: string
+          enum: [free, trial, pro, expired]
+        reminderPolicy:
+          type: string
+          enum: [normal, low_interrupt]
+    Favorite:
+      allOf:
+        - $ref: "#/components/schemas/FavoriteInput"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/ID"
+            createdAt:
+              type: string
+              format: date-time
+    FavoriteInput:
+      type: object
+      required: [type, title, content]
+      properties:
+        type:
+          type: string
+          enum: [communication_template, ai_praise, class_feedback]
+        title:
+          type: string
+        content:
+          type: string
+        sourceId:
+          type: string
+          nullable: true
+    ImportResult:
+      type: object
+      properties:
+        imported:
+          type: integer
+        skipped:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+    Course:
+      allOf:
+        - $ref: "#/components/schemas/CourseInput"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/ID"
+            createdAt:
+              type: string
+              format: date-time
+    CourseInput:
+      type: object
+      required: [title, className, weekday, startTime, endTime]
+      properties:
+        title:
+          type: string
+        className:
+          type: string
+        location:
+          type: string
+        weekday:
+          type: integer
+          minimum: 0
+          maximum: 6
+        startTime:
+          type: string
+          example: "09:30"
+        endTime:
+          type: string
+          example: "10:15"
+        note:
+          type: string
+    Reminder:
+      allOf:
+        - $ref: "#/components/schemas/ReminderInput"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/ID"
+            status:
+              type: string
+              enum: [pending, done, snoozed, deleted]
+            createdAt:
+              type: string
+              format: date-time
+            doneAt:
+              type: string
+              format: date-time
+              nullable: true
+    ReminderInput:
+      type: object
+      required: [title, remindAt]
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+        remindAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [pending, done, snoozed, deleted]
+        note:
+          type: string
+        parentId:
+          type: string
+          nullable: true
+        courseId:
+          type: string
+          nullable: true
+    ParentProfile:
+      allOf:
+        - $ref: "#/components/schemas/ParentProfileInput"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/ID"
+            createdAt:
+              type: string
+              format: date-time
+    ParentProfileInput:
+      type: object
+      required: [studentName, className, parentName, relationship]
+      properties:
+        studentName:
+          type: string
+        className:
+          type: string
+        parentName:
+          type: string
+        relationship:
+          type: string
+        contact:
+          type: string
+        communicationStyle:
+          type: string
+        riskLevel:
+          type: string
+          enum: [low, medium, high]
+        importantNotes:
+          type: string
+        nextAction:
+          type: string
+    CommunicationRecord:
+      allOf:
+        - $ref: "#/components/schemas/CommunicationRecordInput"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/ID"
+            createdAt:
+              type: string
+              format: date-time
+    CommunicationRecordInput:
+      type: object
+      required: [student, channel, reason, summary]
+      properties:
+        parentId:
+          type: string
+          nullable: true
+        student:
+          type: string
+        channel:
+          type: string
+        reason:
+          type: string
+        summary:
+          type: string
+        result:
+          type: string
+        riskLevel:
+          type: string
+          enum: [low, medium, high]
+        followUpAt:
+          type: string
+          format: date-time
+          nullable: true
+    HealingEntry:
+      allOf:
+        - $ref: "#/components/schemas/HealingEntryInput"
+        - type: object
+          properties:
+            id:
+              $ref: "#/components/schemas/ID"
+            createdAt:
+              type: string
+              format: date-time
+    HealingEntryInput:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [breath, praise, treehole, sound]
+        mood:
+          type: string
+        content:
+          type: string
+        aiReply:
+          type: string
+    AIDraft:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        version:
+          type: string
+        tone:
+          type: string
+        style:
+          type: string
+        content:
+          type: string
+        safety:
+          type: string
+    AIGeneration:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        scenario:
+          type: string
+          enum: [parent_drafts, praise]
+        input:
+          type: object
+          additionalProperties: true
+        output:
+          type: object
+          additionalProperties: true
+        safetyLabel:
+          type: string
+        tokenUsage:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+    ParentDraftRequest:
+      type: object
+      required: [issue]
+      properties:
+        issue:
+          type: string
+        parentStyle:
+          type: string
+        tone:
+          type: string
+        studentName:
+          type: string
+    PraiseRequest:
+      type: object
+      required: [content]
+      properties:
+        persona:
+          type: string
+        content:
+          type: string
+        mood:
+          type: string
+    DashboardSummary:
+      type: object
+      properties:
+        todayLabel:
+          type: string
+        coursesCount:
+          type: integer
+        remindersCount:
+          type: integer
+        followUpsCount:
+          type: integer
+        nextCourse:
+          $ref: "#/components/schemas/Course"
+        reminders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reminder"
+        focusParents:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParentProfile"
+        rhythm:
+          $ref: "#/components/schemas/RhythmState"
+    RhythmState:
+      type: object
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        description:
+          type: string

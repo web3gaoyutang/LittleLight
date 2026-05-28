@@ -1,0 +1,32 @@
+{
+  "easycom": {
+    "autoscan": true
+  },
+  "pages": [
+    { "path": "pages/home/index", "style": { "navigationBarTitleText": "今日" } },
+    { "path": "pages/heal/index", "style": { "navigationBarTitleText": "疗愈" } },
+    { "path": "pages/communication/index", "style": { "navigationBarTitleText": "沟通" } },
+    { "path": "pages/communication/parent-detail", "style": { "navigationBarTitleText": "家长档案" } },
+    { "path": "pages/schedule/index", "style": { "navigationBarTitleText": "日程" } },
+    { "path": "pages/profile/index", "style": { "navigationBarTitleText": "我的" } }
+  ],
+  "tabBar": {
+    "color": "#7f89a4",
+    "selectedColor": "#3f5a94",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/home/index", "text": "首页" },
+      { "pagePath": "pages/heal/index", "text": "疗愈" },
+      { "pagePath": "pages/communication/index", "text": "沟通" },
+      { "pagePath": "pages/schedule/index", "text": "日程" },
+      { "pagePath": "pages/profile/index", "text": "我的" }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "微光老师",
+    "navigationBarBackgroundColor": "#f8f9ff",
+    "backgroundColor": "#f8f9ff"
+  }
+}

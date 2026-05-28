@@ -1,1 +1,24 @@
+# Go build artifacts
+bin/
+*.exe
+*.test
+coverage.out
+
+# Local runtime helpers
+.local-*.pid
+local-*.log
+
+# Env files
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Uni-app / Node
+node_modules/
+dist/
+unpackage/
+
+# OS
 .DS_Store
+Thumbs.db
