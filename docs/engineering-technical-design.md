@@ -680,6 +680,7 @@ Docker Compose 中：
 - PostgreSQL 每日全量备份。
 - 关键表启用 PITR 或云数据库备份。
 - Redis 不作为唯一事实来源，只做缓存和临时任务状态。
+- Docker Compose 发布流程、PostgreSQL 备份恢复和回滚步骤记录在 `docs/deployment-runbook.md`。
 
 ## 13. 安全与隐私
 
@@ -738,6 +739,7 @@ Docker Compose 中：
 - API readiness 检查已接入：`/healthz` 表示进程存活，`/readyz` 会检查 PostgreSQL 与 Redis；Docker API 容器使用 `/readyz` 作为健康检查，H5 Web 容器等待 API healthy 后启动，并通过 nginx 暴露同源 `/healthz` 与 `/readyz`。
 - 本地逻辑验证脚本已补充并通过：PostgreSQL 与 Redis 由 Docker Compose 提供，本机 Go API 连接容器完成健康检查、业务写入查询、数据库落库和 Redis 缓存键验证。
 - 本地统一回归脚本已补充：`scripts/verify-all.ps1` 可串联 OpenAPI、前后端环境示例、Docker Compose、Web 网关 readiness、Go 测试、H5 构建、密钥入库检查，并可通过 `-IncludeDockerLogic` 串联 Docker 业务逻辑验证。
+- 部署运行手册已覆盖启动、健康检查、发布、PostgreSQL 备份恢复、Redis 缓存处理、回滚和 CI 验证。
 - 微信模拟登录已接入，前端“我的”页可发起模拟登录并保存登录态；HTTP 开发鉴权中间件支持 `X-User-ID` 并保留默认种子用户。
 - Excel/CSV 课表导入和班级名单导入已接入前端入口与后端解析接口；当前支持 `.xlsx` 与 `.csv`，暂不解析老式二进制 `.xls`。
 - 详细技术文档。

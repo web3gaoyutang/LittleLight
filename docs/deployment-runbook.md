@@ -133,7 +133,72 @@ MIGRATIONS_DIR=server/migrations
 
 当前迁移脚本保持幂等，服务重复启动不会重复插入种子数据。Docker / 生产环境迁移失败会让 API 退出；`APP_ENV=local` 下迁移失败会降级到内存仓库。
 
-## 7. 常用运维命令
+## 7. 发布流程
+
+建议按以下顺序发布：
+
+1. 确认目标分支 CI 通过，尤其是 `docker-build` job。
+2. 在发布机器同步最新代码，或拉取已构建好的镜像。
+3. 确认 `.env` 中数据库、Redis、LLM、镜像源等配置完整，真实密钥只放部署环境。
+4. 先执行配置检查：
+
+```bash
+docker compose -f deploy/docker-compose.yml config --quiet
+```
+
+5. 启动或滚动更新服务：
+
+```bash
+docker compose -f deploy/docker-compose.yml up -d --build
+```
+
+6. 等待健康检查：
+
+```bash
+docker compose -f deploy/docker-compose.yml ps
+curl http://localhost:8080/readyz
+curl http://localhost:8081/readyz
+```
+
+7. 通过 H5 入口执行一次 smoke test：微信模拟登录、首页加载、创建待办、创建家长、生成一条 AI 草稿。
+
+## 8. 数据备份与恢复
+
+PostgreSQL 是业务事实来源；Redis 只做缓存和临时状态，不作为唯一数据来源。
+
+创建 PostgreSQL 备份：
+
+```bash
+docker compose -f deploy/docker-compose.yml exec -T postgres pg_dump -U littlelight -d littlelight --clean --if-exists > littlelight-backup.sql
+```
+
+恢复 PostgreSQL 备份前，应先停止 API 和 Web，避免恢复过程中产生新写入：
+
+```bash
+docker compose -f deploy/docker-compose.yml stop web api
+docker compose -f deploy/docker-compose.yml exec -T postgres psql -U littlelight -d littlelight < littlelight-backup.sql
+docker compose -f deploy/docker-compose.yml up -d api web
+```
+
+Redis 可通过 AOF 卷恢复缓存状态；如果只是缓存异常，优先清空 Redis 并让 API 重新生成 dashboard 缓存：
+
+```bash
+docker compose -f deploy/docker-compose.yml exec -T redis redis-cli FLUSHDB
+```
+
+## 9. 回滚流程
+
+代码或镜像回滚：
+
+1. 保留当前故障版本的日志。
+2. 切回上一个稳定 Git commit 或镜像 tag。
+3. 重新执行 `docker compose -f deploy/docker-compose.yml up -d --build`。
+4. 检查 `http://localhost:8080/readyz` 和 `http://localhost:8081/readyz`。
+5. 如回滚前已执行破坏性迁移，先按备份文件恢复 PostgreSQL，再启动 API/Web。
+
+当前迁移脚本保持向前幂等，但还没有独立 down migration。涉及删字段、改字段类型、批量重写数据的变更必须先创建备份，并在发布说明中写明恢复步骤。
+
+## 10. 常用运维命令
 
 ```bash
 docker compose -f deploy/docker-compose.yml ps
@@ -149,7 +214,7 @@ docker compose -f deploy/docker-compose.yml down
 docker compose -f deploy/docker-compose.yml down -v
 ```
 
-## 8. CI 验证
+## 11. CI 验证
 
 GitHub Actions 会执行：
 

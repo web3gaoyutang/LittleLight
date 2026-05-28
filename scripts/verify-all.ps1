@@ -130,6 +130,13 @@ Invoke-Step "Web gateway readiness config" {
     Assert-FileContains -Path $composeConfig -Pattern "http://localhost/healthz" -Message "web service healthcheck should call the nginx health endpoint."
 }
 
+Invoke-Step "Deployment runbook coverage" {
+    $runbook = Join-Path $RepoRoot "docs\deployment-runbook.md"
+    foreach ($keyword in @("pg_dump", "FLUSHDB", "down migration", "docker-build", "readyz")) {
+        Assert-FileContains -Path $runbook -Pattern $keyword -Message "deployment runbook should cover $keyword."
+    }
+}
+
 Invoke-Step "Go tests" {
     Push-Location $ServerDir
     try {
