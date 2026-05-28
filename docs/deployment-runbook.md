@@ -91,7 +91,29 @@ LLM_MODEL=gpt-4o-mini
 
 未配置 LLM 或 LLM 调用失败时，API 会回落到本地 mock 生成逻辑，保证课程、提醒、沟通、疗愈等主流程仍可验证。
 
-## 5. 数据迁移
+## 5. 本地工程回归
+
+提交前建议运行统一验证脚本：
+
+```powershell
+.\scripts\verify-all.ps1
+```
+
+脚本默认执行：
+
+- OpenAPI 契约关键结构检查。
+- Docker Compose 配置解析。
+- Go 后端测试。
+- uni-app H5 生产构建。
+- 本地 `.env` 中的 LLM 配置未被写入 Git 跟踪文件检查。
+
+需要同时验证 PostgreSQL/Redis 业务逻辑闭环时执行：
+
+```powershell
+.\scripts\verify-all.ps1 -IncludeDockerLogic
+```
+
+## 6. 数据迁移
 
 API 启动时读取 `MIGRATIONS_DIR` 并按文件名顺序执行 SQL 文件。
 
@@ -109,7 +131,7 @@ MIGRATIONS_DIR=server/migrations
 
 当前迁移脚本保持幂等，服务重复启动不会重复插入种子数据。Docker / 生产环境迁移失败会让 API 退出；`APP_ENV=local` 下迁移失败会降级到内存仓库。
 
-## 6. 常用运维命令
+## 7. 常用运维命令
 
 ```bash
 docker compose -f deploy/docker-compose.yml ps
@@ -125,7 +147,7 @@ docker compose -f deploy/docker-compose.yml down
 docker compose -f deploy/docker-compose.yml down -v
 ```
 
-## 7. CI 验证
+## 8. CI 验证
 
 GitHub Actions 会执行：
 

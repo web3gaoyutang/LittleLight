@@ -22,6 +22,9 @@ docker compose -f deploy/docker-compose.yml up --build
 # 使用 Docker 中的 PostgreSQL/Redis + 本机 Go API 做逻辑验证
 powershell -ExecutionPolicy Bypass -File .\scripts\verify-docker.ps1
 
+# 一键运行本地工程回归；需要连 Docker 业务逻辑时追加 -IncludeDockerLogic
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-all.ps1
+
 # 启动 uni-app H5
 cd app
 npm ci
@@ -50,4 +53,5 @@ npm run dev:h5
 cd server && go test ./...
 cd ../app && npm run build:h5
 cd .. && docker compose -f deploy/docker-compose.yml config --quiet
+powershell -ExecutionPolicy Bypass -File .\scripts\verify-all.ps1 -IncludeDockerLogic
 ```
