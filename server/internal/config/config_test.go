@@ -1,6 +1,10 @@
 package config
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestLoadDefaults(t *testing.T) {
 	t.Setenv("APP_ENV", "")
@@ -73,5 +77,56 @@ func TestLoadRedisDBFallback(t *testing.T) {
 	t.Setenv("REDIS_DB", "3")
 	if cfg := Load(); cfg.RedisDB != 3 {
 		t.Fatalf("expected configured redis db, got %d", cfg.RedisDB)
+	}
+}
+
+func TestLoadReadsDotEnvWithoutOverridingExplicitEnvironment(t *testing.T) {
+	t.Setenv("APP_ENV", "")
+	t.Setenv("HTTP_ADDR", ":19090")
+	t.Setenv("DATABASE_URL", "")
+	t.Setenv("REDIS_ADDR", "")
+	t.Setenv("REDIS_PASSWORD", "")
+	t.Setenv("REDIS_DB", "")
+	t.Setenv("MIGRATIONS_DIR", "")
+	t.Setenv("AI_PROVIDER", "")
+	t.Setenv("AI_API_KEY", "")
+	t.Setenv("LLM_API_KEY", "")
+	t.Setenv("LLM_BASE_URL", "")
+	t.Setenv("LLM_MODEL", "")
+
+	tempDir := t.TempDir()
+	previousDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get working dir: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chdir(previousDir)
+	})
+	if err := os.WriteFile(filepath.Join(tempDir, ".env"), []byte(`
+APP_ENV=docker
+HTTP_ADDR=:18080
+REDIS_DB=4
+LLM_API_KEY='dotenv-key'
+LLM_BASE_URL="https://dotenv.example.com"
+`), 0o600); err != nil {
+		t.Fatalf("write .env: %v", err)
+	}
+	if err := os.Chdir(tempDir); err != nil {
+		t.Fatalf("chdir temp: %v", err)
+	}
+
+	cfg := Load()
+
+	if cfg.AppEnv != "docker" {
+		t.Fatalf("expected APP_ENV from .env, got %s", cfg.AppEnv)
+	}
+	if cfg.HTTPAddr != ":19090" {
+		t.Fatalf("explicit HTTP_ADDR should win over .env, got %s", cfg.HTTPAddr)
+	}
+	if cfg.RedisDB != 4 {
+		t.Fatalf("expected Redis DB from .env, got %d", cfg.RedisDB)
+	}
+	if cfg.AIProvider != "llm" || cfg.LLMAPIKey != "dotenv-key" || cfg.LLMBaseURL != "https://dotenv.example.com" {
+		t.Fatalf("expected LLM config from .env, got %+v", cfg)
 	}
 }

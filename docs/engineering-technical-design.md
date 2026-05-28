@@ -149,7 +149,7 @@ go mod download
 go run ./cmd/api
 ```
 
-当前服务启动时会尝试连接 PostgreSQL 和 Redis。如果本地未安装依赖，会退回内存数据仓库，便于先开发 API 形态。
+当前服务启动时会尝试读取仓库根目录或当前工作目录附近的 `.env`，但不会覆盖已经显式设置的进程环境变量；随后连接 PostgreSQL 和 Redis。如果本地未安装依赖，`APP_ENV=local` 会退回内存数据仓库，便于先开发 API 形态。
 
 ## 5. 环境变量
 

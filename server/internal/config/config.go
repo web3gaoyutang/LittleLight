@@ -1,8 +1,11 @@
 package config
 
 import (
+	"bufio"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -21,6 +24,8 @@ type Config struct {
 }
 
 func Load() Config {
+	loadDotEnv()
+
 	llmAPIKey := env("LLM_API_KEY", env("AI_API_KEY", ""))
 	llmBaseURL := env("LLM_BASE_URL", "")
 	aiProvider := env("AI_PROVIDER", "")
@@ -44,6 +49,49 @@ func Load() Config {
 		LLMBaseURL:    llmBaseURL,
 		LLMModel:      env("LLM_MODEL", "gpt-4o-mini"),
 	}
+}
+
+func loadDotEnv() {
+	for _, path := range dotEnvCandidates() {
+		file, err := os.Open(path)
+		if err != nil {
+			continue
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			key, value, ok := parseEnvLine(scanner.Text())
+			if !ok || os.Getenv(key) != "" {
+				continue
+			}
+			_ = os.Setenv(key, value)
+		}
+		return
+	}
+}
+
+func dotEnvCandidates() []string {
+	return []string{
+		".env",
+		filepath.Join("..", ".env"),
+		filepath.Join("..", "..", ".env"),
+	}
+}
+
+func parseEnvLine(line string) (string, string, bool) {
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" || strings.HasPrefix(trimmed, "#") || !strings.Contains(trimmed, "=") {
+		return "", "", false
+	}
+	parts := strings.SplitN(trimmed, "=", 2)
+	key := strings.TrimSpace(parts[0])
+	if key == "" || strings.ContainsAny(key, " \t") {
+		return "", "", false
+	}
+	value := strings.TrimSpace(parts[1])
+	value = strings.Trim(value, `"'`)
+	return key, value, true
 }
 
 func env(key, fallback string) string {
