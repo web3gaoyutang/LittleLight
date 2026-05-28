@@ -48,3 +48,13 @@ jobs:
       - name: Build H5
         working-directory: app
         run: npm run build:h5
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [docs, server, app]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f deploy/server.Dockerfile -t littlelight-api:ci .
+      - name: Build Web image
+        run: docker build -f deploy/web.Dockerfile -t littlelight-web:ci .

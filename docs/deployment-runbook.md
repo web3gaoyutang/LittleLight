@@ -157,5 +157,7 @@ GitHub Actions 会执行：
 - Docker Compose 配置解析检查。
 - Go 依赖下载和 `go test ./...`。
 - uni-app H5 依赖锁安装和 `npm run build:h5`。
+- Go API 与 H5 Web Docker 镜像构建检查，不推送镜像。
 
 本机验证建议使用 Docker Compose 拉起 PostgreSQL、Redis、API 和 H5 Web，再执行健康检查与核心业务接口请求；CI 作为提交级回归保障。
+如果本机无法访问 Docker Hub，可先通过 `.env` 覆盖镜像源，或运行 `.\scripts\verify-all.ps1 -IncludeDockerLogic` 验证 PostgreSQL、Redis 与 API 主业务逻辑；镜像构建由 GitHub Actions 的 `docker-build` job 继续兜底。
