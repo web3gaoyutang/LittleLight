@@ -5,7 +5,9 @@
         <text class="caption">课程 · 待办 · 提醒</text>
         <view class="title">今日安排</view>
       </view>
-      <button class="bell" data-testid="schedule-quick-reminder-button" @tap="openReminderForm">+</button>
+      <button class="avatar-btn" data-testid="schedule-quick-reminder-button" @tap="openReminderForm">
+        <text class="icon-chip"><AppIcon name="plus" /></text>
+      </button>
     </view>
 
     <view class="week-row">
@@ -18,25 +20,25 @@
     <view class="section-head row between">
       <text class="section-title">本周日程</text>
       <view class="row action-row">
-        <button class="ghost-btn small" @tap="downloadCourseTemplate">模板</button>
+        <button class="ghost-btn small" @tap="downloadCourseTemplate"><text class="btn-icon"><AppIcon name="table" /></text>模板</button>
         <button class="ghost-btn small" :disabled="isActionPending('import-courses')" @tap="importSchedule">
-          {{ isActionPending('import-courses') ? '预览中...' : '导入课表' }}
+          <text class="btn-icon"><AppIcon name="upload" /></text>{{ isActionPending('import-courses') ? '预览中...' : '导入课表' }}
         </button>
       </view>
     </view>
     <view class="section-head row between compact">
       <text class="caption">当日课程</text>
-      <button class="primary-btn small" data-testid="course-add-button" @tap="openCourseForm">添加日程</button>
+      <button class="primary-btn small" data-testid="course-add-button" @tap="openCourseForm"><text class="btn-icon"><AppIcon name="calendar" /></text>添加日程</button>
     </view>
     <AppState v-if="loading" type="loading" message="正在加载日程..." />
     <AppState v-if="error" type="error" :message="error" action-text="重试" @action="load" />
-    <view v-for="course in courses" :key="course.id" class="card">
+    <view v-for="course in courses" :key="course.id" class="card schedule-card course-card">
       <view class="row between">
         <text class="tag">{{ course.startTime }} - {{ course.endTime }}</text>
         <view class="row action-row">
-          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap="editCourse(course)">编辑</button>
+          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap="editCourse(course)"><text class="btn-icon"><AppIcon name="edit" /></text>编辑</button>
           <button class="ghost-btn mini danger" :disabled="isActionPending(`delete-course:${course.id}`)" @tap="removeCourse(course.id)">
-            {{ isActionPending(`delete-course:${course.id}`) ? '删除中...' : '删除' }}
+            <text class="btn-icon"><AppIcon name="trash" /></text>{{ isActionPending(`delete-course:${course.id}`) ? '删除中...' : '删除' }}
           </button>
         </view>
       </view>
@@ -52,19 +54,22 @@
 
     <view class="section-head row between">
       <text class="section-title">待办事项</text>
-      <button class="primary-btn small" data-testid="reminder-add-button" @tap="openReminderForm">添加待办</button>
+      <button class="primary-btn small" data-testid="reminder-add-button" @tap="openReminderForm"><text class="btn-icon"><AppIcon name="plus" /></text>添加待办</button>
     </view>
-    <view v-for="item in reminders" :key="item.id" class="card">
-      <view class="row between">
-        <text class="tag">{{ formatTime(item.remindAt) }} · {{ statusText(item.status) }}</text>
+    <view v-for="item in reminders" :key="item.id" class="card schedule-card todo-card">
+      <view class="todo-head">
+        <view class="time-meta" :class="`status-${item.status || 'pending'}`">
+          <text class="time-text">{{ formatTime(item.remindAt) }}</text>
+          <text class="status-text">{{ statusText(item.status) }}</text>
+        </view>
         <view class="row action-row">
-          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap="editReminder(item)">编辑</button>
-          <button v-if="canSnoozeReminder(item)" class="ghost-btn mini" :disabled="hasPendingAction" @tap="openSnoozeForm(item)">延后</button>
+          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap="editReminder(item)"><text class="btn-icon"><AppIcon name="edit" /></text>编辑</button>
+          <button v-if="canSnoozeReminder(item)" class="ghost-btn mini" :disabled="hasPendingAction" @tap="openSnoozeForm(item)"><text class="btn-icon"><AppIcon name="clock" /></text>延后</button>
           <button v-if="canCompleteReminder(item)" class="ghost-btn mini success" :disabled="isActionPending(`complete-reminder:${item.id}`)" @tap="complete(item.id)">
-            {{ isActionPending(`complete-reminder:${item.id}`) ? '完成中...' : '完成' }}
+            <text class="btn-icon"><AppIcon name="check" /></text>{{ isActionPending(`complete-reminder:${item.id}`) ? '完成中...' : '完成' }}
           </button>
           <button class="ghost-btn mini danger" :disabled="isActionPending(`delete-reminder:${item.id}`)" @tap="removeReminder(item.id)">
-            {{ isActionPending(`delete-reminder:${item.id}`) ? '删除中...' : '删除' }}
+            <text class="btn-icon"><AppIcon name="trash" /></text>{{ isActionPending(`delete-reminder:${item.id}`) ? '删除中...' : '删除' }}
           </button>
         </view>
       </view>
@@ -158,6 +163,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { api } from '../../api/client'
 import { chooseImportFile, clockBefore, confirmAction, ensureLoggedIn, errorMessage, hasText, showToast, trimmed, validClock, withinLength } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
+import AppIcon from '../../components/AppIcon.vue'
 
 const today = new Date()
 const selectedDay = ref(toISODate(today))
@@ -642,28 +648,38 @@ function validISODate(value) {
 
 <style src="../../static/common.css"></style>
 <style scoped>
-.page-wrap { padding: 28rpx 0 120rpx; }
-.header, .section-head { padding: 0 32rpx 12rpx; }
-.compact { padding-bottom: 0; }
-.bell { width: 88rpx; height: 88rpx; border-radius: 28rpx; background: rgba(255,255,255,.86); font-size: 42rpx; color: #0e7490; }
-.week-row { display: flex; gap: 16rpx; padding: 16rpx 32rpx; overflow-x: auto; }
-.day { min-width: 88rpx; height: 116rpx; border-radius: 28rpx; background: rgba(255,255,255,.76); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10rpx; color: #506075; font-weight: 900; }
-.day.active { color: #fff; background: linear-gradient(145deg,#0891b2,#059669); }
-.small { min-height: 64rpx; padding: 0 24rpx; font-size: 24rpx; }
-.mini { min-height: 56rpx; padding: 0 18rpx; font-size: 22rpx; }
-.danger { color: #b95c61; }
-.success { color: #059669; }
+.avatar-btn { width: 88rpx; height: 88rpx; padding: 0; border-radius: 28rpx; background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(250,253,255,.86)); border: 1px solid rgba(97,116,166,.14); box-shadow: 0 10rpx 22rpx rgba(73,91,146,.10), inset 0 1px 0 rgba(255,255,255,.96); display: flex; align-items: center; justify-content: center; }
+.section-head { padding: 28rpx 4rpx 10rpx; }
+.compact { padding-top: 10rpx; }
+.week-row { display: flex; gap: 14rpx; margin-right: -32rpx; padding: 12rpx 32rpx 20rpx 0; overflow-x: auto; scrollbar-width: none; }
+.week-row::-webkit-scrollbar { display: none; }
+.day { flex: 0 0 94rpx; height: 118rpx; border-radius: 26rpx; background: rgba(255,255,255,.62); border: 1rpx solid rgba(255,255,255,.78); box-shadow: inset 0 1rpx 0 rgba(255,255,255,.86); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8rpx; color: #585b77; font-size: 23rpx; font-weight: 900; }
+.day.active { color: #fff; background: linear-gradient(145deg, #6f86df, #52b8cf); box-shadow: 0 12rpx 24rpx rgba(89,102,209,.20); }
+.small { min-height: 62rpx; padding: 0 22rpx; font-size: 24rpx; }
+.mini { min-height: 54rpx; padding: 0 16rpx; font-size: 22rpx; }
+.btn-icon { width: 32rpx; height: 32rpx; background: rgba(255,255,255,.46); font-size: 19rpx; }
 .action-row { gap: 10rpx; flex-wrap: wrap; justify-content: flex-end; }
+.schedule-card { display: flex; flex-direction: column; gap: 14rpx; margin: 16rpx 0; }
+.course-card { background: linear-gradient(145deg, rgba(255,255,255,.76), rgba(237,247,255,.58)); }
+.todo-card { background: linear-gradient(145deg, rgba(255,255,255,.78), rgba(255,248,224,.58)); }
+.todo-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16rpx; }
+.todo-head .action-row { flex: 1; min-width: 0; padding-top: 2rpx; }
+.time-meta { flex: 0 0 auto; min-width: 136rpx; padding: 16rpx 18rpx; border-radius: 24rpx; display: flex; flex-direction: column; gap: 5rpx; color: #46577f; background: linear-gradient(145deg, rgba(255,255,255,.96), rgba(245,249,255,.78)); border: 1px solid rgba(97,116,166,.12); box-shadow: 0 10rpx 22rpx rgba(73,91,146,.08), inset 0 1px 0 rgba(255,255,255,.96); box-sizing: border-box; }
+.time-text { font-size: 34rpx; line-height: 1; font-weight: 950; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.status-text { display: flex; align-items: center; gap: 8rpx; color: #6d7894; font-size: 22rpx; line-height: 1.2; font-weight: 900; white-space: nowrap; }
+.status-text::before { content: ""; width: 10rpx; height: 10rpx; border-radius: 999rpx; background: #6f86df; box-shadow: 0 0 0 5rpx rgba(111,134,223,.12); }
+.time-meta.status-done { color: #2f7f6e; background: linear-gradient(145deg, rgba(242,255,250,.96), rgba(229,248,240,.76)); }
+.time-meta.status-done .status-text::before { background: #3a8a76; box-shadow: 0 0 0 5rpx rgba(58,138,118,.13); }
+.time-meta.status-snoozed { color: #7c679f; background: linear-gradient(145deg, rgba(250,246,255,.96), rgba(243,236,255,.76)); }
+.time-meta.status-snoozed .status-text::before { background: #a990ea; box-shadow: 0 0 0 5rpx rgba(169,144,234,.13); }
 .state-card { display: flex; flex-direction: column; gap: 18rpx; }
 .compact-state { margin: 0; padding: 22rpx; }
-.preview-row { padding: 22rpx; border-radius: 22rpx; background: rgba(236,254,255,.72); display: flex; flex-direction: column; gap: 8rpx; }
+.preview-row { padding: 24rpx; border-radius: 24rpx; background: rgba(255,255,255,.58); border: 1rpx solid rgba(255,255,255,.78); display: flex; flex-direction: column; gap: 8rpx; }
 .preview-row.invalid { background: rgba(255,241,242,.88); }
-.block { display: block; }
-.retry { align-self: flex-start; }
-.snooze-summary { padding: 18rpx 20rpx; border-radius: 20rpx; background: rgba(236,254,255,.72); }
-.modal-mask { position: fixed; inset: 0; z-index: 20; background: rgba(18,32,56,.34); display: flex; align-items: flex-end; padding: 32rpx; box-sizing: border-box; }
-.modal-card { width: 100%; padding: 32rpx; border-radius: 32rpx; background: #fff; box-shadow: 0 -20rpx 60rpx rgba(24,32,51,.16); display: flex; flex-direction: column; gap: 24rpx; }
-.form-grid { display: flex; flex-direction: column; gap: 18rpx; }
-.half { flex: 1; min-width: 0; }
-.textarea.short { min-height: 120rpx; }
+.snooze-summary { padding: 20rpx 22rpx; border-radius: 22rpx; background: rgba(255,255,255,.58); border: 1rpx solid rgba(255,255,255,.78); }
+@media (max-width: 380px) {
+  .todo-head { flex-direction: column; align-items: stretch; }
+  .todo-head .action-row { justify-content: flex-start; }
+  .time-meta { width: fit-content; }
+}
 </style>

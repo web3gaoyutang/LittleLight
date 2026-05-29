@@ -1,6 +1,6 @@
 <template>
   <view class="card app-state" :class="[`state-${type}`, { compact }]">
-    <view class="state-icon">{{ iconText }}</view>
+    <view class="state-icon"><AppIcon :name="iconName" /></view>
     <view class="state-copy">
       <text v-if="title" class="section-title">{{ title }}</text>
       <text v-if="message" class="body">{{ message }}</text>
@@ -11,6 +11,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import AppIcon from './AppIcon.vue'
 
 const props = defineProps({
   type: { type: String, default: 'info' },
@@ -22,12 +23,12 @@ const props = defineProps({
 
 defineEmits(['action'])
 
-const iconText = computed(() => ({
-  loading: '...',
-  error: '!',
-  empty: '+',
-  info: 'i'
-})[props.type] || 'i')
+const iconName = computed(() => ({
+  loading: 'loading',
+  error: 'alert',
+  empty: 'empty',
+  info: 'info'
+})[props.type] || 'info')
 </script>
 
 <style scoped>
@@ -52,7 +53,7 @@ const iconText = computed(() => ({
   justify-content: center;
   color: #0e7490;
   background: rgba(236,254,255,.92);
-  font-size: 22rpx;
+  font-size: 30rpx;
   font-weight: 950;
 }
 .state-error .state-icon {

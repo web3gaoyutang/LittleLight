@@ -5,7 +5,7 @@
         <text class="caption">账号 · 素材库</text>
         <view class="title">我的微光</view>
       </view>
-      <button class="ghost-btn small" @tap="openProfileForm">编辑资料</button>
+      <button class="ghost-btn small" @tap="openProfileForm"><text class="btn-icon"><AppIcon name="settings" /></text>编辑资料</button>
     </view>
 
     <view class="card profile">
@@ -27,8 +27,8 @@
           <text class="body block">{{ loginText }}</text>
         </view>
         <view class="row action-row">
-          <button v-if="showDevLogin" class="primary-btn small" @tap="mockWechatLogin">{{ loginButtonText }}</button>
-          <button class="ghost-btn small danger" :disabled="loggingOut" @tap="logout">{{ loggingOut ? '退出中...' : '退出' }}</button>
+          <button v-if="showDevLogin" class="primary-btn small" @tap="mockWechatLogin"><text class="btn-icon"><AppIcon name="wechat" /></text>{{ loginButtonText }}</button>
+          <button class="ghost-btn small danger" :disabled="loggingOut" @tap="logout"><text class="btn-icon"><AppIcon name="logout" /></text>{{ loggingOut ? '退出中...' : '退出' }}</button>
         </view>
       </view>
     </view>
@@ -39,10 +39,15 @@
     <view class="material">
       <view class="row between">
         <text class="tag">素材</text>
-        <button class="primary-btn small" @tap="openFavoriteForm">添加收藏</button>
+        <text class="icon-chip"><AppIcon name="bookmark" /></text>
       </view>
-      <text class="section-title">常用素材库</text>
-      <text class="body">常用沟通模板、AI夸夸用语、班级反馈句式。</text>
+      <view class="row between">
+        <view class="material-copy">
+          <text class="section-title">常用素材库</text>
+          <text class="body">常用沟通模板、AI夸夸用语、班级反馈句式。</text>
+        </view>
+        <button class="primary-btn small" @tap="openFavoriteForm"><text class="btn-icon"><AppIcon name="plus" /></text>添加收藏</button>
+      </view>
     </view>
 
     <view class="section-head row between">
@@ -50,13 +55,14 @@
       <text class="caption">{{ favorites.length }} 条</text>
     </view>
     <view class="search-bar">
+      <text class="search-icon"><AppIcon name="search" /></text>
       <input class="input search-input" v-model="favoriteQuery" confirm-type="search" placeholder="搜索标题、内容或类型" aria-label="搜索收藏素材" data-testid="favorite-search-input" @confirm="searchFavorites" />
       <button class="ghost-btn small" :disabled="loadingFavorites" @tap="searchFavorites">搜索</button>
     </view>
     <view v-for="item in favorites" :key="item.id" class="card">
       <view class="row between">
         <text class="tag">{{ favoriteTypeText(item.type) }}</text>
-        <button class="ghost-btn mini danger" @tap="removeFavorite(item.id)">删除</button>
+        <button class="ghost-btn mini danger" @tap="removeFavorite(item.id)"><text class="btn-icon"><AppIcon name="trash" /></text>删除</button>
       </view>
       <text class="section-title">{{ item.title }}</text>
       <text class="body">{{ item.content }}</text>
@@ -94,6 +100,7 @@
       <text class="caption">{{ aiLogs.length }} 条</text>
     </view>
     <view class="search-bar">
+      <text class="search-icon"><AppIcon name="search" /></text>
       <input class="input search-input" v-model="aiLogQuery" confirm-type="search" placeholder="搜索输入、输出或安全标记" aria-label="搜索 AI 生成记录" data-testid="ai-log-search-input" @confirm="searchAiLogs" />
       <button class="ghost-btn small" :disabled="loadingAiLogs" @tap="searchAiLogs">搜索</button>
     </view>
@@ -106,8 +113,8 @@
       <view class="row between ai-log-foot">
         <text class="caption block">安全标记：{{ safetyText(log.safetyLabel) }}</text>
         <view class="row action-row">
-          <button class="ghost-btn mini" @tap.stop="openAiLog(log)">详情</button>
-          <button class="ghost-btn mini danger" @tap.stop="removeAiLog(log)">删除</button>
+          <button class="ghost-btn mini" @tap.stop="openAiLog(log)"><text class="btn-icon"><AppIcon name="file" /></text>详情</button>
+          <button class="ghost-btn mini danger" @tap.stop="removeAiLog(log)"><text class="btn-icon"><AppIcon name="trash" /></text>删除</button>
         </view>
       </view>
     </view>
@@ -123,7 +130,7 @@
 
     <view class="section-head row between">
       <text class="section-title">数据与权益</text>
-      <button class="ghost-btn small" @tap="showBenefits">查看权益</button>
+      <button class="ghost-btn small" @tap="showBenefits"><text class="btn-icon"><AppIcon name="crown" /></text>查看权益</button>
     </view>
     <view class="card boundary-card" @tap="showBenefits">
       <view class="row between">
@@ -133,7 +140,7 @@
       <text class="body">{{ entitlementMessage }}</text>
       <view class="boundary-meta">
         <text class="caption">支付：{{ checkoutReady ? '已接入' : '未接入' }}</text>
-        <button class="ghost-btn mini" @tap.stop="showBenefits">查看状态</button>
+        <button class="ghost-btn mini" @tap.stop="showBenefits"><text class="btn-icon"><AppIcon name="info" /></text>查看状态</button>
       </view>
     </view>
     <view class="card boundary-card" @tap="showNotificationStatus">
@@ -144,7 +151,7 @@
       <text class="body">{{ notificationMessage }}</text>
       <view class="boundary-meta">
         <text class="caption">推送：{{ notificationReady ? '已接入' : '未接入' }}</text>
-        <button class="ghost-btn mini" @tap.stop="toggleReminderPolicy">切换策略</button>
+        <button class="ghost-btn mini" @tap.stop="toggleReminderPolicy"><text class="btn-icon"><AppIcon name="bell" /></text>切换策略</button>
       </view>
     </view>
     <view class="card boundary-card" @tap="showSyncStatus">
@@ -155,7 +162,7 @@
       <text class="body">{{ syncMessage }}</text>
       <view class="boundary-meta">
         <text class="caption">对象存储：{{ objectStorageReady ? '已接入' : '未接入' }}</text>
-        <button class="ghost-btn mini" @tap.stop="showSyncStatus">刷新状态</button>
+        <button class="ghost-btn mini" @tap.stop="showSyncStatus"><text class="btn-icon"><AppIcon name="cloud" /></text>刷新状态</button>
       </view>
     </view>
     <view class="card boundary-card danger-zone">
@@ -168,9 +175,11 @@
         <text class="caption">删除后重新微信登录会创建新账号</text>
         <view class="row action-row">
           <button class="ghost-btn mini" :disabled="exportingAccount" @tap.stop="exportAccountData">
+            <text class="btn-icon"><AppIcon name="export" /></text>
             {{ exportingAccount ? '导出中...' : '导出数据' }}
           </button>
           <button class="ghost-btn mini danger" :disabled="deletingAccount" @tap.stop="deleteAccount">
+            <text class="btn-icon"><AppIcon name="trash" /></text>
             {{ deletingAccount ? '删除中...' : '删除账号' }}
           </button>
         </view>
@@ -225,6 +234,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { api, listItems, listPageInfo } from '../../api/client'
 import { confirmAction, ensureLoggedIn, errorMessage, hasText, showToast, trimmed, withinLength } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
+import AppIcon from '../../components/AppIcon.vue'
 
 const profile = ref({})
 const favorites = ref([])
@@ -749,37 +759,35 @@ function formatTime(value) {
 
 <style src="../../static/common.css"></style>
 <style scoped>
-.page-wrap { padding: 28rpx 0 120rpx; }
-.header, .section-head { padding: 0 32rpx 12rpx; }
+.header, .section-head { padding: 0 4rpx 14rpx; }
 .profile { display: flex; gap: 24rpx; align-items: center; }
 .profile-main { flex: 1; min-width: 0; }
 .login-card { background: rgba(255,255,255,.72); }
-.avatar { width: 112rpx; height: 112rpx; border-radius: 32rpx; background: linear-gradient(145deg,#0891b2,#059669); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 44rpx; font-weight: 950; }
+.avatar { width: 112rpx; height: 112rpx; border-radius: 32rpx; background: linear-gradient(145deg,#758ce7,#64bfd1); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 44rpx; font-weight: 950; box-shadow: 0 18rpx 34rpx rgba(89,102,209,.20); }
 .block { display: block; margin: 8rpx 0 16rpx; }
 .tag-row { flex-wrap: wrap; }
-.material { margin: 24rpx 32rpx; padding: 32rpx; border-radius: 32rpx; background: linear-gradient(145deg,rgba(255,242,229,.92),rgba(236,254,255,.84)); box-shadow: 0 22rpx 58rpx rgba(20,78,99,.10); display: flex; flex-direction: column; gap: 22rpx; }
+.material { margin: 20rpx 0; padding: 32rpx; border-radius: 32rpx; background: linear-gradient(145deg,rgba(255,210,229,.82),rgba(255,232,185,.72)); display: flex; flex-direction: column; gap: 22rpx; }
+.material-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
 	.boundary-card { display: flex; flex-direction: column; gap: 16rpx; }
 	.danger-zone { background: rgba(255,241,242,.9); }
 	.boundary-meta { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding-top: 14rpx; border-top: 1px solid rgba(8,145,178,.12); }
 .mutedTag { color: #6b778f; background: rgba(247,252,253,.96); }
 .ai-log-card { display: flex; flex-direction: column; gap: 18rpx; }
 .ai-log-foot { align-items: flex-end; }
-.small { min-height: 64rpx; padding: 0 24rpx; font-size: 24rpx; }
-.mini { min-height: 56rpx; padding: 0 18rpx; font-size: 22rpx; }
+.small { min-height: 62rpx; padding: 0 24rpx; font-size: 24rpx; }
+.mini { min-height: 54rpx; padding: 0 18rpx; font-size: 22rpx; }
 .danger { color: #b95c61; }
 .action-row { gap: 10rpx; flex-wrap: wrap; justify-content: flex-end; }
-.search-bar { padding: 0 32rpx 12rpx; display: flex; gap: 12rpx; align-items: center; }
+.search-bar { display: flex; gap: 12rpx; align-items: center; }
 .search-input { flex: 1; min-width: 0; }
-.load-more { margin: 8rpx 32rpx 28rpx; }
-.modal-mask { position: fixed; inset: 0; z-index: 20; background: rgba(18,32,56,.34); display: flex; align-items: flex-end; padding: 32rpx; box-sizing: border-box; }
-.modal-card { width: 100%; padding: 32rpx; border-radius: 32rpx; background: #fff; box-shadow: 0 -20rpx 60rpx rgba(24,32,51,.16); display: flex; flex-direction: column; gap: 24rpx; }
+.load-more { margin: 8rpx 0 28rpx; }
 .form-grid { display: flex; flex-direction: column; gap: 18rpx; }
 .boundary-dialog { gap: 26rpx; }
 .boundary-list { display: flex; flex-direction: column; gap: 16rpx; }
-.boundary-row { padding: 22rpx; border-radius: 24rpx; background: rgba(247,252,253,.92); display: flex; gap: 16rpx; align-items: flex-start; }
+.boundary-row { padding: 22rpx; border-radius: 24rpx; background: rgba(255,255,255,.58); border: 1rpx solid rgba(255,255,255,.78); display: flex; gap: 16rpx; align-items: flex-start; }
 .boundary-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6rpx; }
 .strong { color: #14313b; font-weight: 900; }
 .textarea.short { min-height: 140rpx; }
-.role-toggle { min-height: 78rpx; border-radius: 24rpx; background: rgba(236,254,255,.9); color: #506075; font-weight: 900; }
-.role-toggle.active { color: #fff; background: linear-gradient(135deg,#0891b2,#059669); }
+.role-toggle { min-height: 78rpx; border-radius: 999rpx; background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(250,253,255,.84)); color: #506075; font-weight: 900; border: 1px solid rgba(97,116,166,.16); box-shadow: 0 8rpx 18rpx rgba(73,91,146,.08), inset 0 1px 0 rgba(255,255,255,.96); }
+.role-toggle.active { color: #fff; border-color: rgba(255,255,255,.42); background: linear-gradient(135deg,#6f86df,#52b8cf); box-shadow: 0 12rpx 22rpx rgba(74,111,190,.18), inset 0 1px 0 rgba(255,255,255,.30); }
 </style>

@@ -1,16 +1,19 @@
 <template>
   <view class="page-wrap">
-    <view class="header"><text class="caption">呼吸 · AI夸夸 · 声音</text><view class="title">短恢复</view></view>
+    <view class="header row between">
+      <view><text class="caption">呼吸 · AI夸夸 · 声音</text><view class="title">短恢复</view></view>
+      <view class="avatar-btn"><text class="icon-chip"><AppIcon name="heartHand" /></text></view>
+    </view>
     <view class="breath card">
       <text class="section-title">一分钟呼吸</text>
       <text class="caption">把注意力交还给自己</text>
-      <view class="breath-core" :class="{ active: breathing }"><view class="inner">≋</view></view>
-      <button class="primary-btn breath-btn" @tap="toggleBreath">{{ breathing ? `呼吸中 ${leftText}` : '开始 01:00' }}</button>
+      <view class="breath-core" :class="{ active: breathing }"><view class="inner"><AppIcon name="wind" /></view></view>
+      <button class="primary-btn breath-btn" @tap="toggleBreath"><text class="btn-icon"><AppIcon :name="breathing ? 'pause' : 'play'" /></text>{{ breathing ? `呼吸中 ${leftText}` : '开始 01:00' }}</button>
     </view>
     <view class="card">
       <view class="row between"><view><text class="section-title">AI夸夸</text><text class="caption block">写下今天发生了什么</text></view><text class="tag" :class="{ dangerTag: praiseHighRisk }">{{ praiseSafetyText }}</text></view>
       <textarea class="textarea" v-model="content" maxlength="1000" placeholder="比如：今天课很多，还处理了家长反馈..." aria-label="AI 夸夸内容" data-testid="praise-content-input" />
-      <button class="primary-btn praise-btn" :disabled="saving" @tap="makePraise">{{ saving ? '生成中...' : '生成一句抱抱' }}</button>
+      <button class="primary-btn praise-btn" :disabled="saving" @tap="makePraise"><text class="btn-icon"><AppIcon name="sparkles" /></text>{{ saving ? '生成中...' : '生成一句抱抱' }}</button>
 	      <view class="reply" :class="{ dangerReply: praiseNeedsReview }">
 	        <text class="caption block">{{ praiseSourceText }}</text>
 	        <view v-if="praiseNeedsReview" class="safety-note">
@@ -29,6 +32,7 @@
       <text class="tag">{{ entries.length }} 条</text>
     </view>
     <view class="search-bar">
+      <text class="search-icon"><AppIcon name="search" /></text>
       <input class="input search-input" v-model="entryQuery" confirm-type="search" placeholder="搜索记录、心情或 AI 回复" aria-label="搜索疗愈记录" data-testid="healing-search-input" @confirm="searchEntries" />
       <button class="ghost-btn mini" :disabled="loadingMore" @tap="searchEntries">搜索</button>
     </view>
@@ -61,6 +65,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { api, listItems, listPageInfo } from '../../api/client'
 import { confirmAction, ensureLoggedIn, errorMessage, isHighRiskSafety, showToast, trimmed } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
+import AppIcon from '../../components/AppIcon.vue'
 
 const breathing = ref(false)
 const left = ref(60)
@@ -293,13 +298,13 @@ function formatTime(value) {
 
 <style src="../../static/common.css"></style>
 <style scoped>
-.page-wrap { padding: 28rpx 0 120rpx; }
-.header, .section-head { padding: 0 32rpx 12rpx; }
+.header, .section-head { padding: 0 4rpx 14rpx; }
+.avatar-btn { width: 88rpx; height: 88rpx; padding: 0; border-radius: 28rpx; background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(250,253,255,.86)); border: 1px solid rgba(97,116,166,.14); box-shadow: 0 10rpx 22rpx rgba(73,91,146,.10), inset 0 1px 0 rgba(255,255,255,.96); display: flex; align-items: center; justify-content: center; }
 .block { display: block; }
-.breath { min-height: 720rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28rpx; }
-.breath-core { width: 300rpx; height: 300rpx; border-radius: 999rpx; display: flex; align-items: center; justify-content: center; background: rgba(121,144,255,.14); }
+.breath { min-height: 650rpx; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28rpx; background: radial-gradient(90% 76% at 50% 30%,rgba(158,231,209,.34),transparent 55%),linear-gradient(160deg,rgba(255,255,255,.82),rgba(238,246,255,.54)); }
+.breath-core { width: 300rpx; height: 300rpx; border-radius: 999rpx; display: flex; align-items: center; justify-content: center; background: rgba(122,121,255,.12); box-shadow: 0 0 0 58rpx rgba(145,229,255,.12), 0 0 0 104rpx rgba(255,158,198,.10); }
 .breath-core.active { animation: breathe 7.2s ease-in-out infinite; }
-.inner { width: 150rpx; height: 150rpx; border-radius: 999rpx; background: linear-gradient(135deg,#0891b2,#059669); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 42rpx; }
+.inner { width: 150rpx; height: 150rpx; border-radius: 999rpx; background: linear-gradient(135deg,#6f86df,#52b8cf); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 52rpx; box-shadow: 0 18rpx 34rpx rgba(89,102,209,.22); }
 .breath-btn, .praise-btn { width: 100%; margin-top: 24rpx; }
 .reply { margin-top: 24rpx; padding: 28rpx; border-radius: 30rpx; background: rgba(255,255,255,.68); display: flex; flex-direction: column; gap: 16rpx; }
 .dangerReply { background: rgba(255,241,242,.88); }
@@ -307,10 +312,10 @@ function formatTime(value) {
 .safety-note { display: block; padding: 18rpx 20rpx; border-radius: 20rpx; background: rgba(255,255,255,.72); color: #9f4b52; font-size: 24rpx; line-height: 1.5; font-weight: 800; }
 .entry-card { display: flex; flex-direction: column; gap: 18rpx; }
 .source-text { margin-top: 6rpx; }
-.mini { min-height: 56rpx; padding: 0 18rpx; font-size: 22rpx; }
+.mini { min-height: 54rpx; padding: 0 18rpx; font-size: 22rpx; }
 .danger { color: #b95c61; }
-.search-bar { padding: 0 32rpx 12rpx; display: flex; gap: 12rpx; align-items: center; }
+.search-bar { display: flex; gap: 12rpx; align-items: center; }
 .search-input { flex: 1; min-width: 0; }
-.load-more { margin: 8rpx 32rpx 28rpx; }
+.load-more { margin: 8rpx 0 28rpx; }
 @keyframes breathe { 0%,100% { transform: scale(.86); opacity:.9 } 50% { transform: scale(1.08); opacity:.52 } }
 </style>

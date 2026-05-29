@@ -5,16 +5,28 @@
         <text class="caption">{{ summary.todayLabel || todayLabel }}</text>
         <view class="title">早上好，{{ profile.name || '微光老师' }}</view>
       </view>
-      <button class="bell" data-testid="home-schedule-button" @tap="goSchedule">⌁</button>
+      <button class="avatar-btn notify" data-testid="home-schedule-button" @tap="goSchedule">
+        <text class="icon-chip"><AppIcon name="bell" /></text>
+      </button>
     </view>
 
-    <view class="hero card">
-      <text class="tag">今日教学心流</text>
-      <view class="hero-title">{{ summary.rhythm?.title || '温柔但高效' }}</view>
-      <text class="body">{{ summary.rhythm?.description || '先把节奏拆小，保持一点余裕。' }}</text>
-      <view class="row actions">
-        <button class="primary-btn action" @tap="goCommunication">AI 助手</button>
-        <button class="ghost-btn action" data-testid="home-today-schedule-button" @tap="goSchedule">今日安排</button>
+    <view class="hero" :class="`hero-${mood}`">
+      <view class="hero-copy">
+        <text class="hero-tag">{{ heroRhythm.tag }}</text>
+        <view class="hero-title">{{ heroRhythm.title }}</view>
+        <text class="hero-body">{{ heroRhythm.description }}</text>
+        <view class="row actions">
+          <button class="primary-btn action" @tap="goCommunication"><text class="btn-icon"><AppIcon name="bot" /></text>助手</button>
+          <button class="ghost-btn action" data-testid="home-today-schedule-button" @tap="goSchedule"><text class="btn-icon"><AppIcon name="calendar" /></text>安排</button>
+        </view>
+      </view>
+      <view class="teacher-art" aria-hidden="true">
+        <view class="hair"></view>
+        <view class="face"></view>
+        <view class="body-shape"></view>
+        <view class="book"></view>
+        <view class="note-a"></view>
+        <view class="note-b"></view>
       </view>
     </view>
 
@@ -26,17 +38,29 @@
       <text class="caption">低打扰工作台</text>
     </view>
     <view class="mood-row">
-      <view v-for="item in moods" :key="item.code" class="mood-chip" :class="{ active: item.code === mood }" @tap="mood = item.code">
-        <text class="mood-icon">{{ item.icon }}</text>
+      <view v-for="item in moods" :key="item.code" class="mood-chip" :class="{ active: item.code === mood }" :data-testid="`home-mood-${item.code}`" @tap="mood = item.code">
+        <text class="mood-icon"><AppIcon :name="item.icon" /></text>
         <text>{{ item.label }}</text>
       </view>
     </view>
 
     <view class="bento">
-      <view class="tile blue" data-testid="home-course-tile" @tap="goSchedule"><text class="tag">课程</text><text class="num">{{ summary.coursesCount || 0 }}</text><text class="caption">今日课程</text></view>
-      <view class="tile mint" data-testid="home-reminder-tile" @tap="goSchedule"><text class="tag">待办</text><text class="num">{{ summary.remindersCount || 0 }}</text><text class="caption">待处理提醒</text></view>
-      <view class="tile pink" @tap="goCommunication"><text class="tag">AI</text><text class="tile-title">生成家校回复</text><text class="caption">多语气版本</text></view>
-      <view class="tile peach" @tap="goHeal"><text class="tag">恢复</text><text class="tile-title">一分钟呼吸</text><text class="caption">先收回注意力</text></view>
+      <view class="tile blue" data-testid="home-course-tile" @tap="goSchedule">
+        <view class="row between"><text class="tag">课程</text><text class="icon-chip"><AppIcon name="arrowUpRight" /></text></view>
+        <view><text class="num">{{ summary.coursesCount || 0 }}</text><text class="caption block">今日课程</text></view>
+      </view>
+      <view class="tile mint" data-testid="home-reminder-tile" @tap="goSchedule">
+        <view class="row between"><text class="tag">待办</text><text class="icon-chip"><AppIcon name="listChecks" /></text></view>
+        <view><text class="num">{{ summary.remindersCount || 0 }}</text><text class="caption block">待处理提醒</text></view>
+      </view>
+      <view class="tile pink" @tap="goCommunication">
+        <view class="row between"><text class="tag">AI</text><text class="icon-chip"><AppIcon name="bot" /></text></view>
+        <view><text class="tile-title">生成家校回复</text><text class="caption block">多语气版本</text></view>
+      </view>
+      <view class="tile peach" @tap="goHeal">
+        <view class="row between"><text class="tag">恢复</text><text class="icon-chip"><AppIcon name="heartHand" /></text></view>
+        <view><text class="tile-title">一分钟呼吸</text><text class="caption block">先收回注意力</text></view>
+      </view>
     </view>
 
     <view class="card" v-if="summary.nextCourse">
@@ -56,15 +80,20 @@
       <button class="ghost-btn small" data-testid="home-manage-schedule-button" @tap="goSchedule">管理日程</button>
     </view>
     <view v-if="visibleReminders.length" class="task-list">
-      <view v-for="item in visibleReminders" :key="item.id" class="task-card">
+      <view v-for="item in visibleReminders" :key="item.id" class="task-card reminder-card">
+        <view class="reminder-head">
+          <view class="time-meta" :class="`status-${item.status || 'pending'}`" @tap="goSchedule">
+            <text class="time-text">{{ reminderTime(item.remindAt) }}</text>
+            <text class="status-text">{{ reminderStatusText(item.status) }}</text>
+          </view>
+          <button v-if="item.status !== 'done'" class="ghost-btn mini success" :disabled="completingReminderId === item.id" @tap="completeReminder(item)">
+            {{ completingReminderId === item.id ? '处理中' : '完成' }}
+          </button>
+        </view>
         <view class="task-copy" @tap="goSchedule">
-          <text class="tag">{{ reminderTime(item.remindAt) }} · {{ reminderStatusText(item.status) }}</text>
           <text class="task-title">{{ item.title }}</text>
           <text class="caption">{{ item.note || item.category || '暂无备注' }}</text>
         </view>
-        <button v-if="item.status !== 'done'" class="ghost-btn mini success" :disabled="completingReminderId === item.id" @tap="completeReminder(item)">
-          {{ completingReminderId === item.id ? '处理中' : '完成' }}
-        </button>
       </view>
     </view>
     <AppState
@@ -103,6 +132,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { api } from '../../api/client'
 import { ensureLoggedIn, errorMessage, showToast } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
+import AppIcon from '../../components/AppIcon.vue'
 
 const summary = ref({ rhythm: {} })
 const profile = ref({})
@@ -110,15 +140,51 @@ const loading = ref(false)
 const error = ref('')
 const mood = ref('steady')
 const completingReminderId = ref('')
+const moodRhythms = {
+  steady: {
+    tag: '今日教学心流',
+    title: '温柔但高效',
+    description: '先把节奏拆小，保持一点余裕。'
+  },
+  busy: {
+    tag: '偏满模式',
+    title: '先减压，再推进',
+    description: '把今天拆成三件必要事，能延后的先放进提醒里。'
+  },
+  soft: {
+    tag: '缓冲模式',
+    title: '留一点空白',
+    description: '先安排短恢复，再处理沟通和待办，别把自己排满。'
+  },
+  focus: {
+    tag: '专注模式',
+    title: '单线程推进',
+    description: '关掉额外切换，优先完成一项课程或材料整理。'
+  },
+  warm: {
+    tag: '沟通模式',
+    title: '先共情，再说明',
+    description: '适合处理家长反馈，用清晰温和的话减少反复解释。'
+  }
+}
 const moods = [
-  { code: 'steady', icon: '平', label: '平稳' },
-  { code: 'busy', icon: '忙', label: '偏满' },
-  { code: 'soft', icon: '缓', label: '缓冲' },
-  { code: 'focus', icon: '专', label: '专注' },
-  { code: 'warm', icon: '沟', label: '沟通' }
+  { code: 'steady', icon: 'smile', label: '平稳' },
+  { code: 'busy', icon: 'activity', label: '偏满' },
+  { code: 'soft', icon: 'moon', label: '缓冲' },
+  { code: 'focus', icon: 'target', label: '专注' },
+  { code: 'warm', icon: 'message', label: '沟通' }
 ]
 
 const todayLabel = new Date().toLocaleDateString('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' })
+const heroRhythm = computed(() => {
+  const fallback = moodRhythms[mood.value] || moodRhythms.steady
+  if (mood.value !== 'steady') return fallback
+  return {
+    tag: fallback.tag,
+    title: summary.value.rhythm?.title || fallback.title,
+    description: summary.value.rhythm?.description || fallback.description
+  }
+})
 const visibleReminders = computed(() => (summary.value.reminders || []).slice(0, 3))
 const visibleFocusParents = computed(() => (summary.value.focusParents || []).slice(0, 3))
 
@@ -181,32 +247,59 @@ function riskText(value) {
 
 <style src="../../static/common.css"></style>
 <style scoped>
-.page-wrap { padding: 28rpx 0 120rpx; }
-.header { padding: 0 32rpx 12rpx; }
-.bell { width: 88rpx; height: 88rpx; border-radius: 28rpx; background: rgba(255,255,255,.86); color: #0e7490; }
-.hero { background: linear-gradient(134deg,rgba(236,254,255,.98),rgba(248,251,255,.94) 44%,rgba(241,248,238,.96)); }
-.hero-title { margin: 20rpx 0 12rpx; font-size: 56rpx; font-weight: 950; color: #172039; }
-.actions { margin-top: 28rpx; }
-.action { flex: 1; }
-.section-head { padding: 16rpx 32rpx 0; }
-.mood-row { display: flex; gap: 16rpx; padding: 20rpx 32rpx; overflow-x: auto; }
-.mood-chip { min-width: 112rpx; height: 112rpx; border-radius: 28rpx; background: rgba(255,255,255,.78); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8rpx; font-size: 22rpx; font-weight: 800; color: #31505b; }
-.mood-chip.active { outline: 4rpx solid rgba(8,145,178,.28); }
-.mood-icon { font-size: 32rpx; }
-.bento { display: grid; grid-template-columns: 1fr 1fr; gap: 24rpx; padding: 0 32rpx; }
-.tile { min-height: 190rpx; border-radius: 32rpx; padding: 28rpx; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 20rpx 44rpx rgba(20,78,99,.10); }
-.tile.blue { background: linear-gradient(145deg,rgba(207,250,254,.94),rgba(232,247,255,.82)); }
-.tile.mint { background: linear-gradient(145deg,rgba(209,250,229,.90),rgba(236,254,255,.82)); }
-.tile.pink { background: linear-gradient(145deg,rgba(255,242,229,.90),rgba(236,254,255,.78)); }
-.tile.peach { background: linear-gradient(145deg,rgba(241,248,238,.92),rgba(255,248,232,.84)); }
-.num { font-size: 56rpx; font-weight: 950; color: #182033; }
-.tile-title, .course-title { font-size: 32rpx; font-weight: 900; color: #182033; }
-.task-list { margin: 16rpx 32rpx 8rpx; display: flex; flex-direction: column; gap: 18rpx; }
-.task-card { padding: 24rpx; border-radius: 28rpx; background: rgba(255,255,255,.86); box-shadow: 0 18rpx 42rpx rgba(20,78,99,.08); display: flex; align-items: center; gap: 18rpx; }
+.avatar-btn { width: 88rpx; height: 88rpx; padding: 0; border-radius: 28rpx; background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(250,253,255,.86)); border: 1px solid rgba(97,116,166,.14); box-shadow: 0 10rpx 22rpx rgba(73,91,146,.10), inset 0 1px 0 rgba(255,255,255,.96); position: relative; display: flex; align-items: center; justify-content: center; }
+.avatar-btn.notify::after { content: ""; position: absolute; top: 16rpx; right: 16rpx; width: 14rpx; height: 14rpx; border-radius: 999rpx; background: #ee6e87; box-shadow: 0 0 0 5rpx rgba(255,255,255,.88); }
+.hero { min-height: 430rpx; margin: 6rpx 0 24rpx; padding: 32rpx; border-radius: 38rpx; color: #23213b; display: grid; grid-template-columns: minmax(0,1fr) 210rpx; gap: 24rpx; overflow: hidden; background: radial-gradient(80% 72% at 14% 12%, rgba(255,255,255,.58), transparent 52%), linear-gradient(138deg, rgba(176,210,255,.92) 0%, rgba(198,175,255,.88) 36%, rgba(255,174,211,.82) 68%, rgba(255,225,151,.86) 100%); border: 1rpx solid rgba(255,255,255,.72); box-shadow: 0 28rpx 58rpx rgba(122,89,174,.20), inset 0 1rpx 0 rgba(255,255,255,.70); box-sizing: border-box; }
+.hero-busy { background: radial-gradient(80% 72% at 14% 12%, rgba(255,255,255,.62), transparent 52%), linear-gradient(138deg, rgba(255,214,169,.92) 0%, rgba(255,176,199,.86) 46%, rgba(214,198,255,.84) 100%); }
+.hero-soft { background: radial-gradient(80% 72% at 14% 12%, rgba(255,255,255,.64), transparent 52%), linear-gradient(138deg, rgba(220,236,255,.94) 0%, rgba(232,224,255,.88) 48%, rgba(220,246,237,.86) 100%); }
+.hero-focus { background: radial-gradient(80% 72% at 14% 12%, rgba(255,255,255,.58), transparent 52%), linear-gradient(138deg, rgba(180,216,255,.94) 0%, rgba(153,200,229,.88) 48%, rgba(196,233,218,.86) 100%); }
+.hero-warm { background: radial-gradient(80% 72% at 14% 12%, rgba(255,255,255,.58), transparent 52%), linear-gradient(138deg, rgba(255,205,224,.88) 0%, rgba(255,231,180,.86) 52%, rgba(214,232,255,.86) 100%); }
+.hero-copy { min-width: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 18rpx; }
+.hero-tag { width: fit-content; padding: 12rpx 18rpx; border-radius: 999rpx; border: 1rpx solid rgba(255,255,255,.76); color: #5d407b; background: rgba(255,255,255,.52); font-size: 22rpx; font-weight: 900; }
+.hero-title { margin-top: 4rpx; font-size: 58rpx; line-height: 1.03; font-weight: 950; color: #172039; letter-spacing: 0; }
+.hero-body { max-width: 360rpx; color: rgba(38,37,62,.72); font-size: 25rpx; line-height: 1.5; }
+.actions { margin-top: 8rpx; align-items: stretch; }
+.action { flex: 1; min-width: 0; min-height: 76rpx; border-radius: 999rpx; }
+.teacher-art { min-height: 320rpx; border-radius: 30rpx; position: relative; overflow: hidden; align-self: stretch; background: radial-gradient(80% 60% at 50% 18%, rgba(255,255,255,.62), transparent 60%), linear-gradient(160deg, rgba(255,255,255,.26), rgba(255,255,255,.08)); border: 1rpx solid rgba(255,255,255,.56); }
+.teacher-art .face { position: absolute; left: 50%; top: 52rpx; transform: translateX(-50%); width: 94rpx; height: 94rpx; border-radius: 999rpx; background: linear-gradient(145deg, #ffd9bd, #ffb6c4); box-shadow: 0 10rpx 24rpx rgba(116,72,156,.16); }
+.teacher-art .hair { position: absolute; width: 110rpx; height: 54rpx; left: 50%; top: 38rpx; transform: translateX(-50%); border-radius: 99rpx 99rpx 28rpx 28rpx; background: #5d5888; z-index: 1; }
+.teacher-art .body-shape { position: absolute; left: 50%; top: 154rpx; transform: translateX(-50%); width: 132rpx; height: 150rpx; border-radius: 48rpx 48rpx 30rpx 30rpx; background: linear-gradient(145deg, #758ce7, #64bfd1); }
+.teacher-art .book { position: absolute; right: 18rpx; bottom: 34rpx; width: 82rpx; height: 58rpx; border-radius: 18rpx; background: linear-gradient(145deg, #fff, #ffe9a7); box-shadow: 0 10rpx 20rpx rgba(84,74,151,.14); }
+.teacher-art .note-a, .teacher-art .note-b { position: absolute; width: 46rpx; height: 46rpx; border-radius: 16rpx; background: rgba(255,255,255,.72); border: 1rpx solid rgba(255,255,255,.8); }
+.teacher-art .note-a { left: 18rpx; top: 72rpx; transform: rotate(-8deg); }
+.teacher-art .note-b { left: 28rpx; bottom: 42rpx; transform: rotate(7deg); }
+.section-head { padding: 26rpx 4rpx 8rpx; }
+.mood-row { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12rpx; padding: 14rpx 0 20rpx; overflow-x: auto; }
+.mood-chip { min-width: 0; height: 110rpx; border-radius: 24rpx; background: rgba(255,255,255,.61); border: 1rpx solid rgba(255,255,255,.78); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6rpx; font-size: 21rpx; font-weight: 850; color: #3f405b; box-shadow: inset 0 1rpx 0 rgba(255,255,255,.86), 0 9rpx 18rpx rgba(73,91,146,.07); }
+.mood-chip.active { outline: 4rpx solid rgba(98,166,233,.30); background: rgba(255,255,255,.84); }
+.mood-icon { width: 34rpx; height: 34rpx; display: flex; align-items: center; justify-content: center; font-size: 31rpx; line-height: 1; color: #50619b; }
+.bento { display: grid; grid-template-columns: 1fr 1fr; gap: 20rpx; padding: 0; }
+.tile { min-height: 218rpx; border-radius: 30rpx; padding: 26rpx; display: flex; flex-direction: column; justify-content: space-between; border: 1rpx solid rgba(255,255,255,.72); box-shadow: 0 14rpx 30rpx rgba(73,91,146,.10), inset 0 1rpx 0 rgba(255,255,255,.74); box-sizing: border-box; overflow: hidden; }
+.tile.blue { background: linear-gradient(145deg, rgba(206,231,255,.90), rgba(220,211,255,.72)); }
+.tile.mint { background: linear-gradient(145deg, rgba(202,240,229,.86), rgba(216,237,255,.74)); }
+.tile.pink { background: linear-gradient(145deg, rgba(255,210,229,.82), rgba(255,232,185,.72)); }
+.tile.peach { background: linear-gradient(145deg, rgba(255,239,184,.82), rgba(255,214,202,.72)); }
+.num { display: block; font-size: 58rpx; line-height: 1; font-weight: 950; color: #182033; }
+.tile-title, .course-title { display: block; font-size: 32rpx; line-height: 1.26; font-weight: 930; color: #182033; }
+.task-list { margin: 14rpx 0 8rpx; display: flex; flex-direction: column; gap: 18rpx; }
+.task-card { padding: 26rpx; border-radius: 28rpx; display: flex; align-items: center; gap: 18rpx; }
+.reminder-card { align-items: stretch; flex-direction: column; gap: 18rpx; }
+.reminder-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16rpx; }
+.time-meta { flex: 0 0 auto; min-width: 136rpx; padding: 16rpx 18rpx; border-radius: 24rpx; display: flex; flex-direction: column; gap: 5rpx; color: #46577f; background: linear-gradient(145deg, rgba(255,255,255,.96), rgba(245,249,255,.78)); border: 1px solid rgba(97,116,166,.12); box-shadow: 0 10rpx 22rpx rgba(73,91,146,.08), inset 0 1px 0 rgba(255,255,255,.96); box-sizing: border-box; }
+.time-text { font-size: 34rpx; line-height: 1; font-weight: 950; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.status-text { display: flex; align-items: center; gap: 8rpx; color: #6d7894; font-size: 22rpx; line-height: 1.2; font-weight: 900; white-space: nowrap; }
+.status-text::before { content: ""; width: 10rpx; height: 10rpx; border-radius: 999rpx; background: #6f86df; box-shadow: 0 0 0 5rpx rgba(111,134,223,.12); }
+.time-meta.status-done { color: #2f7f6e; background: linear-gradient(145deg, rgba(242,255,250,.96), rgba(229,248,240,.76)); }
+.time-meta.status-done .status-text::before { background: #3a8a76; box-shadow: 0 0 0 5rpx rgba(58,138,118,.13); }
+.time-meta.status-snoozed { color: #7c679f; background: linear-gradient(145deg, rgba(250,246,255,.96), rgba(243,236,255,.76)); }
+.time-meta.status-snoozed .status-text::before { background: #a990ea; box-shadow: 0 0 0 5rpx rgba(169,144,234,.13); }
 .parent-task { align-items: stretch; }
 .task-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10rpx; }
 .task-title { font-size: 30rpx; line-height: 1.35; font-weight: 900; color: #14313b; }
-.small { min-height: 64rpx; padding: 0 24rpx; font-size: 24rpx; }
-.mini { min-height: 56rpx; padding: 0 18rpx; font-size: 22rpx; }
-.success { color: #059669; }
+.small { min-height: 62rpx; padding: 0 24rpx; font-size: 24rpx; }
+.mini { min-height: 54rpx; padding: 0 18rpx; font-size: 22rpx; }
+@media (max-width: 360px) {
+  .hero { grid-template-columns: 1fr; }
+  .teacher-art { min-height: 220rpx; }
+}
 </style>

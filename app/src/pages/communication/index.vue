@@ -1,19 +1,25 @@
 <template>
   <view class="page-wrap">
-    <view class="header">
-      <text class="caption">AI 回复 · 重点关注</text>
-      <view class="title">沟通助手</view>
+    <view class="header row between">
+      <view>
+        <text class="caption">AI 回复 · 重点关注</text>
+        <view class="title">沟通助手</view>
+      </view>
+      <view class="avatar-btn"><text class="icon-chip"><AppIcon name="bot" /></text></view>
     </view>
 
     <view class="card">
-      <text class="section-title">生成家校草稿</text>
+      <view class="row between">
+        <text class="section-title">生成家校草稿</text>
+        <text class="icon-chip"><AppIcon name="sparkles" /></text>
+      </view>
       <textarea class="textarea" :class="{ invalid: aiFormError && (!hasText(issue) || !withinLength(issue, 1200)) }" v-model="issue" maxlength="1200" placeholder="描述学生情况、家长问题和沟通目标" aria-label="家校沟通问题描述" data-testid="parent-draft-issue-input" />
       <view class="row picker-row">
         <picker class="picker" :range="styles" @change="style = styles[$event.detail.value]"><text>{{ style }}</text></picker>
         <picker class="picker" :range="tones" @change="tone = tones[$event.detail.value]"><text>{{ tone }}</text></picker>
       </view>
       <text v-if="aiFormError" class="form-error">{{ aiFormError }}</text>
-      <button class="primary-btn" :disabled="generating" @tap="generate">{{ generating ? '生成中...' : '生成草稿' }}</button>
+      <button class="primary-btn" :disabled="generating" @tap="generate"><text class="btn-icon"><AppIcon name="edit" /></text>{{ generating ? '生成中...' : '生成草稿' }}</button>
     </view>
 
     <AppState v-if="loading" type="loading" message="正在加载沟通数据..." />
@@ -28,9 +34,11 @@
 	        <text class="tag" :class="{ dangerTag: isHighRiskDraft(draft) }">{{ draft.version }} · {{ safetyText(draft.safety) }}</text>
 	        <view class="row action-row">
           <button class="ghost-btn small" :disabled="isActionPending(`save-draft:${draft.id}`)" @tap="saveDraftAsRecord(draft)">
+            <text class="btn-icon"><AppIcon name="bookmark" /></text>
             {{ isActionPending(`save-draft:${draft.id}`) ? '处理中...' : '存记录' }}
           </button>
           <button class="ghost-btn small" :disabled="isActionPending(`copy-draft:${draft.id}`)" @tap="copyDraft(draft)">
+            <text class="btn-icon"><AppIcon name="copy" /></text>
             {{ isActionPending(`copy-draft:${draft.id}`) ? '复制中...' : '复制' }}
           </button>
 	        </view>
@@ -52,14 +60,16 @@
     <view class="section-head row between">
       <text class="section-title">重点关注</text>
       <view class="row action-row">
-        <button class="ghost-btn small" @tap="downloadParentTemplate">模板</button>
+        <button class="ghost-btn small" @tap="downloadParentTemplate"><text class="btn-icon"><AppIcon name="table" /></text>模板</button>
         <button class="ghost-btn small" :disabled="isActionPending('import-parents')" @tap="importParents">
+          <text class="btn-icon"><AppIcon name="upload" /></text>
           {{ isActionPending('import-parents') ? '预览中...' : '导入名单' }}
         </button>
-        <button class="primary-btn small" :disabled="hasPendingAction" @tap="openParentForm">新增家长</button>
+        <button class="primary-btn small" :disabled="hasPendingAction" @tap="openParentForm"><text class="btn-icon"><AppIcon name="plus" /></text>新增家长</button>
       </view>
     </view>
     <view class="search-bar">
+      <text class="search-icon"><AppIcon name="search" /></text>
       <input class="input search-input" v-model="parentQuery" confirm-type="search" placeholder="搜索学生、家长、班级或备注" aria-label="搜索家长档案" data-testid="parent-search-input" @confirm="searchParents" />
       <button class="ghost-btn small" :disabled="loadingParents" @tap="searchParents">搜索</button>
     </view>
@@ -70,9 +80,10 @@
           <text class="caption block">{{ parent.studentName }} · {{ parent.className }} · {{ riskText(parent.riskLevel) }}</text>
         </view>
         <view class="row action-row">
-          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap.stop="selectParent(parent)">记录</button>
-          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap.stop="editParent(parent)">编辑</button>
+          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap.stop="selectParent(parent)"><text class="btn-icon"><AppIcon name="message" /></text>记录</button>
+          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap.stop="editParent(parent)"><text class="btn-icon"><AppIcon name="edit" /></text>编辑</button>
           <button class="ghost-btn mini danger" :disabled="isActionPending(`delete-parent:${parent.id}`)" @tap.stop="removeParent(parent)">
+            <text class="btn-icon"><AppIcon name="trash" /></text>
             {{ isActionPending(`delete-parent:${parent.id}`) ? '删除中...' : '删除' }}
           </button>
         </view>
@@ -91,9 +102,10 @@
 
     <view class="section-head row between">
       <text class="section-title">沟通记录</text>
-      <button class="primary-btn small" :disabled="hasPendingAction" @tap="openRecordForm()">手动添加</button>
+      <button class="primary-btn small" :disabled="hasPendingAction" @tap="openRecordForm()"><text class="btn-icon"><AppIcon name="plus" /></text>手动添加</button>
     </view>
     <view class="search-bar">
+      <text class="search-icon"><AppIcon name="search" /></text>
       <input class="input search-input" v-model="recordQuery" confirm-type="search" placeholder="搜索原因、摘要、结果或风险" aria-label="搜索沟通记录" data-testid="record-search-input" @confirm="searchRecords" />
       <button class="ghost-btn small" :disabled="loadingRecords" @tap="searchRecords">搜索</button>
     </view>
@@ -102,10 +114,12 @@
         <text class="tag">{{ record.channel }} · {{ record.riskLevel }}</text>
         <view class="row action-row">
           <button v-if="canCompleteFollowUp(record)" class="ghost-btn mini success" :disabled="isActionPending(`complete-record:${record.id}`)" @tap="completeRecordFollowUp(record)">
+            <text class="btn-icon"><AppIcon name="check" /></text>
             {{ isActionPending(`complete-record:${record.id}`) ? '完成中...' : '完成跟进' }}
           </button>
-          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap="editRecord(record)">编辑</button>
+          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap="editRecord(record)"><text class="btn-icon"><AppIcon name="edit" /></text>编辑</button>
           <button class="ghost-btn mini danger" :disabled="isActionPending(`delete-record:${record.id}`)" @tap="removeRecord(record.id)">
+            <text class="btn-icon"><AppIcon name="trash" /></text>
             {{ isActionPending(`delete-record:${record.id}`) ? '删除中...' : '删除' }}
           </button>
         </view>
@@ -199,6 +213,7 @@ import { onShow } from '@dcloudio/uni-app'
 import { api, listItems, listPageInfo } from '../../api/client'
 import { chooseImportFile, confirmAction, ensureLoggedIn, errorMessage, hasText, isHighRiskSafety, showToast, trimmed, validClock, withinLength } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
+import AppIcon from '../../components/AppIcon.vue'
 
 const issue = ref('')
 const styles = ['容易焦虑', '比较敏感', '沟通积极', '关注成绩']
@@ -966,35 +981,33 @@ function validISODate(value) {
 
 <style src="../../static/common.css"></style>
 <style scoped>
-.page-wrap { padding: 28rpx 0 120rpx; }
-.header, .section-head { padding: 0 32rpx 12rpx; }
+.header, .section-head { padding: 0 4rpx 14rpx; }
+.avatar-btn { width: 88rpx; height: 88rpx; padding: 0; border-radius: 28rpx; background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(250,253,255,.86)); border: 1px solid rgba(97,116,166,.14); box-shadow: 0 10rpx 22rpx rgba(73,91,146,.10), inset 0 1px 0 rgba(255,255,255,.96); display: flex; align-items: center; justify-content: center; }
 .picker-row { margin: 20rpx 0; }
 .picker { flex: 1; }
 .draft { border: 2rpx solid rgba(169,144,234,.28); }
 .parent-card { display: flex; flex-direction: column; gap: 18rpx; }
 .parent-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6rpx; }
 .half { flex: 1; min-width: 0; }
-.small { min-height: 64rpx; padding: 0 24rpx; font-size: 24rpx; }
-.mini { min-height: 56rpx; padding: 0 18rpx; font-size: 22rpx; }
+.small { min-height: 62rpx; padding: 0 24rpx; font-size: 24rpx; }
+.mini { min-height: 54rpx; padding: 0 18rpx; font-size: 22rpx; }
 .danger { color: #b95c61; }
 .success { color: #059669; }
 .action-row { gap: 10rpx; flex-wrap: wrap; justify-content: flex-end; }
-.search-bar { padding: 0 32rpx 12rpx; display: flex; gap: 12rpx; align-items: center; }
+.search-bar { display: flex; gap: 12rpx; align-items: center; }
 .search-input { flex: 1; min-width: 0; }
-.load-more { margin: 8rpx 32rpx 28rpx; }
+.load-more { margin: 8rpx 0 28rpx; }
 .state-card { display: flex; flex-direction: column; gap: 18rpx; }
 .compact-state { margin: 0; padding: 22rpx; }
-.preview-row { padding: 22rpx; border-radius: 22rpx; background: rgba(236,254,255,.72); display: flex; flex-direction: column; gap: 8rpx; }
+.preview-row { padding: 22rpx; border-radius: 22rpx; background: rgba(255,255,255,.58); border: 1rpx solid rgba(255,255,255,.78); display: flex; flex-direction: column; gap: 8rpx; }
 .preview-row.invalid { background: rgba(255,241,242,.88); }
 	.dangerTag { background: rgba(255,241,242,.95); color: #b95c61; }
 .safety-note { display: block; padding: 18rpx 20rpx; border-radius: 20rpx; background: rgba(255,241,242,.88); color: #9f4b52; font-size: 24rpx; line-height: 1.5; font-weight: 800; }
 .retry { align-self: flex-start; }
-.modal-mask { position: fixed; inset: 0; z-index: 20; background: rgba(18,32,56,.34); display: flex; align-items: flex-end; padding: 32rpx; box-sizing: border-box; }
-.modal-card { width: 100%; max-height: 88vh; overflow-y: auto; padding: 32rpx; border-radius: 32rpx; background: #fff; box-shadow: 0 -20rpx 60rpx rgba(24,32,51,.16); display: flex; flex-direction: column; gap: 24rpx; }
 .form-grid { display: flex; flex-direction: column; gap: 18rpx; }
 .textarea.short { min-height: 120rpx; }
 .risk-row { display: flex; gap: 14rpx; }
 .follow-row { align-items: stretch; }
-.risk-btn { flex: 1; min-height: 68rpx; border-radius: 22rpx; background: rgba(236,254,255,.9); color: #506075; font-size: 24rpx; font-weight: 900; }
-.risk-btn.active { color: #fff; background: linear-gradient(135deg,#0891b2,#059669); }
+.risk-btn { flex: 1; min-height: 68rpx; border-radius: 22rpx; background: rgba(255,255,255,.64); color: #506075; font-size: 24rpx; font-weight: 900; border: 1rpx solid rgba(255,255,255,.78); }
+.risk-btn.active { color: #fff; background: linear-gradient(135deg,#6f86df,#52b8cf); }
 </style>

@@ -12,14 +12,17 @@
       <text class="body">课表、待办、家长档案和 AI 生成记录都会跟随当前微信账号隔离保存。</text>
       <view class="hero-preview">
         <view class="preview-row">
+          <text class="preview-icon"><AppIcon name="lock" /></text>
           <text class="preview-label">账号</text>
           <text class="preview-main">服务端 session</text>
         </view>
         <view class="preview-row">
+          <text class="preview-icon"><AppIcon name="shieldCheck" /></text>
           <text class="preview-label">数据</text>
           <text class="preview-main">按用户隔离保存</text>
         </view>
         <view class="preview-row">
+          <text class="preview-icon"><AppIcon name="sparkles" /></text>
           <text class="preview-label">AI</text>
           <text class="preview-main">复核与审计留痕</text>
         </view>
@@ -36,7 +39,7 @@
         <input class="input" v-model="nickName" placeholder="例如：林老师" aria-label="登录昵称" data-testid="login-nickname-input" />
       </view>
       <button class="wechat-btn" :class="{ disabled: !canUseWechatLogin }" :disabled="loading || !canUseWechatLogin" data-testid="wechat-login-button" @tap="login">
-        <text class="wechat-mark">微信</text>
+        <text class="wechat-mark"><AppIcon name="wechat" /></text>
         <text>{{ primaryButtonText }}</text>
       </button>
       <view v-if="showDevLogin" class="dev-zone">
@@ -61,6 +64,7 @@ import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { api } from '../../api/client'
 import { errorMessage, showToast } from '../../utils/ui'
+import AppIcon from '../../components/AppIcon.vue'
 
 const nickName = ref('林小微')
 const loading = ref(false)
@@ -194,29 +198,30 @@ function loginHintText() {
 
 <style src="../../static/common.css"></style>
 <style scoped>
-.login-page { min-height: 100vh; padding: 72rpx 36rpx 56rpx; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; background: linear-gradient(155deg,#ecfeff 0%,#f8fbff 46%,#f1f8ee 100%); gap: 40rpx; }
-.brand { padding-top: 48rpx; display: flex; flex-direction: column; gap: 22rpx; }
+.login-page { min-height: 100vh; padding: calc(64rpx + env(safe-area-inset-top)) 36rpx calc(48rpx + env(safe-area-inset-bottom)); box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; gap: 42rpx; background: radial-gradient(105% 72% at 8% 0%, rgba(183,140,255,.28), transparent 50%), radial-gradient(88% 66% at 96% 8%, rgba(145,229,255,.26), transparent 46%), linear-gradient(130deg, rgba(231,242,255,.88) 0%, rgba(249,244,255,.74) 38%, rgba(255,249,237,.82) 100%); }
+.brand { padding-top: 40rpx; display: flex; flex-direction: column; gap: 24rpx; }
 .brand-row { display: flex; align-items: center; gap: 22rpx; }
-.brand-mark { width: 124rpx; height: 124rpx; border-radius: 36rpx; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 52rpx; font-weight: 950; background: linear-gradient(135deg,#0891b2,#059669); box-shadow: 0 24rpx 54rpx rgba(8,145,178,.24); }
-.brand-name { margin-top: 4rpx; color: #14313b; font-size: 34rpx; font-weight: 950; }
-.login-title { font-size: 54rpx; line-height: 1.14; color: #14313b; font-weight: 950; }
-.login-panel { padding: 32rpx; border-radius: 32rpx; background: rgba(255,255,255,.86); box-shadow: 0 22rpx 58rpx rgba(20,78,99,.12); display: flex; flex-direction: column; gap: 22rpx; }
-.panel-head { display: flex; flex-direction: column; gap: 8rpx; }
+.brand-mark { width: 122rpx; height: 122rpx; border-radius: 38rpx; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 52rpx; font-weight: 950; background: linear-gradient(145deg, #758ce7, #64bfd1); box-shadow: 0 24rpx 54rpx rgba(89,105,160,.22), inset 0 1rpx 0 rgba(255,255,255,.28); }
+.brand-name { margin-top: 4rpx; color: #172039; font-size: 36rpx; font-weight: 950; }
+.login-title { font-size: 56rpx; line-height: 1.12; color: #172039; font-weight: 950; letter-spacing: 0; }
+.login-panel { padding: 34rpx; border-radius: 34rpx; display: flex; flex-direction: column; gap: 24rpx; }
+.panel-head { display: flex; flex-direction: column; gap: 10rpx; }
 .field { display: flex; flex-direction: column; gap: 12rpx; }
-.wechat-btn { min-height: 94rpx; border-radius: 28rpx; color: #fff; font-size: 30rpx; font-weight: 950; background: linear-gradient(135deg,#059669,#0891b2); display: flex; align-items: center; justify-content: center; gap: 16rpx; }
-.wechat-btn[disabled], .wechat-btn.disabled { opacity: .58; }
-.wechat-mark { padding: 6rpx 12rpx; border-radius: 14rpx; color: #059669; background: rgba(255,255,255,.92); font-size: 22rpx; font-weight: 950; }
-.dev-btn { min-height: 82rpx; border-radius: 24rpx; color: #0e7490; font-size: 26rpx; font-weight: 900; background: rgba(236,254,255,.86); }
-.hero-preview { margin-top: 10rpx; padding: 22rpx; border-radius: 28rpx; background: rgba(255,255,255,.62); display: flex; flex-direction: column; gap: 14rpx; box-shadow: 0 18rpx 42rpx rgba(20,78,99,.08); }
-.preview-row { display: flex; align-items: center; justify-content: space-between; gap: 18rpx; }
-.preview-label { flex: 0 0 auto; color: #0e7490; font-size: 22rpx; font-weight: 950; }
-.preview-main { min-width: 0; color: #14313b; font-size: 24rpx; font-weight: 900; text-align: right; }
-.dev-zone { padding: 22rpx; border-radius: 24rpx; background: rgba(247,252,253,.92); display: flex; align-items: center; justify-content: space-between; gap: 18rpx; }
+.wechat-btn { min-height: 94rpx; border-radius: 999rpx; color: #fff; font-size: 29rpx; font-weight: 930; background: linear-gradient(135deg, #6f86df, #52b8cf); border: 1px solid rgba(255,255,255,.42); box-shadow: 0 14rpx 26rpx rgba(74,111,190,.18), inset 0 1px 0 rgba(255,255,255,.30); display: flex; align-items: center; justify-content: center; gap: 16rpx; }
+.wechat-btn[disabled], .wechat-btn.disabled { opacity: .62; }
+.wechat-mark { width: 42rpx; height: 42rpx; border-radius: 14rpx; color: #4d5d91; background: rgba(255,255,255,.92); font-size: 25rpx; font-weight: 950; display: flex; align-items: center; justify-content: center; }
+.dev-btn { min-height: 78rpx; border-radius: 999rpx; color: #4d5d91; font-size: 25rpx; font-weight: 900; padding: 0 24rpx; background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(250,253,255,.84)); border: 1px solid rgba(97,116,166,.16); box-shadow: 0 8rpx 18rpx rgba(73,91,146,.08), inset 0 1px 0 rgba(255,255,255,.96); }
+.hero-preview { margin-top: 8rpx; padding: 24rpx; border-radius: 30rpx; display: flex; flex-direction: column; gap: 14rpx; }
+.preview-row { display: grid; grid-template-columns: auto auto minmax(0,1fr); align-items: center; gap: 14rpx; }
+.preview-icon { width: 42rpx; height: 42rpx; border-radius: 15rpx; color: #4d5d91; background: rgba(255,255,255,.72); display: flex; align-items: center; justify-content: center; font-size: 25rpx; font-weight: 950; }
+.preview-label { color: #536079; font-size: 23rpx; font-weight: 950; }
+.preview-main { min-width: 0; color: #172039; font-size: 24rpx; font-weight: 900; text-align: right; overflow-wrap: anywhere; }
+.dev-zone { padding: 24rpx; border-radius: 26rpx; background: rgba(255,255,255,.58); border: 1rpx solid rgba(255,255,255,.78); display: flex; align-items: center; justify-content: space-between; gap: 18rpx; }
 .dev-zone > view { min-width: 0; display: flex; flex-direction: column; gap: 6rpx; }
-.dev-copy { color: #6b778f; font-size: 22rpx; line-height: 1.45; }
-.dev-zone .dev-btn { min-width: 168rpx; padding: 0 20rpx; }
-.hint { font-size: 22rpx; line-height: 1.5; color: #6b778f; }
-.login-foot { padding-top: 6rpx; border-top: 1px solid rgba(8,145,178,.12); }
-.login-foot.warning { border-top-color: rgba(185,92,97,.18); }
-.error-text { font-size: 22rpx; line-height: 1.5; color: #b95c61; font-weight: 800; }
+.dev-copy { color: #7f89a4; font-size: 22rpx; line-height: 1.45; }
+.dev-zone .dev-btn { min-width: 168rpx; }
+.hint { font-size: 22rpx; line-height: 1.5; color: #7f89a4; }
+.login-foot { padding-top: 8rpx; border-top: 1rpx solid rgba(79,92,136,.13); }
+.login-foot.warning { border-top-color: rgba(232,108,134,.18); }
+.error-text { font-size: 22rpx; line-height: 1.5; color: #b95c61; font-weight: 850; }
 </style>
