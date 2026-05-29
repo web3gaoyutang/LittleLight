@@ -2,14 +2,22 @@ const api = process.env.LITTLELIGHT_API_URL || 'http://localhost:8080'
 const day = process.env.LITTLELIGHT_SMOKE_DAY || '2026-05-27'
 const runId = Math.random().toString(16).slice(2, 10)
 let userId = process.env.LITTLELIGHT_USER_ID || ''
+let sessionToken = process.env.LITTLELIGHT_SESSION_TOKEN || ''
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
 }
 
+function listItems(response) {
+  if (Array.isArray(response)) return response
+  if (Array.isArray(response?.items)) return response.items
+  return []
+}
+
 async function request(path, options = {}) {
   const headers = {
     'Content-Type': 'application/json',
+    ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
     ...(userId ? { 'X-User-ID': userId } : {}),
     ...(options.headers || {})
   }
@@ -60,6 +68,7 @@ async function main() {
   assert(session.userId, 'mock login did not return userId')
   assert(session.sessionToken, 'mock login did not return sessionToken')
   userId = session.userId
+  sessionToken = session.sessionToken
 
   const profile = await request('/api/v1/me')
   assert(profile.name === `Smoke Teacher ${runId}`, 'profile did not use mock login name')
@@ -171,8 +180,11 @@ async function main() {
   })
   assert(favorite.id, 'favorite create did not return id')
 
-  const generations = await request('/api/v1/ai/generations')
+  const generationsResponse = await request('/api/v1/ai/generations?limit=1')
+  const generations = listItems(generationsResponse)
   assert(Array.isArray(generations) && generations.length > 0, 'AI generation audit list is empty')
+  assert(generationsResponse.pageInfo?.count === generations.length, 'AI generation audit list did not return pageInfo')
+  assert(generationsResponse.pageInfo?.hasMore === true, 'AI generation audit list should expose hasMore when limit is smaller than result set')
 
   const dashboard = await request(`/api/v1/dashboard?day=${day}`)
   assert(dashboard.coursesCount >= 1, 'dashboard did not include courses')

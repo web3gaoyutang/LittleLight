@@ -74,17 +74,26 @@ powershell -ExecutionPolicy Bypass -File .\scripts\verify-docker.ps1
 node scripts/api-smoke.mjs
 ```
 
-`api-smoke.mjs` 会检查 health/readiness、微信模拟登录、首页、课程、待办、家长、沟通记录、AI 草稿、AI 夸夸、疗愈记录、收藏和 AI 审计记录。可通过 `LITTLELIGHT_API_URL` 指向非默认 API 地址。
+`api-smoke.mjs` 会检查 health/readiness、微信开发登录、首页、课程、待办、家长、沟通记录、AI 草稿、AI 夸夸、疗愈记录、收藏和 AI 审计记录。可通过 `LITTLELIGHT_API_URL` 指向非默认 API 地址。
+
+验证运行中的 H5 前端关键路径：
+
+```bash
+cd app
+npm run test:h5-smoke
+```
+
+`test:h5-smoke` 会启动临时 headless Chrome，点击 H5 开发登录，进入首页和日程页，提交一条真实待办，再通过 API 确认服务端落库。需要本机已有 Chrome、API 在 `http://localhost:8080`、H5 在 `http://localhost:5173`；可通过 `CHROME_PATH`、`LITTLELIGHT_API_URL`、`LITTLELIGHT_H5_URL` 覆盖。
 
 ## 当前能力
 
 - `app/` 提供 uni-app + Vue 3 五个 Tab 页面骨架，核心页面已接入后端 API。
-- `server/` 提供 Go HTTP API，覆盖 Dashboard、课程、待办提醒、家长档案、沟通记录、疗愈记录、收藏、AI 生成和微信模拟登录。
+- `server/` 提供 Go HTTP API，覆盖 Dashboard、课程、待办提醒、家长档案、沟通记录、疗愈记录、收藏、AI 生成、微信 code 登录和开发模拟登录。
 - PostgreSQL 负责持久化业务数据，Redis 负责首页 dashboard 缓存。
 - API 启动时会按 `MIGRATIONS_DIR` 自动执行 SQL 迁移；Docker 环境默认使用 `/app/migrations`。
-- `APP_ENV=local` 时 PostgreSQL 不可用会降级到内存仓库；Docker/生产环境中数据库或迁移失败会直接退出。
-- Docker Compose 可编排 H5 Web、API、PostgreSQL 和 Redis；API 容器使用 `/readyz` 作为 healthcheck。
-- GitHub Actions 包含 `docs`、`server`、`app`、`integration` 和 `docker-build` jobs；`integration` 会启动 PostgreSQL/Redis 与 Go API 后执行 API smoke。
+- `APP_ENV=local` 时 PostgreSQL 不可用会降级到内存仓库；`APP_ENV=docker/prod/production` 中数据库或迁移失败会直接退出。
+- Docker Compose 可编排 H5 Web、API、PostgreSQL 和 Redis；默认 `APP_ENV=docker` 是本地容器开发环境，关闭 `X-User-ID` 开发鉴权但保留模拟微信登录；API 容器使用 `/readyz` 作为 healthcheck。
+- GitHub Actions 包含 `docs`、`server`、`app`、`integration` 和 `docker-build` jobs；`integration` 会启动 PostgreSQL/Redis、Go API 与 H5 dev server 后执行 API smoke 和 H5 smoke。
 - LLM 支持 OpenAI-compatible `/v1/chat/completions`，未配置或调用失败时回退到本地 mock，保证主流程可验证。
 
 ## 文档入口
@@ -98,6 +107,6 @@ node scripts/api-smoke.mjs
 
 ## 当前边界
 
-- 真实微信 code 换 session 尚未接入；当前使用微信模拟登录和 `X-User-ID` 开发鉴权。
+- 后端已提供 `/api/v1/auth/wechat` 做微信 code 换 openid，并按 openid 查找或创建用户；小程序端会优先走真实微信登录，H5/本地调试可通过显式“开发登录”按钮调用 `/api/v1/auth/wechat/mock`。业务接口默认要求 Bearer session，session 会写入服务端 `auth_sessions` 并可通过 `/api/v1/auth/logout` 撤销；仅显式开启 `AUTH_ALLOW_DEV_USER=true` 时可用非空且已存在的 `X-User-ID` 做本地开发鉴权。`APP_ENV=prod/production` 启动时会强制要求 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`、至少 32 字符的 `SESSION_SECRET` 与具体的 `CORS_ALLOWED_ORIGINS`，并拒绝 `AUTH_ALLOW_DEV_USER=true`、`AUTH_ALLOW_MOCK_LOGIN=true` 或通配 CORS；生产前端不要设置 `VITE_ENABLE_MOCK_LOGIN=true`。
 - 推送通知、支付、对象存储和真实生产多副本部署尚未进入当前工程阶段。
 - 完整 Docker 镜像构建依赖基础镜像可拉取；如果本机 Docker Hub 不可用，可先跑 `verify-all.ps1 -IncludeDockerLogic` 验证 PostgreSQL/Redis/API 主业务逻辑，镜像构建由 CI 兜底。

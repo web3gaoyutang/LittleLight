@@ -65,6 +65,30 @@ func (c *DashboardCache) Invalidate(ctx context.Context, userID domain.ID, day t
 	}
 }
 
+func (c *DashboardCache) InvalidateUser(ctx context.Context, userID domain.ID) {
+	if c == nil || c.client == nil {
+		return
+	}
+	pattern := fmt.Sprintf("dashboard:%s:*", userID)
+	var cursor uint64
+	for {
+		keys, nextCursor, err := c.client.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			log.Printf("dashboard cache scan invalidate failed: %v", err)
+			return
+		}
+		if len(keys) > 0 {
+			if err := c.client.Del(ctx, keys...).Err(); err != nil {
+				log.Printf("dashboard cache user invalidate failed: %v", err)
+			}
+		}
+		if nextCursor == 0 {
+			return
+		}
+		cursor = nextCursor
+	}
+}
+
 func (c *DashboardCache) key(userID domain.ID, day time.Time) string {
 	return fmt.Sprintf("dashboard:%s:%s", userID, day.Format("2006-01-02"))
 }

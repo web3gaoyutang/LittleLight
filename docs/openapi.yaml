@@ -9,11 +9,15 @@ servers:
   - url: http://localhost:8081
     description: docker web gateway
 security:
+  - SessionToken: []
   - DevUser: []
 tags:
   - name: Health
   - name: Auth
   - name: Me
+  - name: Billing
+  - name: Notifications
+  - name: Sync
   - name: Dashboard
   - name: Courses
   - name: Reminders
@@ -52,18 +56,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReadinessResponse"
-  /api/v1/auth/wechat/mock:
+  /api/v1/auth/wechat:
     post:
       tags: [Auth]
       security: []
-      summary: Mock WeChat login for development
-      description: 开发阶段微信模拟登录；后续真实微信登录可复用同样响应结构。
+      summary: WeChat Mini Program login
+      description: 使用微信小程序登录 code 换取 openid，按 openid 查找或创建用户，并返回服务端 session token。
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/WechatMockLoginInput"
+              $ref: "#/components/schemas/WechatLoginInput"
+      responses:
+        "200":
+          description: WeChat session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WechatSession"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          description: WeChat credentials are not configured
+  /api/v1/auth/wechat/mock:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Mock WeChat login for development
+      description: 开发阶段微信模拟登录；仅在 AUTH_ALLOW_MOCK_LOGIN=true 时可用。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WechatLoginInput"
       responses:
         "200":
           description: Mock WeChat session
@@ -71,6 +100,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WechatSession"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke current session
+      description: 撤销当前 Bearer session；前端退出登录时调用，随后清理本地登录态。
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
   /api/v1/me:
     get:
       tags: [Me]
@@ -98,6 +139,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserProfile"
+    delete:
+      tags: [Me]
+      summary: Delete current account and owned data
+      description: Deletes the current user account, server sessions, and all account-owned courses, reminders, parent profiles, communication records, healing entries, AI generation records, AI action audit rows, and favorites. A later WeChat login for the same openid creates a new account.
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+  /api/v1/me/export:
+    get:
+      tags: [Me]
+      summary: Export current account data
+      description: Returns current account-owned profile, courses, reminders, parent profiles, communication records, healing entries, AI generation records with action audit rows, favorites, and export timestamp.
+      responses:
+        "200":
+          description: Account export JSON
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountExport"
   /api/v1/me/favorites:
     get:
       tags: [Me]
@@ -107,16 +167,20 @@ paths:
           in: query
           schema:
             type: string
+            enum: [communication_template, ai_praise, class_feedback]
           description: Filter by favorite type.
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
       responses:
         "200":
           description: Favorite list
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Favorite"
+                $ref: "#/components/schemas/FavoriteList"
+        "400":
+          $ref: "#/components/responses/ValidationError"
     post:
       tags: [Me]
       summary: Create a favorite item
@@ -142,6 +206,67 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/OK"
+  /api/v1/billing/entitlements:
+    get:
+      tags: [Billing]
+      summary: Get current billing entitlements
+      responses:
+        "200":
+          description: Current entitlement boundary status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entitlements"
+  /api/v1/billing/checkout:
+    post:
+      tags: [Billing]
+      summary: Request a billing checkout
+      description: Returns an explicit unavailable status until a real payment provider is configured.
+      responses:
+        "200":
+          description: Checkout boundary status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Entitlements"
+  /api/v1/notifications/settings:
+    get:
+      tags: [Notifications]
+      summary: Get reminder notification settings
+      responses:
+        "200":
+          description: Notification boundary settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+    put:
+      tags: [Notifications]
+      summary: Update reminder notification settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationSettingsInput"
+      responses:
+        "200":
+          description: Updated notification boundary settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationSettings"
+  /api/v1/sync/status:
+    get:
+      tags: [Sync]
+      summary: Get cloud sync and object storage status
+      responses:
+        "200":
+          description: Sync boundary status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncStatus"
   /api/v1/dashboard:
     get:
       tags: [Dashboard]
@@ -155,6 +280,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
+        "400":
+          $ref: "#/components/responses/ValidationError"
   /api/v1/courses:
     get:
       tags: [Courses]
@@ -176,6 +303,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Course"
+        "400":
+          $ref: "#/components/responses/ValidationError"
     post:
       tags: [Courses]
       summary: Create a course
@@ -192,10 +321,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Course"
+  /api/v1/courses/imports/template:
+    get:
+      tags: [Courses]
+      summary: Download course import CSV template
+      responses:
+        "200":
+          description: Course import CSV template
+          content:
+            text/csv:
+              schema:
+                type: string
   /api/v1/courses/imports:
     post:
       tags: [Courses]
       summary: Import courses from .xlsx or .csv
+      parameters:
+        - name: preview
+          in: query
+          schema:
+            type: boolean
+          description: Parse and validate rows without persisting them.
       requestBody:
         required: true
         content:
@@ -270,6 +416,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Reminder"
+        "400":
+          $ref: "#/components/responses/ValidationError"
     post:
       tags: [Reminders]
       summary: Create a reminder
@@ -346,6 +494,7 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               required: [until]
               properties:
                 until:
@@ -362,15 +511,19 @@ paths:
     get:
       tags: [Parents]
       summary: List parent profiles
+      parameters:
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
       responses:
         "200":
           description: Parent profile list
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ParentProfile"
+                $ref: "#/components/schemas/ParentProfileList"
+        "400":
+          $ref: "#/components/responses/ValidationError"
     post:
       tags: [Parents]
       summary: Create a parent profile
@@ -387,10 +540,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ParentProfile"
+  /api/v1/parents/imports/template:
+    get:
+      tags: [Parents]
+      summary: Download parent profile import CSV template
+      responses:
+        "200":
+          description: Parent profile import CSV template
+          content:
+            text/csv:
+              schema:
+                type: string
   /api/v1/parents/imports:
     post:
       tags: [Parents]
       summary: Import parent profiles from .xlsx or .csv
+      parameters:
+        - name: preview
+          in: query
+          schema:
+            type: boolean
+          description: Parse and validate rows without persisting them.
       requestBody:
         required: true
         content:
@@ -457,15 +627,18 @@ paths:
           in: query
           schema:
             type: string
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
       responses:
         "200":
           description: Communication record list
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/CommunicationRecord"
+                $ref: "#/components/schemas/CommunicationRecordList"
+        "400":
+          $ref: "#/components/responses/ValidationError"
     post:
       tags: [CommunicationRecords]
       summary: Create a communication record
@@ -521,6 +694,19 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/OK"
+  /api/v1/communication-records/{id}/complete-follow-up:
+    post:
+      tags: [CommunicationRecords]
+      summary: Mark a communication follow-up as done
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          description: Updated communication record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunicationRecord"
   /api/v1/ai/parent-drafts:
     post:
       tags: [AI]
@@ -540,6 +726,8 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AIDraft"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /api/v1/ai/praise:
     post:
       tags: [AI]
@@ -557,6 +745,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AIDraft"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /api/v1/ai/generations:
     get:
       tags: [AI]
@@ -568,15 +758,18 @@ paths:
             type: string
             enum: [parent_drafts, praise]
           description: Filter by AI generation scenario.
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
       responses:
         "200":
           description: AI generation audit record list
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AIGeneration"
+                $ref: "#/components/schemas/AIGenerationList"
+        "400":
+          $ref: "#/components/responses/ValidationError"
   /api/v1/ai/generations/{id}:
     get:
       tags: [AI]
@@ -592,6 +785,41 @@ paths:
                 $ref: "#/components/schemas/AIGeneration"
         "404":
           $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [AI]
+      summary: Delete an AI generation audit record
+      description: Removes the current user's AI input, output, and related action audit records for the generation.
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      responses:
+        "200":
+          $ref: "#/components/responses/OK"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/ai/generations/{id}/actions:
+    post:
+      tags: [AI]
+      summary: Record a teacher action on an AI generation
+      description: For outputs marked as requiring review, copy/save actions require a prior review_confirmed action for the same draft or generation.
+      parameters:
+        - $ref: "#/components/parameters/ID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AIActionInput"
+      responses:
+        "200":
+          description: Created AI action audit record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AIAction"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/v1/healing/entries:
     get:
       tags: [Healing]
@@ -603,15 +831,18 @@ paths:
             type: string
             enum: [breath, praise, treehole, sound]
           description: Filter by healing entry type.
+        - $ref: "#/components/parameters/SearchQuery"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Offset"
       responses:
         "200":
           description: Healing entry list
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/HealingEntry"
+                $ref: "#/components/schemas/HealingEntryList"
+        "400":
+          $ref: "#/components/responses/ValidationError"
     post:
       tags: [Healing]
       summary: Save a healing entry
@@ -655,11 +886,16 @@ paths:
           $ref: "#/components/responses/NotFound"
 components:
   securitySchemes:
+    SessionToken:
+      type: http
+      scheme: bearer
+      bearerFormat: LittleLightSession
+      description: "微信登录或开发模拟登录返回的 sessionToken，前端以 Authorization: Bearer <token> 携带。"
     DevUser:
       type: apiKey
       in: header
       name: X-User-ID
-      description: 开发阶段鉴权；未传时后端使用默认种子用户。
+      description: 仅开发阶段鉴权；需要显式开启 AUTH_ALLOW_DEV_USER=true，且值非空并对应已存在用户。生产部署应关闭 AUTH_ALLOW_DEV_USER。
   parameters:
     ID:
       name: id
@@ -674,6 +910,30 @@ components:
         type: string
         format: date
       example: "2026-05-27"
+    SearchQuery:
+      name: q
+      in: query
+      schema:
+        type: string
+        maxLength: 100
+      description: Keyword search over the main text fields.
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+      description: Maximum number of items to return.
+    Offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Number of matching items to skip.
   responses:
     OK:
       description: Boolean operation result
@@ -686,6 +946,23 @@ components:
                 type: boolean
     NotFound:
       description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    RateLimited:
+      description: Too many requests in a short time window. Response includes Retry-After.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds to wait before retrying.
       content:
         application/json:
           schema:
@@ -723,18 +1000,22 @@ components:
       properties:
         error:
           type: string
-    WechatMockLoginInput:
+    WechatLoginInput:
       type: object
+      additionalProperties: false
       properties:
         code:
           type: string
-          description: 模拟微信 code；真实微信登录接入后替换为 wx.login 返回的 code。
+          maxLength: 512
+          description: 微信小程序登录 code；mock 端点中会用于生成稳定模拟 openid。
         nickName:
           type: string
-          description: 模拟微信昵称。
+          maxLength: 80
+          description: 微信昵称或用户手动输入昵称。
         avatarUrl:
           type: string
-          description: 模拟微信头像。
+          maxLength: 500
+          description: 微信头像 URL。
     WechatSession:
       type: object
       properties:
@@ -761,6 +1042,7 @@ components:
               format: date-time
     UserProfileInput:
       type: object
+      additionalProperties: false
       required: [name]
       properties:
         name:
@@ -779,6 +1061,94 @@ components:
         reminderPolicy:
           type: string
           enum: [normal, low_interrupt]
+    Entitlements:
+      type: object
+      properties:
+        plan:
+          type: string
+          enum: [free, pro]
+        status:
+          type: string
+          enum: [free, trial, pro, expired]
+        features:
+          type: array
+          items:
+            type: string
+        checkoutStatus:
+          type: string
+          enum: [not_configured, unavailable, ready]
+        checkoutMessage:
+          type: string
+    NotificationSettings:
+      allOf:
+        - $ref: "#/components/schemas/NotificationSettingsInput"
+        - type: object
+          properties:
+            providerStatus:
+              type: string
+              enum: [not_configured, ready]
+            permissionRequired:
+              type: boolean
+            message:
+              type: string
+    NotificationSettingsInput:
+      type: object
+      additionalProperties: false
+      properties:
+        reminderPolicy:
+          type: string
+          enum: [normal, low_interrupt]
+    SyncStatus:
+      type: object
+      properties:
+        cloudSyncStatus:
+          type: string
+          enum: [local_persistence, not_configured, ready]
+        objectStorageStatus:
+          type: string
+          enum: [not_configured, ready]
+        lastSyncedAt:
+          type: string
+          format: date-time
+        message:
+          type: string
+    AccountExport:
+      type: object
+      required: [profile, courses, reminders, parents, communicationRecords, healingEntries, aiGenerations, favorites, exportedAt]
+      properties:
+        profile:
+          $ref: "#/components/schemas/UserProfile"
+        courses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Course"
+        reminders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reminder"
+        parents:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParentProfile"
+        communicationRecords:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommunicationRecord"
+        healingEntries:
+          type: array
+          items:
+            $ref: "#/components/schemas/HealingEntry"
+        aiGenerations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AIGeneration"
+        favorites:
+          type: array
+          items:
+            $ref: "#/components/schemas/Favorite"
+        exportedAt:
+          type: string
+          format: date-time
     Favorite:
       allOf:
         - $ref: "#/components/schemas/FavoriteInput"
@@ -789,8 +1159,19 @@ components:
             createdAt:
               type: string
               format: date-time
+    FavoriteList:
+      type: object
+      required: [items, pageInfo]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Favorite"
+        pageInfo:
+          $ref: "#/components/schemas/PageInfo"
     FavoriteInput:
       type: object
+      additionalProperties: false
       required: [type, title, content]
       properties:
         type:
@@ -814,6 +1195,47 @@ components:
           type: array
           items:
             type: string
+        preview:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportPreview"
+        failureCsv:
+          type: string
+          description: CSV content containing failed rows and failure reasons.
+    ImportPreview:
+      type: object
+      properties:
+        row:
+          type: integer
+        status:
+          type: string
+          enum: [ready, invalid, duplicate]
+        message:
+          type: string
+        values:
+          type: object
+          additionalProperties:
+            type: string
+    PageInfo:
+      type: object
+      required: [limit, offset, count, hasMore]
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+        offset:
+          type: integer
+          minimum: 0
+        count:
+          type: integer
+          minimum: 0
+        nextOffset:
+          type: integer
+          minimum: 0
+          description: Present when hasMore is true.
+        hasMore:
+          type: boolean
     Course:
       allOf:
         - $ref: "#/components/schemas/CourseInput"
@@ -826,6 +1248,7 @@ components:
               format: date-time
     CourseInput:
       type: object
+      additionalProperties: false
       required: [title, className, weekday, startTime, endTime]
       properties:
         title:
@@ -865,6 +1288,7 @@ components:
               nullable: true
     ReminderInput:
       type: object
+      additionalProperties: false
       required: [title, remindAt]
       properties:
         title:
@@ -895,8 +1319,19 @@ components:
             createdAt:
               type: string
               format: date-time
+    ParentProfileList:
+      type: object
+      required: [items, pageInfo]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ParentProfile"
+        pageInfo:
+          $ref: "#/components/schemas/PageInfo"
     ParentProfileInput:
       type: object
+      additionalProperties: false
       required: [studentName, className, parentName, relationship]
       properties:
         studentName:
@@ -928,13 +1363,25 @@ components:
             createdAt:
               type: string
               format: date-time
+    CommunicationRecordList:
+      type: object
+      required: [items, pageInfo]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CommunicationRecord"
+        pageInfo:
+          $ref: "#/components/schemas/PageInfo"
     CommunicationRecordInput:
       type: object
+      additionalProperties: false
       required: [student, channel, reason, summary]
       properties:
         parentId:
           type: string
           nullable: true
+          description: 删除家长档案后，历史沟通记录会保留且不再关联 parentId。
         student:
           type: string
         channel:
@@ -952,6 +1399,13 @@ components:
           type: string
           format: date-time
           nullable: true
+        followUpStatus:
+          type: string
+          enum: [pending, done]
+        followedUpAt:
+          type: string
+          format: date-time
+          nullable: true
     HealingEntry:
       allOf:
         - $ref: "#/components/schemas/HealingEntryInput"
@@ -962,8 +1416,19 @@ components:
             createdAt:
               type: string
               format: date-time
+    HealingEntryList:
+      type: object
+      required: [items, pageInfo]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/HealingEntry"
+        pageInfo:
+          $ref: "#/components/schemas/PageInfo"
     HealingEntryInput:
       type: object
+      additionalProperties: false
       required: [type]
       properties:
         type:
@@ -980,6 +1445,8 @@ components:
       properties:
         id:
           $ref: "#/components/schemas/ID"
+        generationId:
+          $ref: "#/components/schemas/ID"
         version:
           type: string
         tone:
@@ -990,6 +1457,68 @@ components:
           type: string
         safety:
           type: string
+          enum: [teacher_review_required, self_care, crisis_support_required, student_safety_review_required, medical_review_required]
+        provider:
+          type: string
+          description: llm / mock / safety_rules.
+        source:
+          type: string
+          description: Model name, local_template, local_fallback, or risk_guardrail.
+        fallback:
+          type: boolean
+          description: True when the service had to use a local fallback instead of the configured model.
+        reviewRequired:
+          type: boolean
+          description: True when the draft should be manually reviewed before use.
+        safetyNote:
+          type: string
+        safetyLevel:
+          type: string
+          enum: [info, review, high]
+          description: Coarse safety severity used by clients to render review or high-risk states.
+        safetyReason:
+          type: string
+          description: Human-readable reason explaining why the safety label or review requirement was applied.
+        safetySignals:
+          type: array
+          description: Matched guardrail signals or keywords that triggered the safety classification.
+          items:
+            type: string
+    AIActionInput:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [copy, save_record, save_healing, review_confirmed, review_skipped]
+        draftId:
+          type: string
+        note:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    AIAction:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/ID"
+        generationId:
+          $ref: "#/components/schemas/ID"
+        action:
+          type: string
+          enum: [copy, save_record, save_healing, review_confirmed, review_skipped]
+        draftId:
+          type: string
+        note:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
     AIGeneration:
       type: object
       properties:
@@ -1008,11 +1537,26 @@ components:
           type: string
         tokenUsage:
           type: integer
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AIAction"
         createdAt:
           type: string
           format: date-time
+    AIGenerationList:
+      type: object
+      required: [items, pageInfo]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AIGeneration"
+        pageInfo:
+          $ref: "#/components/schemas/PageInfo"
     ParentDraftRequest:
       type: object
+      additionalProperties: false
       required: [issue]
       properties:
         issue:
@@ -1025,6 +1569,7 @@ components:
           type: string
     PraiseRequest:
       type: object
+      additionalProperties: false
       required: [content]
       properties:
         persona:

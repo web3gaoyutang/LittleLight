@@ -16,12 +16,55 @@ type UserProfile struct {
 	CreatedAt      time.Time `json:"createdAt"`
 }
 
+type Entitlements struct {
+	Plan            string   `json:"plan"`
+	Status          string   `json:"status"`
+	Features        []string `json:"features"`
+	CheckoutStatus  string   `json:"checkoutStatus"`
+	CheckoutMessage string   `json:"checkoutMessage"`
+}
+
+type NotificationSettings struct {
+	ReminderPolicy     string `json:"reminderPolicy"`
+	ProviderStatus     string `json:"providerStatus"`
+	PermissionRequired bool   `json:"permissionRequired"`
+	Message            string `json:"message"`
+}
+
+type SyncStatus struct {
+	CloudSyncStatus     string `json:"cloudSyncStatus"`
+	ObjectStorageStatus string `json:"objectStorageStatus"`
+	LastSyncedAt        string `json:"lastSyncedAt,omitempty"`
+	Message             string `json:"message"`
+}
+
 type WechatSession struct {
 	UserID       ID          `json:"userId"`
 	SessionToken string      `json:"sessionToken"`
 	OpenID       string      `json:"openId"`
 	Profile      UserProfile `json:"profile"`
 	ExpiresAt    time.Time   `json:"expiresAt"`
+}
+
+type AuthSession struct {
+	ID        ID         `json:"id"`
+	UserID    ID         `json:"userId"`
+	TokenHash string     `json:"-"`
+	ExpiresAt time.Time  `json:"expiresAt"`
+	RevokedAt *time.Time `json:"revokedAt,omitempty"`
+	CreatedAt time.Time  `json:"createdAt"`
+}
+
+type AccountExport struct {
+	Profile              UserProfile           `json:"profile"`
+	Courses              []Course              `json:"courses"`
+	Reminders            []Reminder            `json:"reminders"`
+	Parents              []ParentProfile       `json:"parents"`
+	CommunicationRecords []CommunicationRecord `json:"communicationRecords"`
+	HealingEntries       []HealingEntry        `json:"healingEntries"`
+	AIGenerations        []AIGeneration        `json:"aiGenerations"`
+	Favorites            []Favorite            `json:"favorites"`
+	ExportedAt           time.Time             `json:"exportedAt"`
 }
 
 type Course struct {
@@ -64,16 +107,18 @@ type ParentProfile struct {
 }
 
 type CommunicationRecord struct {
-	ID         ID        `json:"id"`
-	ParentID   ID        `json:"parentId"`
-	Student    string    `json:"student"`
-	Channel    string    `json:"channel"`
-	Reason     string    `json:"reason"`
-	Summary    string    `json:"summary"`
-	Result     string    `json:"result"`
-	RiskLevel  string    `json:"riskLevel"`
-	FollowUpAt time.Time `json:"followUpAt"`
-	CreatedAt  time.Time `json:"createdAt"`
+	ID             ID         `json:"id"`
+	ParentID       *ID        `json:"parentId,omitempty"`
+	Student        string     `json:"student"`
+	Channel        string     `json:"channel"`
+	Reason         string     `json:"reason"`
+	Summary        string     `json:"summary"`
+	Result         string     `json:"result"`
+	RiskLevel      string     `json:"riskLevel"`
+	FollowUpAt     time.Time  `json:"followUpAt"`
+	FollowUpStatus string     `json:"followUpStatus"`
+	FollowedUpAt   *time.Time `json:"followedUpAt,omitempty"`
+	CreatedAt      time.Time  `json:"createdAt"`
 }
 
 type HealingEntry struct {
@@ -95,12 +140,31 @@ type Favorite struct {
 }
 
 type AIDraft struct {
-	ID      ID     `json:"id"`
-	Version string `json:"version"`
-	Tone    string `json:"tone"`
-	Style   string `json:"style"`
-	Content string `json:"content"`
-	Safety  string `json:"safety"`
+	ID             ID       `json:"id"`
+	GenerationID   ID       `json:"generationId,omitempty"`
+	Version        string   `json:"version"`
+	Tone           string   `json:"tone"`
+	Style          string   `json:"style"`
+	Content        string   `json:"content"`
+	Safety         string   `json:"safety"`
+	Provider       string   `json:"provider"`
+	Source         string   `json:"source"`
+	Fallback       bool     `json:"fallback"`
+	ReviewRequired bool     `json:"reviewRequired"`
+	SafetyNote     string   `json:"safetyNote,omitempty"`
+	SafetyLevel    string   `json:"safetyLevel,omitempty"`
+	SafetyReason   string   `json:"safetyReason,omitempty"`
+	SafetySignals  []string `json:"safetySignals,omitempty"`
+}
+
+type AIAction struct {
+	ID           ID             `json:"id"`
+	GenerationID ID             `json:"generationId"`
+	Action       string         `json:"action"`
+	DraftID      string         `json:"draftId,omitempty"`
+	Note         string         `json:"note,omitempty"`
+	Metadata     map[string]any `json:"metadata,omitempty"`
+	CreatedAt    time.Time      `json:"createdAt"`
 }
 
 type AIGeneration struct {
@@ -110,6 +174,7 @@ type AIGeneration struct {
 	Output      map[string]any `json:"output"`
 	SafetyLabel string         `json:"safetyLabel"`
 	TokenUsage  int            `json:"tokenUsage"`
+	Actions     []AIAction     `json:"actions,omitempty"`
 	CreatedAt   time.Time      `json:"createdAt"`
 }
 

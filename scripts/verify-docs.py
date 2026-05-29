@@ -1,7 +1,24 @@
 from pathlib import Path
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parents[1]
+
+STRICT_REQUEST_SCHEMAS = [
+    "WechatLoginInput",
+    "UserProfileInput",
+    "NotificationSettingsInput",
+    "FavoriteInput",
+    "CourseInput",
+    "ReminderInput",
+    "ParentProfileInput",
+    "CommunicationRecordInput",
+    "HealingEntryInput",
+    "AIActionInput",
+    "ParentDraftRequest",
+    "PraiseRequest",
+]
 
 
 CHECKS = {
@@ -34,6 +51,7 @@ CHECKS = {
         "Docker Compose",
         "scripts\\verify-all.ps1",
         "scripts/api-smoke.mjs",
+        "npm run test:h5-smoke",
         "integration",
         "docs/engineering-technical-design.md",
     ],
@@ -79,6 +97,7 @@ CHECKS = {
         "docker-build",
         "scripts/verify-docker.ps1",
         "scripts/api-smoke.mjs",
+        "npm run test:h5-smoke",
         "integration",
     ],
 }
@@ -93,6 +112,34 @@ def main() -> None:
         for fragment in required_fragments:
             if fragment not in text:
                 raise SystemExit(f"{relative_path} is missing required fragment: {fragment}")
+    openapi = yaml.safe_load((ROOT / "docs/openapi.yaml").read_text(encoding="utf-8"))
+    if not str(openapi.get("openapi", "")).startswith("3."):
+        raise SystemExit("docs/openapi.yaml is not an OpenAPI 3 document")
+    required_paths = ["/api/v1/dashboard", "/api/v1/auth/wechat", "/api/v1/me/favorites"]
+    for path in required_paths:
+        if path not in openapi.get("paths", {}):
+            raise SystemExit(f"docs/openapi.yaml is missing path: {path}")
+    schemas = openapi.get("components", {}).get("schemas", {})
+    for schema in ["Course", "AIDraft", "PageInfo"]:
+        if schema not in schemas:
+            raise SystemExit(f"docs/openapi.yaml is missing schema: {schema}")
+    for schema_name in STRICT_REQUEST_SCHEMAS:
+        schema = schemas.get(schema_name)
+        if not schema:
+            raise SystemExit(f"docs/openapi.yaml is missing schema: {schema_name}")
+        if schema.get("additionalProperties") is not False:
+            raise SystemExit(f"docs/openapi.yaml schema {schema_name} must set additionalProperties: false")
+    snooze_schema = (
+        openapi.get("paths", {})
+        .get("/api/v1/reminders/{id}/snooze", {})
+        .get("post", {})
+        .get("requestBody", {})
+        .get("content", {})
+        .get("application/json", {})
+        .get("schema", {})
+    )
+    if snooze_schema.get("additionalProperties") is not False:
+        raise SystemExit("docs/openapi.yaml snooze request body must set additionalProperties: false")
     print("documentation coverage ok")
 
 

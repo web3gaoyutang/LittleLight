@@ -7,7 +7,8 @@ $ComposeFile = Join-Path $RepoRoot "deploy\docker-compose.yml"
 $Api = $env:LITTLELIGHT_API_URL
 if (-not $Api) { $Api = "http://localhost:8080" }
 $HttpAddr = ":" + ([Uri]$Api).Port
-$UserID = "00000000-0000-0000-0000-000000000001"
+$UserID = ""
+$SessionToken = ""
 $Day = "2026-05-27"
 $RunID = [Guid]::NewGuid().ToString("N").Substring(0, 8)
 $ApiJob = $null
@@ -33,7 +34,13 @@ function Invoke-ApiJson {
         [Parameter(Mandatory = $true)][string]$Path,
         [object]$Body = $null
     )
-    $headers = @{ "X-User-ID" = $UserID }
+    $headers = @{}
+    if ($SessionToken) {
+        $headers["Authorization"] = "Bearer $SessionToken"
+    }
+    if ($UserID) {
+        $headers["X-User-ID"] = $UserID
+    }
     $params = @{
         Method = $Method
         Uri = "$Api$Path"
@@ -88,6 +95,9 @@ try {
         $env:REDIS_PASSWORD = ""
         $env:REDIS_DB = "0"
         $env:MIGRATIONS_DIR = "migrations"
+        $env:AUTH_ALLOW_DEV_USER = "false"
+        $env:AUTH_ALLOW_MOCK_LOGIN = "true"
+        $env:CORS_ALLOWED_ORIGINS = "http://localhost:8081,http://localhost:5173"
         $env:AI_PROVIDER = ""
         $env:LLM_API_KEY = $LLMKey
         $env:LLM_BASE_URL = $LLMBaseURL
@@ -108,6 +118,8 @@ try {
     }
     Assert-True ([string]$login.userId -ne "") "Wechat mock login user id is empty."
     Assert-True ([string]$login.sessionToken -ne "") "Wechat mock login token is empty."
+    $UserID = [string]$login.userId
+    $SessionToken = [string]$login.sessionToken
 
     $dashboard = Invoke-ApiJson -Method "GET" -Path "/api/v1/dashboard?day=$Day"
     Assert-True ($dashboard.todayLabel -eq $Day) "Dashboard day mismatch."
@@ -179,7 +191,7 @@ try {
     Assert-True ([string]$healing.id -ne "") "Healing entry id is empty."
 
     $favorite = Invoke-ApiJson -Method "POST" -Path "/api/v1/me/favorites" -Body @{
-        type = "ai_praise_phrase"
+        type = "ai_praise"
         title = "Docker verify favorite $RunID"
         content = "You completed a reliable verification loop."
     }

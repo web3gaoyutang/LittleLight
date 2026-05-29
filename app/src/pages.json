@@ -3,12 +3,14 @@
     "autoscan": true
   },
   "pages": [
+    { "path": "pages/login/index", "style": { "navigationBarTitleText": "微信登录" } },
     { "path": "pages/home/index", "style": { "navigationBarTitleText": "今日" } },
     { "path": "pages/heal/index", "style": { "navigationBarTitleText": "疗愈" } },
     { "path": "pages/communication/index", "style": { "navigationBarTitleText": "沟通" } },
     { "path": "pages/communication/parent-detail", "style": { "navigationBarTitleText": "家长档案" } },
     { "path": "pages/schedule/index", "style": { "navigationBarTitleText": "日程" } },
-    { "path": "pages/profile/index", "style": { "navigationBarTitleText": "我的" } }
+    { "path": "pages/profile/index", "style": { "navigationBarTitleText": "我的" } },
+    { "path": "pages/profile/ai-log-detail", "style": { "navigationBarTitleText": "AI 记录详情" } }
   ],
   "tabBar": {
     "color": "#7f89a4",

@@ -139,7 +139,7 @@ MIGRATIONS_DIR=server/migrations
 
 1. 确认目标分支 CI 通过，尤其是 `docker-build` job。
 2. 在发布机器同步最新代码，或拉取已构建好的镜像。
-3. 确认 `.env` 中数据库、Redis、LLM、镜像源等配置完整，真实密钥只放部署环境。
+3. 确认 `.env` 中 `APP_ENV=prod` 或 `APP_ENV=production`，并配置数据库、Redis、LLM、镜像源、`SESSION_SECRET`、微信配置与 `CORS_ALLOWED_ORIGINS`。真实密钥只放部署环境，且 `AUTH_ALLOW_DEV_USER=false`、`AUTH_ALLOW_MOCK_LOGIN=false`。
 4. 先执行配置检查：
 
 ```bash
@@ -160,7 +160,7 @@ curl http://localhost:8080/readyz
 curl http://localhost:8081/readyz
 ```
 
-7. 通过 H5 入口执行一次 smoke test：微信模拟登录、首页加载、创建待办、创建家长、生成一条 AI 草稿。
+7. 通过 H5 入口执行一次 smoke test：生产环境使用真实微信登录；本地调试可在 `VITE_ENABLE_MOCK_LOGIN=true` 时使用开发登录。随后检查首页加载、创建待办、创建家长、生成一条 AI 草稿。
 
 ## 8. 数据备份与恢复
 
@@ -218,7 +218,7 @@ API 启动日志应重点确认以下信号：
 - Redis connected：dashboard 缓存依赖可用。
 - listening：HTTP 服务已开始监听 `HTTP_ADDR`。
 
-如果 `APP_ENV=local` 且 PostgreSQL 不可用，API 会降级到内存仓库，便于本地先验证接口形态；如果 `APP_ENV=docker` 或 `APP_ENV=prod`，数据库连接或迁移失败会让 API 退出，避免部署环境静默丢失持久化能力。
+如果 `APP_ENV=local` 且 PostgreSQL 不可用，API 会降级到内存仓库，便于本地先验证接口形态；如果 `APP_ENV=docker`、`APP_ENV=prod` 或 `APP_ENV=production`，数据库连接或迁移失败会让 API 退出，避免容器环境静默丢失持久化能力。`APP_ENV=prod/production` 还会要求真实微信配置、至少 32 字符的 `SESSION_SECRET`、具体 `CORS_ALLOWED_ORIGINS`，并拒绝开发鉴权、模拟登录和 `*` CORS。
 
 ### 10.2 Readiness 诊断
 

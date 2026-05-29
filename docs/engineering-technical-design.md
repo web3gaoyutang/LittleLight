@@ -98,7 +98,7 @@ PostgreSQL 存储长期业务数据：用户、课表、提醒、家长档案、
 
 Redis 用于：
 
-- 今日工作台摘要缓存：当前 API 已通过 DashboardCache 接入，写入提醒或家长档案后会主动失效当天缓存。
+- 今日工作台摘要缓存：当前 API 已通过 DashboardCache 接入；提醒变更会按相关日期精确失效，课程、家长档案和沟通跟进等跨日期影响会按当前用户失效缓存。
 
 - 登录态和 Token 黑名单。
 - AI 生成结果短期缓存，降低重复调用成本。
@@ -155,18 +155,23 @@ go run ./cmd/api
 
 | 变量 | 示例 | 说明 |
 | --- | --- | --- |
-| APP_ENV | local / docker / prod | 运行环境 |
+| APP_ENV | local / docker / prod / production | 运行环境；docker 表示本地容器开发，prod/production 表示生产启动门禁 |
 | HTTP_ADDR | :8080 | Go API 监听地址 |
 | DATABASE_URL | postgres://littlelight:littlelight@postgres:5432/littlelight?sslmode=disable | PostgreSQL DSN |
 | REDIS_ADDR | redis:6379 | Redis 地址 |
 | REDIS_PASSWORD | 空 | Redis 密码 |
 | REDIS_DB | 0 | Redis DB |
 | MIGRATIONS_DIR | server/migrations / /app/migrations | SQL 迁移目录；Docker 容器内使用 `/app/migrations` |
+| SESSION_SECRET | 至少 32 字符随机值 | Bearer session 签名密钥；prod/production 必须显式配置且不能使用示例值 |
+| AUTH_ALLOW_DEV_USER | true / false | 是否允许 `X-User-ID` 开发鉴权；local 默认 true，docker/prod/production 默认 false，生产必须为 false；请求中的用户 ID 必须已存在 |
+| AUTH_ALLOW_MOCK_LOGIN | true / false | 是否允许 `/auth/wechat/mock`；local/docker 默认 true，prod/production 默认 false，生产必须为 false |
+| CORS_ALLOWED_ORIGINS | https://h5.example.com,https://admin.example.com | API 允许的 Web Origin，逗号分隔；prod/production 必须显式配置且不能使用 `*` |
 | AI_PROVIDER | 空 / mock / llm / openai / qwen | AI 供应商；留空时会根据 LLM 配置自动判断 |
 | AI_API_KEY | sk-xxx | 兼容旧配置；未设置 `LLM_API_KEY` 时作为 LLM Key 兜底 |
 | LLM_API_KEY | sk-xxx | OpenAI-compatible LLM API Key；只放本地 `.env` 或部署密钥，不提交仓库 |
 | LLM_BASE_URL | https://llmapi.example.com | OpenAI-compatible Base URL；服务会请求 `{LLM_BASE_URL}/v1/chat/completions` |
 | LLM_MODEL | gpt-4o-mini | LLM 模型名；未设置时使用默认值 |
+| VITE_ENABLE_MOCK_LOGIN | true / false | H5 是否显示开发登录入口；生产环境不要启用 |
 | GO_IMAGE | golang:1.22-alpine | Go API 构建阶段基础镜像，可替换为镜像代理或内网镜像 |
 | ALPINE_IMAGE | alpine:3.20 | Go API 运行阶段基础镜像 |
 | NODE_IMAGE | node:20-alpine | H5 构建阶段基础镜像 |
@@ -287,7 +292,7 @@ AI 生成记录。
 - Docker 镜像会把 `server/migrations` 复制到 `/app/migrations`，Compose 中显式设置 `MIGRATIONS_DIR=/app/migrations`。
 - 本地直接运行 `go run ./cmd/api` 时可使用 `.env.example` 中的 `MIGRATIONS_DIR=server/migrations`，也可以按实际工作目录覆盖；迁移器会依次尝试 `MIGRATIONS_DIR`、`migrations`、`server/migrations`、`/app/migrations`。
 - 当前迁移脚本使用 `CREATE TABLE IF NOT EXISTS`、`CREATE INDEX IF NOT EXISTS`、`ON CONFLICT DO NOTHING` 等幂等写法，适合服务启动时重复执行。后续涉及结构变更时，新增迁移必须继续保持可重复执行。
-- `APP_ENV=local` 时迁移失败会降级到内存仓库，便于本地先调通 API；`APP_ENV=docker/prod` 时迁移失败会直接退出进程，避免部署环境静默丢失持久化。
+- `APP_ENV=local` 时迁移失败会降级到内存仓库，便于本地先调通 API；`APP_ENV=docker/prod/production` 时迁移失败会直接退出进程，避免部署环境静默丢失持久化。
 
 当前表：
 
@@ -312,7 +317,7 @@ AI 生成记录。
 
 基础路径：`/api/v1`
 
-开发阶段鉴权：当前提供 `POST /api/v1/auth/wechat/mock` 作为微信模拟登录入口，返回模拟 `sessionToken`、`openId` 和当前教师资料；前端保存 `userId` 并在后续请求中携带 `X-User-ID`。未传时后端仍默认使用种子用户 `00000000-0000-0000-0000-000000000001`，便于接口调试。后续接入真实微信登录时，可保持前端调用形态不变，将 mock code 换成微信 code 并由后端换取 openid/session。
+鉴权：当前提供 `POST /api/v1/auth/wechat` 作为真实微信小程序 code 登录入口，后端用 code 换取 openid，按 openid 查找或创建用户，并返回服务端签名的 `sessionToken`。session 明文只返回给客户端，服务端保存 token hash、过期时间和撤销状态；业务请求会同时校验签名、过期时间和服务端 session 状态，前端退出时调用 `POST /api/v1/auth/logout` 撤销当前 session。前端后续请求优先携带 `Authorization: Bearer <sessionToken>`，遇到 401 会清理本地登录态并回到登录页。本地/H5 调试可通过显式开发登录入口调用 `POST /api/v1/auth/wechat/mock` 生成稳定模拟 openid；只有显式开启 `AUTH_ALLOW_DEV_USER=true` 时才允许 `X-User-ID` 开发鉴权，且请求必须携带非空、已存在的用户 ID，不再自动落到默认种子用户或为任意 header 创建账号空间。`APP_ENV=prod/production` 启动时会强制关闭开发鉴权和模拟登录，并要求真实微信配置、强 session secret 与具体 CORS 白名单；`APP_ENV=docker` 是本地容器开发环境，默认关闭 `X-User-ID` 但保留模拟登录。
 
 机器可读契约：`docs/openapi.yaml`。后端路由、前端 `app/src/api/client.js` 和手工检查清单应以该文件保持一致。
 
@@ -367,6 +372,14 @@ AI 生成记录。
 }
 ```
 
+`DELETE /api/v1/me`
+
+删除当前账号、服务端 session 和账号名下课程、提醒、家长档案、沟通记录、疗愈记录、AI 生成记录、AI action 审计与收藏。后续同一微信 openid 再登录会创建新账号。
+
+`GET /api/v1/me/export`
+
+导出当前账号名下 profile、课程、提醒、家长档案、沟通记录、疗愈记录、AI 生成记录及 action 审计、收藏和导出时间戳，用于删除账号前备份或数据可携带。
+
 `GET /api/v1/me/favorites?type=communication_template`
 
 `POST /api/v1/me/favorites`
@@ -411,9 +424,10 @@ AI 生成记录。
 导入接口：
 
 - `POST /api/v1/courses/imports`，上传 `.xlsx` 或 `.csv` 课表。
+- `GET /api/v1/courses/imports/template`，下载 CSV 模板。
 - 请求使用 `multipart/form-data`，文件字段名为 `file`。
 - 当前支持表头：课程名称/课程/科目、班级、星期/周几、开始时间、结束时间、地点/教室、备注。
-- 后端限制单文件 5MB、单次最多解析 300 行，返回导入成功数、跳过数和行级错误。
+- 后端限制单文件 5MB、单次最多解析 300 行，支持 `preview=true` 预览而不落库，返回导入成功数、跳过数、行级错误、预览行和失败行 CSV；文件内重复或当前用户已有课程会标记为 `duplicate` 并跳过。
 
 ### 8.5 提醒
 
@@ -451,6 +465,8 @@ AI 生成记录。
 
 `GET /api/v1/parents`
 
+支持 `q`、`limit`、`offset`，返回 `{ "items": [...], "pageInfo": { "limit": 20, "offset": 0, "count": 20, "nextOffset": 20, "hasMore": true } }`。后端会多取一条记录计算 `hasMore`，前端不再用当前页长度猜测下一页。
+
 `POST /api/v1/parents`
 
 ```json
@@ -475,13 +491,17 @@ AI 生成记录。
 导入接口：
 
 - `POST /api/v1/parents/imports`，上传 `.xlsx` 或 `.csv` 班级名单。
+- `GET /api/v1/parents/imports/template`，下载 CSV 模板。
 - 请求使用 `multipart/form-data`，文件字段名为 `file`。
 - 当前支持表头：学生姓名/学生、班级、家长姓名/家长、关系、联系方式/手机号、沟通风格/家长风格、风险等级、重点备注、下一步。
 - 导入时学生姓名和班级必填；家长姓名为空时默认生成为“学生姓名 + 家长”，关系为空时默认为“家长”。
+- 文件内重复或当前用户已有家长档案会标记为 `duplicate` 并跳过；有联系方式时按学生 + 班级 + 联系方式判断，无联系方式时按学生 + 班级 + 家长姓名判断。
 
 ### 8.7 沟通记录
 
 `GET /api/v1/communication-records?parentId=xxx`
+
+支持 `parentId`、`q`、`limit`、`offset`，返回统一分页对象 `{ items, pageInfo }`。
 
 `POST /api/v1/communication-records`
 
@@ -546,7 +566,7 @@ AI 生成记录。
 
 `GET /api/v1/ai/generations`
 
-按当前用户返回最近 50 条 AI 生成记录，支持 `scenario=parent_drafts|praise` 过滤。
+按当前用户返回 AI 生成记录，支持 `scenario=parent_drafts|praise`、`q`、`limit`、`offset`，响应为统一分页对象 `{ items, pageInfo }`。
 
 `GET /api/v1/ai/generations/{id}`
 
@@ -562,7 +582,7 @@ AI 生成记录。
 
 `GET /api/v1/healing/entries`
 
-支持按 `type` 过滤：`breath`、`praise`、`treehole`、`sound`。
+支持按 `type` 过滤：`breath`、`praise`、`treehole`、`sound`；同时支持 `q`、`limit`、`offset`，响应为统一分页对象 `{ items, pageInfo }`。
 
 `POST /api/v1/healing/entries`
 
@@ -653,7 +673,7 @@ type AIProvider interface {
 - 日程：`GET/POST/PUT/DELETE /courses`、`GET/POST/PUT/DELETE /reminders`
 - 沟通：`GET/POST/PUT/DELETE /parents`、`GET/POST/PUT/DELETE /communication-records`、`POST /ai/parent-drafts`
 - 疗愈：`GET/POST/DELETE /healing/entries`、`POST /ai/praise`
-- 我的：`GET/PUT /me`、`GET/POST/DELETE /me/favorites`、`GET /ai/generations`
+- 我的：`GET/PUT/DELETE /me`、`GET/POST/DELETE /me/favorites`、`GET/DELETE /ai/generations`
 
 ## 12. 部署设计
 
@@ -666,7 +686,7 @@ Docker Compose 启动 H5 Web、API、PostgreSQL、Redis。uni-app H5 也可以�
 - API 使用多副本容器部署。
 - PostgreSQL 使用云数据库或独立持久化卷。
 - Redis 使用托管 Redis 或持久化容器。
-- Nginx / API Gateway 负责 TLS、CORS、压缩、限流。
+- Nginx / API Gateway 负责 TLS、压缩和全局限流；API 进程也对登录与 AI 生成入口保留基础固定窗口限流，超过窗口会返回 `429` 与 `Retry-After`，并通过 `CORS_ALLOWED_ORIGINS` 回显白名单 Origin，prod/production 启动时会拒绝空白或 `*` 配置。
 - 日志输出到 stdout，由平台采集。
 
 ### 12.3 数据持久化
@@ -690,7 +710,12 @@ Docker Compose 中：
 - 所有家长联系方式、沟通记录、树洞内容都属于敏感数据。
 - 正式环境必须启用 HTTPS。
 - 服务端必须做用户身份校验，禁止跨用户读取数据。
+- JSON 请求体限制为 1MB，服务端拒绝未知字段和尾随多段 JSON；业务 handler 仍需继续维护必填、枚举、时间格式和长度校验。
 - AI 生成内容不能自动发送给家长。
+- 登录入口按客户端地址限流，AI 生成入口按当前用户限流；生产环境仍建议在 API Gateway 或 Redis 层配置跨副本限流和用量配额。
+- AI 响应会返回 `provider`、`source`、`fallback`、`reviewRequired` 和 `safetyNote`，前端必须把本地降级、规则拦截和人工复核状态展示给用户。
+- AI 生成记录包含用户输入、模型输出和使用审计，当前账号可通过 `DELETE /api/v1/ai/generations/{id}` 主动删除对应生成记录及其 action 审计；生产环境仍需补充账号级导出、保留期和批量清理策略。
+- 当前账号可通过 `DELETE /api/v1/me` 主动删除账号及其业务数据；生产环境仍需补充独立备份擦除流程、冷备保留期说明和账号级数据导出。
 - 树洞默认私密，不自动公开。
 - Excel 导入文件需要限制大小、类型和有效期，导入后及时删除原文件。
 
@@ -699,14 +724,14 @@ Docker Compose 中：
 ### P0
 
 - 接入真实 PostgreSQL repository。当前已提供 `PostgresStore`，服务启动时 PostgreSQL 可用则使用持久化仓库，否则 fallback 到内存仓库。
-- 完成真实微信登录和用户鉴权；当前已完成微信模拟登录闭环。
+- 完成真实微信登录和用户鉴权；当前已提供微信 code 登录、开发模拟登录和 Bearer session。
 - 完成课程、提醒、家长档案、沟通记录 CRUD。
 - 完成 AI Provider 抽象和真实模型接入。
 - 完成 uni-app 页面接口联调。
 
 ### P1
 
-- 完善 Excel/CSV 导入预览、字段映射配置和导入回滚。
+- 完善 Excel/CSV 字段映射配置和导入回滚。
 - 完善家长档案详情时间线和附件。
 - 沟通记录详情页。
 - 提醒延后、编辑、删除。
@@ -718,7 +743,7 @@ Docker Compose 中：
 - 推送通知。
 - 白噪音真实音频资源。
 - 树洞历史与小范围可见。
-- AI 沟通风险识别。
+- AI 沟通风险识别持续完善。
 - 云同步状态页。
 
 ## 15. 当前实现状态
@@ -728,7 +753,7 @@ Docker Compose 中：
 - 工程目录拆分：`app/`、`server/`、`deploy/`、`docs/`。
 - PostgreSQL repository 已接入，覆盖 Dashboard、课程、提醒、家长档案、沟通记录、疗愈记录。
 - 课程、提醒、家长档案、沟通记录已具备列表、详情、新增、编辑、删除等核心 CRUD；提醒额外支持完成和延后。
-- 后端单元测试初版已补充，覆盖配置加载、HTTP 路由、OpenAPI 路由一致性、微信模拟登录、`X-User-ID` 开发鉴权、内存仓库 CRUD 和 AI 服务。
+- 后端单元测试初版已补充，覆盖配置加载、HTTP 路由、OpenAPI 路由一致性、微信登录/模拟登录、Bearer session、`X-User-ID` 开发鉴权、内存仓库 CRUD 和 AI 服务。
 - GitHub Actions 初版已补充，包含 OpenAPI 解析、文档覆盖检查、Docker Compose 配置解析、Go 测试、前端 API client 测试、uni-app H5 构建和 Web/API Docker 镜像构建。
 - Go/Node 依赖锁已补齐：`server/go.sum`、`app/package-lock.json` 已提交，CI 与 Docker Web 镜像使用锁文件进行可复现安装。
 - uni-app 五个 Tab 页面骨架，日程页已接入课程/待办增删改查入口，沟通页已接入家长档案、家长详情和沟通记录基础操作，我的页已接入教师资料与收藏素材管理。
@@ -743,17 +768,15 @@ Docker Compose 中：
 - API readiness 检查已接入：`/healthz` 表示进程存活，`/readyz` 会检查 PostgreSQL 与 Redis；Docker API 容器使用 `/readyz` 作为健康检查，H5 Web 容器等待 API healthy 后启动，并通过 nginx 暴露同源 `/healthz` 与 `/readyz`。
 - 本地逻辑验证脚本已补充并通过：PostgreSQL 与 Redis 由 Docker Compose 提供，本机 Go API 连接容器完成健康检查、业务写入查询、数据库落库和 Redis 缓存键验证。
 - 本地统一回归脚本已补充：`scripts/verify-all.ps1` 可串联 OpenAPI、前后端环境示例、Docker Compose、Web 网关 readiness、部署手册覆盖、数据库 schema 文档覆盖、Go 测试、前端 API client 测试、H5 构建、密钥入库检查，并可通过 `-IncludeDockerLogic` 串联 Docker 业务逻辑验证。
-- API smoke 脚本已补充：`scripts/api-smoke.mjs` 可对运行中的 Go API 执行 health/readiness、微信模拟登录、首页、课程、待办、家长、沟通、AI、疗愈和收藏链路验证；GitHub Actions `integration` job 会启动 PostgreSQL/Redis 与 Go API 后执行该脚本。
+- API smoke 脚本已补充：`scripts/api-smoke.mjs` 可对运行中的 Go API 执行 health/readiness、微信开发登录、首页、课程、待办、家长、沟通、AI、疗愈和收藏链路验证；GitHub Actions `integration` job 会启动 PostgreSQL/Redis 与 Go API 后执行该脚本。
+- H5 smoke 脚本已补充：`app/scripts/h5-smoke.mjs` 使用临时 headless Chrome 访问运行中的 H5，点击开发登录、进入首页和日程页、提交真实待办表单，并通过 API 校验服务端落库；CI `integration` job 会在 API smoke 后启动 H5 dev server 并执行该脚本。
 - 工程验证矩阵已补充：`docs/engineering-verification-matrix.md` 将目标要求映射到证据文件、验证命令和剩余风险。
 - 部署运行手册已覆盖启动、健康检查、日志与排障、发布、PostgreSQL 备份恢复、Redis 缓存处理、回滚和 CI 验证；文档校验脚本会检查 `/readyz`、容器日志、PostgreSQL/Redis/LLM/H5 常见故障排查片段。
-- 微信模拟登录已接入，前端“我的”页可发起模拟登录并保存登录态；HTTP 开发鉴权中间件支持 `X-User-ID` 并保留默认种子用户。
-- Excel/CSV 课表导入和班级名单导入已接入前端入口与后端解析接口；当前支持 `.xlsx` 与 `.csv`，暂不解析老式二进制 `.xls`。
+- 微信 code 登录和模拟登录已接入，前端登录页优先走微信登录，H5/本地调试降级模拟登录并保存 Bearer session；HTTP 开发鉴权中间件仅在显式开启时接受非空且已存在的 `X-User-ID`，docker/prod/production 默认服务实例不再开放开发鉴权。
+- Excel/CSV 课表导入和班级名单导入已接入前端入口与后端解析接口；当前支持模板下载、导入预览、确认导入、重复行跳过和失败行 CSV 反馈，支持 `.xlsx` 与 `.csv`，暂不解析老式二进制 `.xls`。
 - 详细技术文档。
 
 待完成：
 
 - 完整 Web/API Docker 镜像构建仍依赖 Docker Hub 基础镜像可拉取；若 `auth.docker.io` 网络不可用，先使用 `scripts/verify-docker.ps1` 验证数据库、缓存和后端业务逻辑。
-- 真实微信 code 换 session 尚未接入；当前为微信模拟登录 + `X-User-ID` 开发态。
-
-
-
+- 生产微信登录需要配置 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`、`SESSION_SECRET` 和 `CORS_ALLOWED_ORIGINS`，并关闭开发鉴权与模拟登录。

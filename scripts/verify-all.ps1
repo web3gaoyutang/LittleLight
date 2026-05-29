@@ -160,6 +160,16 @@ Invoke-Step "API client tests" {
     }
 }
 
+Invoke-Step "Frontend page contract tests" {
+    $npm = Resolve-Npm
+    Push-Location $AppDir
+    try {
+        & $npm run test:pages
+    } finally {
+        Pop-Location
+    }
+}
+
 if (-not $SkipH5Build) {
     Invoke-Step "uni-app H5 build" {
         $npm = Resolve-Npm

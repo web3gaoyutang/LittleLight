@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/web3gaoyutang/littlelight/server/internal/domain"
 )
@@ -17,9 +18,100 @@ import (
 const maxImportRows = 300
 
 type ImportResult struct {
-	Imported int      `json:"imported"`
-	Skipped  int      `json:"skipped"`
-	Errors   []string `json:"errors"`
+	Imported   int             `json:"imported"`
+	Skipped    int             `json:"skipped"`
+	Errors     []string        `json:"errors"`
+	Preview    []ImportPreview `json:"preview,omitempty"`
+	FailureCSV string          `json:"failureCsv,omitempty"`
+	ReadyRows  []int           `json:"-"`
+
+	failureHeader []string
+	failureRows   [][]string
+	rawRows       map[int][]string
+}
+
+type ImportPreview struct {
+	Row     int               `json:"row"`
+	Status  string            `json:"status"`
+	Message string            `json:"message"`
+	Values  map[string]string `json:"values"`
+}
+
+func (r *ImportResult) MarkDuplicate(row int, message string) {
+	if message == "" {
+		message = fmt.Sprintf("第 %d 行重复，已跳过", row)
+	}
+	r.Skipped++
+	r.Errors = append(r.Errors, message)
+	r.addFailureRow(row, message)
+	for index := range r.Preview {
+		if r.Preview[index].Row == row {
+			r.Preview[index].Status = "duplicate"
+			r.Preview[index].Message = message
+			return
+		}
+	}
+	r.Preview = append(r.Preview, ImportPreview{Row: row, Status: "duplicate", Message: message, Values: map[string]string{}})
+}
+
+func (r *ImportResult) ReadyRow(index int) int {
+	if index >= 0 && index < len(r.ReadyRows) && r.ReadyRows[index] > 0 {
+		return r.ReadyRows[index]
+	}
+	return index + 2
+}
+
+func (r *ImportResult) setFailureHeader(row []string) {
+	r.failureHeader = append([]string(nil), row...)
+	r.rebuildFailureCSV()
+}
+
+func (r *ImportResult) markReady(rowNumber int, row []string, values map[string]string) {
+	r.trackRawRow(rowNumber, row)
+	r.ReadyRows = append(r.ReadyRows, rowNumber)
+	r.Preview = append(r.Preview, importPreview(rowNumber, "ready", "可导入", values))
+}
+
+func (r *ImportResult) markInvalid(rowNumber int, row []string, values map[string]string, message string) {
+	r.Skipped++
+	r.Errors = append(r.Errors, message)
+	r.trackRawRow(rowNumber, row)
+	r.Preview = append(r.Preview, importPreview(rowNumber, "invalid", message, values))
+	r.addFailureRow(rowNumber, message)
+}
+
+func (r *ImportResult) trackRawRow(rowNumber int, row []string) {
+	if r.rawRows == nil {
+		r.rawRows = map[int][]string{}
+	}
+	r.rawRows[rowNumber] = append([]string(nil), row...)
+}
+
+func (r *ImportResult) addFailureRow(rowNumber int, message string) {
+	row, ok := r.rawRows[rowNumber]
+	if !ok {
+		return
+	}
+	r.failureRows = append(r.failureRows, appendFailureReason(row, message))
+	r.rebuildFailureCSV()
+}
+
+func (r *ImportResult) rebuildFailureCSV() {
+	r.FailureCSV = failureCSV(r.failureHeader, r.failureRows)
+}
+
+func CourseImportTemplateCSV() []byte {
+	return csvTemplate([][]string{
+		{"课程名称", "班级", "地点", "星期", "开始时间", "结束时间", "备注"},
+		{"心理健康", "高二(3)班", "教学楼 B 座 402 室", "三", "09:30", "10:15", "情绪识别与压力调节"},
+	})
+}
+
+func ParentImportTemplateCSV() []byte {
+	return csvTemplate([][]string{
+		{"学生姓名", "班级", "家长姓名", "关系", "联系方式", "沟通风格", "风险等级", "重点备注", "下一步"},
+		{"林晓晓", "高二(5)班", "林晓晓妈妈", "母亲", "13800000000", "比较敏感", "medium", "睡眠与到校状态需要持续观察", "先确认睡眠，再同步课堂参与中的积极信号"},
+	})
 }
 
 type xlsxCell struct {
@@ -38,8 +130,11 @@ func ParseCoursesImport(filename string, data []byte) ([]domain.Course, ImportRe
 		return nil, result
 	}
 	header := normalizeHeader(rows[0])
+	headerRow := rows[0]
+	result.setFailureHeader(headerRow)
 	courses := make([]domain.Course, 0, len(rows)-1)
 	for index, row := range rows[1:] {
+		rowNumber := index + 2
 		if index >= maxImportRows {
 			result.Skipped += len(rows) - index - 1
 			result.Errors = append(result.Errors, fmt.Sprintf("超过 %d 行的内容已跳过", maxImportRows))
@@ -50,18 +145,24 @@ func ParseCoursesImport(filename string, data []byte) ([]domain.Course, ImportRe
 			result.Skipped++
 			continue
 		}
+		weekday, ok := parseWeekday(firstValue(values, "weekday", "day", "星期", "周几"))
 		course := domain.Course{
 			Title:     firstValue(values, "title", "course", "课程", "课程名称", "科目"),
 			ClassName: firstValue(values, "class", "className", "班级", "班级名称"),
 			Location:  firstValue(values, "location", "地点", "教室"),
-			Weekday:   parseWeekday(firstValue(values, "weekday", "day", "星期", "周几")),
+			Weekday:   weekday,
 			StartTime: normalizeClock(firstValue(values, "start", "startTime", "开始", "开始时间")),
 			EndTime:   normalizeClock(firstValue(values, "end", "endTime", "结束", "结束时间")),
 			Note:      firstValue(values, "note", "备注", "说明"),
 		}
 		if course.Title == "" || course.ClassName == "" {
-			result.Skipped++
-			result.Errors = append(result.Errors, fmt.Sprintf("第 %d 行缺少课程名称或班级", index+2))
+			message := fmt.Sprintf("第 %d 行缺少课程名称或班级", rowNumber)
+			result.markInvalid(rowNumber, row, values, message)
+			continue
+		}
+		if !ok {
+			message := fmt.Sprintf("第 %d 行星期必须是 0-6、周一到周日或星期一到星期日", rowNumber)
+			result.markInvalid(rowNumber, row, values, message)
 			continue
 		}
 		if course.StartTime == "" {
@@ -70,7 +171,22 @@ func ParseCoursesImport(filename string, data []byte) ([]domain.Course, ImportRe
 		if course.EndTime == "" {
 			course.EndTime = "08:45"
 		}
+		if !validImportClock(course.StartTime) || !validImportClock(course.EndTime) {
+			message := fmt.Sprintf("第 %d 行开始或结束时间格式不正确", rowNumber)
+			result.markInvalid(rowNumber, row, values, message)
+			continue
+		}
+		if !importClockBefore(course.StartTime, course.EndTime) {
+			message := fmt.Sprintf("第 %d 行结束时间必须晚于开始时间", rowNumber)
+			result.markInvalid(rowNumber, row, values, message)
+			continue
+		}
+		if message, ok := validateImportCourse(rowNumber, course); !ok {
+			result.markInvalid(rowNumber, row, values, message)
+			continue
+		}
 		courses = append(courses, course)
+		result.markReady(rowNumber, row, values)
 	}
 	return courses, result
 }
@@ -82,8 +198,11 @@ func ParseParentsImport(filename string, data []byte) ([]domain.ParentProfile, I
 		return nil, result
 	}
 	header := normalizeHeader(rows[0])
+	headerRow := rows[0]
+	result.setFailureHeader(headerRow)
 	parents := make([]domain.ParentProfile, 0, len(rows)-1)
 	for index, row := range rows[1:] {
+		rowNumber := index + 2
 		if index >= maxImportRows {
 			result.Skipped += len(rows) - index - 1
 			result.Errors = append(result.Errors, fmt.Sprintf("超过 %d 行的内容已跳过", maxImportRows))
@@ -94,6 +213,7 @@ func ParseParentsImport(filename string, data []byte) ([]domain.ParentProfile, I
 			result.Skipped++
 			continue
 		}
+		riskLevel, ok := normalizeRisk(firstValue(values, "risk", "riskLevel", "风险", "风险等级"))
 		parent := domain.ParentProfile{
 			StudentName:        firstValue(values, "student", "studentName", "学生", "学生姓名", "姓名"),
 			ClassName:          firstValue(values, "class", "className", "班级", "班级名称"),
@@ -101,13 +221,18 @@ func ParseParentsImport(filename string, data []byte) ([]domain.ParentProfile, I
 			Relationship:       firstValue(values, "relationship", "关系", "亲属关系"),
 			Contact:            firstValue(values, "contact", "phone", "mobile", "联系方式", "手机号", "电话"),
 			CommunicationStyle: firstValue(values, "style", "communicationStyle", "沟通风格", "家长风格"),
-			RiskLevel:          normalizeRisk(firstValue(values, "risk", "riskLevel", "风险", "风险等级")),
+			RiskLevel:          riskLevel,
 			ImportantNotes:     firstValue(values, "notes", "importantNotes", "重点备注", "备注"),
 			NextAction:         firstValue(values, "nextAction", "下一步", "跟进动作"),
 		}
 		if parent.StudentName == "" || parent.ClassName == "" {
-			result.Skipped++
-			result.Errors = append(result.Errors, fmt.Sprintf("第 %d 行缺少学生姓名或班级", index+2))
+			message := fmt.Sprintf("第 %d 行缺少学生姓名或班级", rowNumber)
+			result.markInvalid(rowNumber, row, values, message)
+			continue
+		}
+		if !ok {
+			message := fmt.Sprintf("第 %d 行风险等级必须是 low、medium、high 或低/中/高", rowNumber)
+			result.markInvalid(rowNumber, row, values, message)
 			continue
 		}
 		if parent.ParentName == "" {
@@ -119,7 +244,12 @@ func ParseParentsImport(filename string, data []byte) ([]domain.ParentProfile, I
 		if parent.RiskLevel == "" {
 			parent.RiskLevel = "low"
 		}
+		if message, ok := validateImportParent(rowNumber, parent); !ok {
+			result.markInvalid(rowNumber, row, values, message)
+			continue
+		}
 		parents = append(parents, parent)
+		result.markReady(rowNumber, row, values)
 	}
 	return parents, result
 }
@@ -349,18 +479,64 @@ func trimRows(rows [][]string) [][]string {
 	return result
 }
 
-func parseWeekday(value string) int {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return 1
-	}
-	labels := map[string]int{"日": 0, "天": 0, "一": 1, "1": 1, "二": 2, "2": 2, "三": 3, "3": 3, "四": 4, "4": 4, "五": 5, "5": 5, "六": 6, "6": 6}
-	for label, weekday := range labels {
-		if strings.Contains(value, label) {
-			return weekday
+type importFieldLimit struct {
+	Label string
+	Value string
+	Max   int
+}
+
+func validateImportCourse(rowNumber int, course domain.Course) (string, bool) {
+	return validateImportFieldLengths(rowNumber, []importFieldLimit{
+		{Label: "课程名称", Value: course.Title, Max: 80},
+		{Label: "班级", Value: course.ClassName, Max: 80},
+		{Label: "地点", Value: course.Location, Max: 120},
+		{Label: "备注", Value: course.Note, Max: 1000},
+	})
+}
+
+func validateImportParent(rowNumber int, parent domain.ParentProfile) (string, bool) {
+	return validateImportFieldLengths(rowNumber, []importFieldLimit{
+		{Label: "学生姓名", Value: parent.StudentName, Max: 60},
+		{Label: "班级", Value: parent.ClassName, Max: 80},
+		{Label: "家长姓名", Value: parent.ParentName, Max: 80},
+		{Label: "关系", Value: parent.Relationship, Max: 40},
+		{Label: "联系方式", Value: parent.Contact, Max: 80},
+		{Label: "沟通风格", Value: parent.CommunicationStyle, Max: 80},
+		{Label: "重点备注", Value: parent.ImportantNotes, Max: 2000},
+		{Label: "下一步", Value: parent.NextAction, Max: 1000},
+	})
+}
+
+func validateImportFieldLengths(rowNumber int, fields []importFieldLimit) (string, bool) {
+	for _, field := range fields {
+		if len([]rune(field.Value)) > field.Max {
+			return fmt.Sprintf("第 %d 行%s不能超过 %d 个字符", rowNumber, field.Label, field.Max), false
 		}
 	}
-	return 1
+	return "", true
+}
+
+func parseWeekday(value string) (int, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 1, true
+	}
+	value = strings.TrimPrefix(value, "星期")
+	value = strings.TrimPrefix(value, "周")
+	value = strings.TrimPrefix(value, "礼拜")
+	labels := map[string]int{
+		"日": 0, "天": 0, "0": 0,
+		"一": 1, "1": 1,
+		"二": 2, "2": 2,
+		"三": 3, "3": 3,
+		"四": 4, "4": 4,
+		"五": 5, "5": 5,
+		"六": 6, "6": 6,
+	}
+	if weekday, ok := labels[value]; ok {
+		return weekday, true
+	}
+	return 0, false
 }
 
 func normalizeClock(value string) string {
@@ -384,15 +560,68 @@ func normalizeClock(value string) string {
 	return value
 }
 
-func normalizeRisk(value string) string {
+func validImportClock(value string) bool {
+	_, err := time.Parse("15:04", value)
+	return err == nil
+}
+
+func importClockBefore(start string, end string) bool {
+	startTime, err := time.Parse("15:04", start)
+	if err != nil {
+		return false
+	}
+	endTime, err := time.Parse("15:04", end)
+	if err != nil {
+		return false
+	}
+	return startTime.Before(endTime)
+}
+
+func normalizeRisk(value string) (string, bool) {
+	value = strings.TrimSpace(value)
 	switch {
 	case strings.Contains(value, "高") || strings.EqualFold(value, "high"):
-		return "high"
+		return "high", true
 	case strings.Contains(value, "中") || strings.EqualFold(value, "medium"):
-		return "medium"
+		return "medium", true
+	case strings.Contains(value, "低") || strings.EqualFold(value, "low"):
+		return "low", true
 	case value == "":
-		return ""
+		return "", true
 	default:
-		return "low"
+		return "", false
 	}
+}
+
+func csvTemplate(rows [][]string) []byte {
+	var buffer bytes.Buffer
+	buffer.Write([]byte{0xef, 0xbb, 0xbf})
+	writer := csv.NewWriter(&buffer)
+	_ = writer.WriteAll(rows)
+	writer.Flush()
+	return buffer.Bytes()
+}
+
+func importPreview(row int, status string, message string, values map[string]string) ImportPreview {
+	copyValues := make(map[string]string, len(values))
+	for key, value := range values {
+		copyValues[key] = value
+	}
+	return ImportPreview{Row: row, Status: status, Message: message, Values: copyValues}
+}
+
+func appendFailureReason(row []string, reason string) []string {
+	result := append([]string(nil), row...)
+	result = append(result, reason)
+	return result
+}
+
+func failureCSV(header []string, failedRows [][]string) string {
+	if len(failedRows) == 0 {
+		return ""
+	}
+	rows := make([][]string, 0, len(failedRows)+1)
+	rows = append(rows, append(append([]string(nil), header...), "失败原因"))
+	rows = append(rows, failedRows...)
+	return string(csvTemplate(rows))
 }

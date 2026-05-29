@@ -27,17 +27,25 @@ services:
         GO_IMAGE: ${GO_IMAGE:-golang:1.22-alpine}
         ALPINE_IMAGE: ${ALPINE_IMAGE:-alpine:3.20}
         GOPROXY: ${GOPROXY:-https://goproxy.cn,direct}
-    env_file:
-      - path: ../.env.example
-        required: true
-      - path: ../.env
-        required: false
     environment:
-      APP_ENV: docker
+      APP_ENV: ${APP_ENV:-docker}
       HTTP_ADDR: :8080
       DATABASE_URL: postgres://littlelight:littlelight@postgres:5432/littlelight?sslmode=disable
       REDIS_ADDR: redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
       MIGRATIONS_DIR: /app/migrations
+      SESSION_SECRET: ${SESSION_SECRET:-littlelight-docker-session-secret-32}
+      WECHAT_APP_ID: ${WECHAT_APP_ID:-}
+      WECHAT_APP_SECRET: ${WECHAT_APP_SECRET:-}
+      AUTH_ALLOW_DEV_USER: ${AUTH_ALLOW_DEV_USER:-false}
+      AUTH_ALLOW_MOCK_LOGIN: ${AUTH_ALLOW_MOCK_LOGIN:-true}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8081,http://localhost:5173}
+      AI_PROVIDER: ${AI_PROVIDER:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
     ports:
       - "8080:8080"
     depends_on:

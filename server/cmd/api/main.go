@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/web3gaoyutang/littlelight/server/internal/config"
@@ -17,6 +19,9 @@ import (
 
 func main() {
 	cfg := config.Load()
+	if err := validateProductionAuthConfig(cfg); err != nil {
+		log.Fatal(err)
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -72,8 +77,61 @@ func main() {
 		Model:    cfg.LLMModel,
 	})
 	server := httpapi.NewServer(store, ai, dashboardCache, readiness...)
+	server.ConfigureAuth(httpapi.AuthConfig{
+		SessionSecret: cfg.SessionSecret,
+		WechatAppID:   cfg.WechatAppID,
+		WechatSecret:  cfg.WechatSecret,
+		AllowDevUser:  cfg.AllowDevUser,
+		AllowMockAuth: cfg.AllowMockAuth,
+		CORSOrigins:   cfg.CORSOrigins,
+	})
+	httpServer := newHTTPServer(cfg.HTTPAddr, server.Routes())
 	log.Printf("littlelight api listening on %s", cfg.HTTPAddr)
-	if err := http.ListenAndServe(cfg.HTTPAddr, server.Routes()); err != nil {
+	if err := httpServer.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func newHTTPServer(addr string, handler http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+}
+
+func validateProductionAuthConfig(cfg config.Config) error {
+	if !isProductionEnv(cfg.AppEnv) {
+		return nil
+	}
+	if cfg.AllowDevUser {
+		return errors.New("AUTH_ALLOW_DEV_USER must be false outside local environment")
+	}
+	if cfg.AllowMockAuth {
+		return errors.New("AUTH_ALLOW_MOCK_LOGIN must be false outside local environment")
+	}
+	if len(cfg.CORSOrigins) == 0 {
+		return errors.New("CORS_ALLOWED_ORIGINS must be configured outside local environment")
+	}
+	for _, origin := range cfg.CORSOrigins {
+		if origin == "*" {
+			return errors.New("CORS_ALLOWED_ORIGINS must not contain * outside local environment")
+		}
+	}
+	secret := strings.TrimSpace(cfg.SessionSecret)
+	if len(secret) < 32 || secret == "change-me-in-deploy" {
+		return errors.New("SESSION_SECRET must be configured with at least 32 characters outside local environment")
+	}
+	if strings.TrimSpace(cfg.WechatAppID) == "" || strings.TrimSpace(cfg.WechatSecret) == "" {
+		return errors.New("WECHAT_APP_ID and WECHAT_APP_SECRET must be configured outside local environment")
+	}
+	return nil
+}
+
+func isProductionEnv(appEnv string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(appEnv))
+	return normalized == "prod" || normalized == "production"
 }

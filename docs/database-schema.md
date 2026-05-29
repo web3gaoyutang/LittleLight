@@ -4,9 +4,10 @@
 
 ## 总体原则
 
-- 所有业务表通过 `user_id` 归属到教师用户，开发阶段默认种子用户为 `00000000-0000-0000-0000-000000000001`。
+- 所有业务表通过 `user_id` 归属到教师用户；开发种子数据归属 `00000000-0000-0000-0000-000000000001`，但 HTTP 鉴权不会在缺少登录态时自动落到该用户。
 - PostgreSQL 是业务事实来源；Redis 只保存 dashboard 缓存和后续临时状态。
 - 所有主键使用 UUID，默认由 `uuid_generate_v4()` 生成。
+- 关键枚举、课程时间顺序和业务表 `user_id` 归属在数据库层也有约束，避免绕过 API 产生脏数据。
 - `created_at` 记录创建时间；有编辑语义的表同时保留 `updated_at`。
 - 当前迁移为向前幂等脚本，尚未提供独立 down migration。
 
@@ -19,7 +20,9 @@
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | id | UUID PK | 用户 ID |
+| wechat_open_id | TEXT UNIQUE | 微信 openid，真实/模拟登录的账号映射键 |
 | name | TEXT NOT NULL | 教师姓名 |
+| avatar_url | TEXT | 微信头像或用户头像 URL |
 | school | TEXT | 学校 |
 | stage | TEXT | 学段 |
 | subject | TEXT | 学科 |
@@ -28,6 +31,25 @@
 | reminder_policy | TEXT | low_interrupt / normal |
 | created_at | TIMESTAMPTZ | 创建时间 |
 | updated_at | TIMESTAMPTZ | 更新时间 |
+
+索引：`idx_users_wechat_open_id(wechat_open_id)`，仅索引非空 openid。
+
+约束：`pro_status` 仅允许 free / trial / pro / expired；`reminder_policy` 仅允许 low_interrupt / normal。
+
+### auth_sessions
+
+服务端登录态，用于校验和撤销 Bearer session。
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| id | UUID PK | Session ID |
+| user_id | UUID FK users(id) | 所属教师 |
+| token_hash | TEXT UNIQUE | sessionToken 的 SHA-256 摘要，不保存明文 token |
+| expires_at | TIMESTAMPTZ | 过期时间 |
+| revoked_at | TIMESTAMPTZ | 撤销时间，非空表示不可再用 |
+| created_at | TIMESTAMPTZ | 创建时间 |
+
+索引：`idx_auth_sessions_user_active(user_id, expires_at)`，仅索引未撤销 session。
 
 ### courses
 
@@ -51,6 +73,8 @@
 
 索引：`idx_courses_user_weekday(user_id, weekday)`。
 
+约束：`user_id` 非空；`weekday` 为 0-6；`end_time` 必须晚于 `start_time`。
+
 ### parent_profiles
 
 家长档案和重点关注信息。
@@ -73,6 +97,8 @@
 
 索引：`idx_parent_profiles_user_risk(user_id, risk_level)`。
 
+约束：`user_id` 非空；`risk_level` 仅允许 low / medium / high。
+
 ### reminders
 
 待办事项和提醒。
@@ -93,6 +119,8 @@
 | updated_at | TIMESTAMPTZ | 更新时间 |
 
 索引：`idx_reminders_user_time_status(user_id, remind_at, status)`。
+
+约束：`user_id` 非空；`status` 仅允许 pending / done / snoozed / deleted。
 
 ### communication_records
 
@@ -115,6 +143,8 @@
 
 索引：`idx_records_user_parent(user_id, parent_id, created_at DESC)`。
 
+约束：`user_id` 非空；`risk_level` 仅允许 low / medium / high。
+
 ### healing_entries
 
 疗愈记录，包括呼吸、AI 夸夸、树洞、声音等。
@@ -131,6 +161,8 @@
 | created_at | TIMESTAMPTZ | 创建时间 |
 
 索引：`idx_healing_user_created(user_id, created_at DESC)`。
+
+约束：`user_id` 非空；`type` 仅允许 breath / praise / treehole / sound；`visibility` 当前仅允许 private。
 
 ### ai_generations
 
@@ -149,6 +181,8 @@ AI 生成审计记录。
 
 索引：`idx_ai_generations_user_created(user_id, created_at DESC)`。
 
+约束：`user_id` 非空；`scenario` 仅允许 parent_drafts / praise；`safety_label` 仅允许 teacher_review_required / self_care / crisis_support_required / student_safety_review_required / medical_review_required。
+
 ### favorites
 
 收藏素材。
@@ -162,6 +196,8 @@ AI 生成审计记录。
 | content | TEXT NOT NULL | 内容 |
 | source_id | UUID | 来源记录，当前不强制外键 |
 | created_at | TIMESTAMPTZ | 创建时间 |
+
+约束：`user_id` 非空；`type` 仅允许 communication_template / ai_praise / class_feedback。
 
 ## 种子数据
 

@@ -1,6 +1,6 @@
 # API 手工检查示例
 
-以下命令默认服务运行在 `http://localhost:8080`，开发用户通过 `X-User-ID` 指定。完整 API 契约见 `docs/openapi.yaml`。
+以下命令默认服务运行在 `http://localhost:8080`，本地开发需显式开启 `AUTH_ALLOW_DEV_USER=true` 后通过 `X-User-ID` 指定已存在用户。未携带 `Authorization: Bearer <sessionToken>` 或非空且已存在的 `X-User-ID` 的业务请求会返回 401。完整 API 契约见 `docs/openapi.yaml`。
 
 ```bash
 export API=http://localhost:8080

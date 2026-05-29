@@ -16,6 +16,12 @@ type Config struct {
 	RedisPassword string
 	RedisDB       int
 	MigrationsDir string
+	SessionSecret string
+	WechatAppID   string
+	WechatSecret  string
+	AllowDevUser  bool
+	AllowMockAuth bool
+	CORSOrigins   []string
 	AIProvider    string
 	AIAPIKey      string
 	LLMAPIKey     string
@@ -35,20 +41,52 @@ func Load() Config {
 			aiProvider = "llm"
 		}
 	}
+	appEnv := env("APP_ENV", "local")
 	return Config{
-		AppEnv:        env("APP_ENV", "local"),
+		AppEnv:        appEnv,
 		HTTPAddr:      env("HTTP_ADDR", ":8080"),
 		DatabaseURL:   env("DATABASE_URL", "postgres://littlelight:littlelight@localhost:5432/littlelight?sslmode=disable"),
 		RedisAddr:     env("REDIS_ADDR", "localhost:6379"),
 		RedisPassword: env("REDIS_PASSWORD", ""),
 		RedisDB:       envInt("REDIS_DB", 0),
 		MigrationsDir: env("MIGRATIONS_DIR", "server/migrations"),
+		SessionSecret: env("SESSION_SECRET", ""),
+		WechatAppID:   env("WECHAT_APP_ID", ""),
+		WechatSecret:  env("WECHAT_APP_SECRET", ""),
+		AllowDevUser:  envBool("AUTH_ALLOW_DEV_USER", isLocalEnv(appEnv)),
+		AllowMockAuth: envBool("AUTH_ALLOW_MOCK_LOGIN", !isProductionEnv(appEnv)),
+		CORSOrigins:   envList("CORS_ALLOWED_ORIGINS"),
 		AIProvider:    aiProvider,
 		AIAPIKey:      env("AI_API_KEY", ""),
 		LLMAPIKey:     llmAPIKey,
 		LLMBaseURL:    llmBaseURL,
 		LLMModel:      env("LLM_MODEL", "gpt-4o-mini"),
 	}
+}
+
+func isLocalEnv(appEnv string) bool {
+	return strings.EqualFold(strings.TrimSpace(appEnv), "local")
+}
+
+func isProductionEnv(appEnv string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(appEnv))
+	return normalized == "prod" || normalized == "production"
+}
+
+func envList(key string) []string {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		value := strings.TrimSpace(part)
+		if value != "" {
+			values = append(values, value)
+		}
+	}
+	return values
 }
 
 func loadDotEnv() {
@@ -111,4 +149,19 @@ func envInt(key string, fallback int) int {
 		return fallback
 	}
 	return parsed
+}
+
+func envBool(key string, fallback bool) bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	if value == "" {
+		return fallback
+	}
+	switch value {
+	case "1", "true", "yes", "y", "on":
+		return true
+	case "0", "false", "no", "n", "off":
+		return false
+	default:
+		return fallback
+	}
 }

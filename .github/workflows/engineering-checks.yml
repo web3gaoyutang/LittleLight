@@ -50,6 +50,9 @@ jobs:
       - name: Test API client
         working-directory: app
         run: npm run test:api
+      - name: Test page contracts
+        working-directory: app
+        run: npm run test:pages
       - name: Build H5
         working-directory: app
         run: npm run build:h5
@@ -103,9 +106,29 @@ jobs:
           echo $! > ../api-smoke.pid
       - name: Run API smoke test
         run: node scripts/api-smoke.mjs
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci
+      - name: Start H5 dev server
+        working-directory: app
+        env:
+          VITE_ENABLE_MOCK_LOGIN: "true"
+          VITE_DEV_API_TARGET: http://localhost:8080
+        run: |
+          npm run dev:h5 > ../h5-smoke.log 2>&1 &
+          echo $! > ../h5-smoke.pid
+      - name: Run H5 smoke test
+        working-directory: app
+        env:
+          LITTLELIGHT_H5_URL: http://localhost:5173
+          LITTLELIGHT_API_URL: http://localhost:8080
+        run: npm run test:h5-smoke
       - name: Show API logs on failure
         if: failure()
         run: cat api-smoke.log || true
+      - name: Show H5 logs on failure
+        if: failure()
+        run: cat h5-smoke.log || true
 
   docker-build:
     runs-on: ubuntu-latest

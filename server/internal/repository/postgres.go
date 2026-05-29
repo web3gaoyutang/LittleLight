@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -18,6 +20,95 @@ type PostgresStore struct {
 
 func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore {
 	return &PostgresStore{pool: pool}
+}
+
+func (s *PostgresStore) FindOrCreateUserByWechatOpenID(ctx context.Context, openID string, nickName string, avatarURL string) (domain.UserProfile, error) {
+	openID = strings.TrimSpace(openID)
+	if openID == "" {
+		return domain.UserProfile{}, errors.New("wechat openid is required")
+	}
+	name := strings.TrimSpace(nickName)
+	if name == "" {
+		name = "微光老师"
+	}
+	var profile domain.UserProfile
+	err := s.pool.QueryRow(ctx, `
+		WITH upserted AS (
+			INSERT INTO users (wechat_open_id, name, avatar_url)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (wechat_open_id) WHERE wechat_open_id IS NOT NULL DO UPDATE
+			SET name = CASE WHEN $2 <> '' THEN $2 ELSE users.name END,
+			    avatar_url = CASE WHEN $3 <> '' THEN $3 ELSE users.avatar_url END,
+			    updated_at = now()
+			RETURNING id, name, school, stage, subject, is_head_teacher, pro_status, reminder_policy, created_at
+		)
+		SELECT id::text, name, COALESCE(school, ''), COALESCE(stage, ''), COALESCE(subject, ''), is_head_teacher, pro_status, reminder_policy, created_at
+		FROM upserted`, openID, name, strings.TrimSpace(avatarURL)).
+		Scan(&profile.ID, &profile.Name, &profile.School, &profile.Stage, &profile.Subject, &profile.IsHeadTeacher, &profile.ProStatus, &profile.ReminderPolicy, &profile.CreatedAt)
+	return profile, err
+}
+
+func (s *PostgresStore) CreateAuthSession(ctx context.Context, session domain.AuthSession) (domain.AuthSession, error) {
+	session.TokenHash = strings.TrimSpace(session.TokenHash)
+	if session.UserID == "" {
+		return domain.AuthSession{}, ErrMissingUserID
+	}
+	if session.TokenHash == "" {
+		return domain.AuthSession{}, errors.New("session token hash is required")
+	}
+	var revokedAt sql.NullTime
+	err := s.pool.QueryRow(ctx, `
+		INSERT INTO auth_sessions (user_id, token_hash, expires_at)
+		VALUES ($1, $2, $3)
+		RETURNING id::text, user_id::text, token_hash, expires_at, revoked_at, created_at`,
+		string(session.UserID), session.TokenHash, session.ExpiresAt).
+		Scan(&session.ID, &session.UserID, &session.TokenHash, &session.ExpiresAt, &revokedAt, &session.CreatedAt)
+	if revokedAt.Valid {
+		session.RevokedAt = &revokedAt.Time
+	}
+	return session, err
+}
+
+func (s *PostgresStore) AuthSessionByTokenHash(ctx context.Context, tokenHash string) (domain.AuthSession, error) {
+	tokenHash = strings.TrimSpace(tokenHash)
+	if tokenHash == "" {
+		return domain.AuthSession{}, notFound("auth session", "")
+	}
+	var session domain.AuthSession
+	var revokedAt sql.NullTime
+	err := s.pool.QueryRow(ctx, `
+		SELECT id::text, user_id::text, token_hash, expires_at, revoked_at, created_at
+		FROM auth_sessions
+		WHERE token_hash = $1 AND revoked_at IS NULL AND expires_at > now()`, tokenHash).
+		Scan(&session.ID, &session.UserID, &session.TokenHash, &session.ExpiresAt, &revokedAt, &session.CreatedAt)
+	if isNoRows(err) {
+		return domain.AuthSession{}, notFound("auth session", "")
+	}
+	if revokedAt.Valid {
+		session.RevokedAt = &revokedAt.Time
+	}
+	return session, err
+}
+
+func (s *PostgresStore) RevokeAuthSession(ctx context.Context, tokenHash string, userID domain.ID) error {
+	tokenHash = strings.TrimSpace(tokenHash)
+	if userID == "" {
+		return ErrMissingUserID
+	}
+	if tokenHash == "" {
+		return notFound("auth session", "")
+	}
+	tag, err := s.pool.Exec(ctx, `
+		UPDATE auth_sessions
+		SET revoked_at = COALESCE(revoked_at, now())
+		WHERE token_hash = $1 AND user_id = $2`, tokenHash, string(userID))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return notFound("auth session", "")
+	}
+	return nil
 }
 
 func (s *PostgresStore) UserProfile(ctx context.Context, userID domain.ID) (domain.UserProfile, error) {
@@ -69,6 +160,73 @@ func (s *PostgresStore) UpdateUserProfile(ctx context.Context, userID domain.ID,
 	return profile, err
 }
 
+func (s *PostgresStore) DeleteUser(ctx context.Context, userID domain.ID) error {
+	if userID == "" {
+		return ErrMissingUserID
+	}
+	tag, err := s.pool.Exec(ctx, `DELETE FROM users WHERE id = $1`, string(userID))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return notFound("user profile", userID)
+	}
+	return nil
+}
+
+func (s *PostgresStore) ExportUserData(ctx context.Context, userID domain.ID) (domain.AccountExport, error) {
+	profile, err := s.UserProfile(ctx, userID)
+	if err != nil {
+		return domain.AccountExport{}, err
+	}
+	courses, err := s.allCourses(ctx, userID)
+	if err != nil {
+		return domain.AccountExport{}, err
+	}
+	reminders, err := s.allReminders(ctx, userID)
+	if err != nil {
+		return domain.AccountExport{}, err
+	}
+	parents, err := s.allParents(ctx, userID)
+	if err != nil {
+		return domain.AccountExport{}, err
+	}
+	records, err := s.allCommunicationRecords(ctx, userID)
+	if err != nil {
+		return domain.AccountExport{}, err
+	}
+	healing, err := s.allHealingEntries(ctx, userID)
+	if err != nil {
+		return domain.AccountExport{}, err
+	}
+	aiLogs, err := s.allAIGenerations(ctx, userID)
+	if err != nil {
+		return domain.AccountExport{}, err
+	}
+	for index := range aiLogs {
+		actions, err := s.AIActions(ctx, userID, aiLogs[index].ID)
+		if err != nil {
+			return domain.AccountExport{}, err
+		}
+		aiLogs[index].Actions = actions
+	}
+	favorites, err := s.allFavorites(ctx, userID)
+	if err != nil {
+		return domain.AccountExport{}, err
+	}
+	return domain.AccountExport{
+		Profile:              profile,
+		Courses:              courses,
+		Reminders:            reminders,
+		Parents:              parents,
+		CommunicationRecords: records,
+		HealingEntries:       healing,
+		AIGenerations:        aiLogs,
+		Favorites:            favorites,
+		ExportedAt:           time.Now(),
+	}, nil
+}
+
 func (s *PostgresStore) Dashboard(ctx context.Context, userID domain.ID, day time.Time) (domain.DashboardSummary, error) {
 	weekday := int(day.Weekday())
 	courses, err := s.CoursesByDay(ctx, userID, weekday)
@@ -79,19 +237,22 @@ func (s *PostgresStore) Dashboard(ctx context.Context, userID domain.ID, day tim
 	if err != nil {
 		return domain.DashboardSummary{}, err
 	}
-	parents, err := s.Parents(ctx, userID)
+	pendingReminders := pendingReminderCount(reminders)
+	dueRecords, err := s.dueCommunicationRecords(ctx, userID, day)
 	if err != nil {
 		return domain.DashboardSummary{}, err
 	}
-	var next *domain.Course
-	if len(courses) > 0 {
-		next = &courses[0]
+	followUpParentIDs, followUpsCount := dueFollowUpParentIDs(dueRecords)
+	followUpParents, err := s.parentsByIDs(ctx, userID, followUpParentIDs)
+	if err != nil {
+		return domain.DashboardSummary{}, err
 	}
+	next := nextCourseForDay(courses, day)
 	rhythm := domain.RhythmState{Code: "steady", Title: "温柔但高效", Description: "今天事项可控，先处理下一节课，再推进家长跟进。"}
-	if len(courses)+len(reminders) >= 5 {
+	if len(courses)+pendingReminders >= 5 {
 		rhythm = domain.RhythmState{Code: "busy", Title: "节奏偏满", Description: "课程和待办较集中，建议按课前、课后、沟通三段处理。"}
 	}
-	return domain.DashboardSummary{TodayLabel: day.Format("2006-01-02"), CoursesCount: len(courses), RemindersCount: len(reminders), FollowUpsCount: len(parents), NextCourse: next, Reminders: reminders, FocusParents: parents, Rhythm: rhythm}, nil
+	return domain.DashboardSummary{TodayLabel: day.Format("2006-01-02"), CoursesCount: len(courses), RemindersCount: pendingReminders, FollowUpsCount: followUpsCount, NextCourse: next, Reminders: reminders, FocusParents: followUpParents, Rhythm: rhythm}, nil
 }
 
 func (s *PostgresStore) CoursesByDay(ctx context.Context, userID domain.ID, weekday int) ([]domain.Course, error) {
@@ -100,6 +261,27 @@ func (s *PostgresStore) CoursesByDay(ctx context.Context, userID domain.ID, week
 		FROM courses
 		WHERE user_id = $1 AND weekday = $2
 		ORDER BY start_time ASC`, string(userID), weekday)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.Course, 0)
+	for rows.Next() {
+		var item domain.Course
+		if err := rows.Scan(&item.ID, &item.Title, &item.ClassName, &item.Location, &item.Weekday, &item.StartTime, &item.EndTime, &item.Note, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) allCourses(ctx context.Context, userID domain.ID) ([]domain.Course, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, title, class_name, COALESCE(location, ''), weekday, to_char(start_time, 'HH24:MI'), to_char(end_time, 'HH24:MI'), COALESCE(note, ''), created_at
+		FROM courses
+		WHERE user_id = $1
+		ORDER BY weekday ASC, start_time ASC, created_at ASC`, string(userID))
 	if err != nil {
 		return nil, err
 	}
@@ -185,6 +367,34 @@ func (s *PostgresStore) RemindersByDay(ctx context.Context, userID domain.ID, da
 		FROM reminders
 		WHERE user_id = $1 AND remind_at >= $2 AND remind_at < $3 AND status <> 'deleted'
 		ORDER BY remind_at ASC`, string(userID), start, end)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.Reminder, 0)
+	for rows.Next() {
+		var item domain.Reminder
+		var parentID, courseID sql.NullString
+		var doneAt sql.NullTime
+		if err := rows.Scan(&item.ID, &item.Title, &item.Category, &item.RemindAt, &item.Status, &item.Note, &parentID, &courseID, &item.CreatedAt, &doneAt); err != nil {
+			return nil, err
+		}
+		item.ParentID = nullableDomainID(parentID)
+		item.CourseID = nullableDomainID(courseID)
+		if doneAt.Valid {
+			item.DoneAt = &doneAt.Time
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) allReminders(ctx context.Context, userID domain.ID) ([]domain.Reminder, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, title, category, remind_at, status, COALESCE(note, ''), parent_id::text, course_id::text, created_at, done_at
+		FROM reminders
+		WHERE user_id = $1
+		ORDER BY remind_at DESC, created_at DESC`, string(userID))
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +525,36 @@ func (s *PostgresStore) SnoozeReminder(ctx context.Context, userID domain.ID, id
 	return item, err
 }
 
-func (s *PostgresStore) Parents(ctx context.Context, userID domain.ID) ([]domain.ParentProfile, error) {
+func (s *PostgresStore) Parents(ctx context.Context, userID domain.ID, options ListOptions) ([]domain.ParentProfile, error) {
+	options = normalizeListOptions(options)
+	query := `
+		SELECT id::text, student_name, class_name, parent_name, relationship, COALESCE(contact, ''), COALESCE(communication_style, ''), risk_level, COALESCE(important_notes, ''), COALESCE(next_action, ''), created_at
+		FROM parent_profiles
+		WHERE user_id = $1`
+	args := []any{string(userID)}
+	if options.Query != "" {
+		query += ` AND (student_name ILIKE $2 OR class_name ILIKE $2 OR parent_name ILIKE $2 OR relationship ILIKE $2 OR COALESCE(contact, '') ILIKE $2 OR COALESCE(communication_style, '') ILIKE $2 OR COALESCE(important_notes, '') ILIKE $2 OR COALESCE(next_action, '') ILIKE $2)`
+		args = append(args, "%"+options.Query+"%")
+	}
+	query += fmt.Sprintf(" ORDER BY CASE risk_level WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, updated_at DESC LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
+	args = append(args, options.Limit, options.Offset)
+	rows, err := s.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.ParentProfile, 0)
+	for rows.Next() {
+		var item domain.ParentProfile
+		if err := rows.Scan(&item.ID, &item.StudentName, &item.ClassName, &item.ParentName, &item.Relationship, &item.Contact, &item.CommunicationStyle, &item.RiskLevel, &item.ImportantNotes, &item.NextAction, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) allParents(ctx context.Context, userID domain.ID) ([]domain.ParentProfile, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT id::text, student_name, class_name, parent_name, relationship, COALESCE(contact, ''), COALESCE(communication_style, ''), risk_level, COALESCE(important_notes, ''), COALESCE(next_action, ''), created_at
 		FROM parent_profiles
@@ -389,17 +628,23 @@ func (s *PostgresStore) DeleteParent(ctx context.Context, userID domain.ID, id d
 	return nil
 }
 
-func (s *PostgresStore) CommunicationRecords(ctx context.Context, userID domain.ID, parentID *domain.ID) ([]domain.CommunicationRecord, error) {
+func (s *PostgresStore) CommunicationRecords(ctx context.Context, userID domain.ID, parentID *domain.ID, options ListOptions) ([]domain.CommunicationRecord, error) {
+	options = normalizeListOptions(options)
 	query := `
-		SELECT id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, created_at
+		SELECT id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, follow_up_status, followed_up_at, created_at
 		FROM communication_records
 		WHERE user_id = $1`
 	args := []any{string(userID)}
 	if parentID != nil {
-		query += " AND parent_id = $2"
+		query += fmt.Sprintf(" AND parent_id = $%d", len(args)+1)
 		args = append(args, string(*parentID))
 	}
-	query += " ORDER BY created_at DESC LIMIT 50"
+	if options.Query != "" {
+		query += fmt.Sprintf(" AND (student ILIKE $%d OR channel ILIKE $%d OR reason ILIKE $%d OR summary ILIKE $%d OR COALESCE(result, '') ILIKE $%d OR risk_level ILIKE $%d)", len(args)+1, len(args)+1, len(args)+1, len(args)+1, len(args)+1, len(args)+1)
+		args = append(args, "%"+options.Query+"%")
+	}
+	query += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
+	args = append(args, options.Limit, options.Offset)
 	rows, err := s.pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -409,38 +654,138 @@ func (s *PostgresStore) CommunicationRecords(ctx context.Context, userID domain.
 	for rows.Next() {
 		var item domain.CommunicationRecord
 		var parent sql.NullString
-		var followUp sql.NullTime
-		if err := rows.Scan(&item.ID, &parent, &item.Student, &item.Channel, &item.Reason, &item.Summary, &item.Result, &item.RiskLevel, &followUp, &item.CreatedAt); err != nil {
+		var followUp, followedUp sql.NullTime
+		if err := rows.Scan(&item.ID, &parent, &item.Student, &item.Channel, &item.Reason, &item.Summary, &item.Result, &item.RiskLevel, &followUp, &item.FollowUpStatus, &followedUp, &item.CreatedAt); err != nil {
 			return nil, err
 		}
-		if parent.Valid {
-			item.ParentID = domain.ID(parent.String)
-		}
+		item.ParentID = nullableDomainID(parent)
 		if followUp.Valid {
 			item.FollowUpAt = followUp.Time
+		}
+		if followedUp.Valid {
+			item.FollowedUpAt = &followedUp.Time
 		}
 		items = append(items, item)
 	}
 	return items, rows.Err()
 }
 
+func (s *PostgresStore) allCommunicationRecords(ctx context.Context, userID domain.ID) ([]domain.CommunicationRecord, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, follow_up_status, followed_up_at, created_at
+		FROM communication_records
+		WHERE user_id = $1
+		ORDER BY created_at DESC`, string(userID))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.CommunicationRecord, 0)
+	for rows.Next() {
+		var item domain.CommunicationRecord
+		var parent sql.NullString
+		var followUp, followedUp sql.NullTime
+		if err := rows.Scan(&item.ID, &parent, &item.Student, &item.Channel, &item.Reason, &item.Summary, &item.Result, &item.RiskLevel, &followUp, &item.FollowUpStatus, &followedUp, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		item.ParentID = nullableDomainID(parent)
+		if followUp.Valid {
+			item.FollowUpAt = followUp.Time
+		}
+		if followedUp.Valid {
+			item.FollowedUpAt = &followedUp.Time
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) dueCommunicationRecords(ctx context.Context, userID domain.ID, day time.Time) ([]domain.CommunicationRecord, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, follow_up_status, followed_up_at, created_at
+		FROM communication_records
+		WHERE user_id = $1 AND follow_up_status <> 'done' AND follow_up_at IS NOT NULL AND follow_up_at <= $2
+		ORDER BY follow_up_at ASC, created_at DESC`, string(userID), endOfDay(day))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.CommunicationRecord, 0)
+	for rows.Next() {
+		var item domain.CommunicationRecord
+		var parent sql.NullString
+		var followUp, followedUp sql.NullTime
+		if err := rows.Scan(&item.ID, &parent, &item.Student, &item.Channel, &item.Reason, &item.Summary, &item.Result, &item.RiskLevel, &followUp, &item.FollowUpStatus, &followedUp, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		item.ParentID = nullableDomainID(parent)
+		if followUp.Valid {
+			item.FollowUpAt = followUp.Time
+		}
+		if followedUp.Valid {
+			item.FollowedUpAt = &followedUp.Time
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) parentsByIDs(ctx context.Context, userID domain.ID, ids []domain.ID) ([]domain.ParentProfile, error) {
+	if len(ids) == 0 {
+		return []domain.ParentProfile{}, nil
+	}
+	args := []any{string(userID)}
+	placeholders := make([]string, 0, len(ids))
+	for _, id := range ids {
+		args = append(args, string(id))
+		placeholders = append(placeholders, fmt.Sprintf("$%d", len(args)))
+	}
+	rows, err := s.pool.Query(ctx, fmt.Sprintf(`
+		SELECT id::text, student_name, class_name, parent_name, relationship, COALESCE(contact, ''), COALESCE(communication_style, ''), risk_level, COALESCE(important_notes, ''), COALESCE(next_action, ''), created_at
+		FROM parent_profiles
+		WHERE user_id = $1 AND id IN (%s)`, strings.Join(placeholders, ",")), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	parentByID := make(map[domain.ID]domain.ParentProfile, len(ids))
+	for rows.Next() {
+		var item domain.ParentProfile
+		if err := rows.Scan(&item.ID, &item.StudentName, &item.ClassName, &item.ParentName, &item.Relationship, &item.Contact, &item.CommunicationStyle, &item.RiskLevel, &item.ImportantNotes, &item.NextAction, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		parentByID[item.ID] = item
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	parents := make([]domain.ParentProfile, 0, len(ids))
+	for _, id := range ids {
+		if parent, ok := parentByID[id]; ok {
+			parents = append(parents, parent)
+		}
+	}
+	return parents, nil
+}
+
 func (s *PostgresStore) CommunicationRecord(ctx context.Context, userID domain.ID, id domain.ID) (domain.CommunicationRecord, error) {
 	var item domain.CommunicationRecord
 	var parent sql.NullString
-	var followUp sql.NullTime
+	var followUp, followedUp sql.NullTime
 	err := s.pool.QueryRow(ctx, `
-		SELECT id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, created_at
+		SELECT id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, follow_up_status, followed_up_at, created_at
 		FROM communication_records
 		WHERE user_id = $1 AND id = $2`, string(userID), string(id)).
-		Scan(&item.ID, &parent, &item.Student, &item.Channel, &item.Reason, &item.Summary, &item.Result, &item.RiskLevel, &followUp, &item.CreatedAt)
+		Scan(&item.ID, &parent, &item.Student, &item.Channel, &item.Reason, &item.Summary, &item.Result, &item.RiskLevel, &followUp, &item.FollowUpStatus, &followedUp, &item.CreatedAt)
 	if isNoRows(err) {
 		return domain.CommunicationRecord{}, notFound("communication record", id)
 	}
-	if parent.Valid {
-		item.ParentID = domain.ID(parent.String)
-	}
+	item.ParentID = nullableDomainID(parent)
 	if followUp.Valid {
 		item.FollowUpAt = followUp.Time
+	}
+	if followedUp.Valid {
+		item.FollowedUpAt = &followedUp.Time
 	}
 	return item, err
 }
@@ -449,10 +794,20 @@ func (s *PostgresStore) CreateCommunicationRecord(ctx context.Context, userID do
 	if record.RiskLevel == "" {
 		record.RiskLevel = "low"
 	}
+	if record.FollowUpStatus == "" {
+		record.FollowUpStatus = "pending"
+	}
+	if record.FollowUpStatus == "done" && record.FollowedUpAt == nil {
+		now := time.Now()
+		record.FollowedUpAt = &now
+	}
+	if record.FollowUpStatus != "done" {
+		record.FollowedUpAt = nil
+	}
 	err := s.pool.QueryRow(ctx, `
-		INSERT INTO communication_records (user_id, parent_id, student, channel, reason, summary, result, risk_level, follow_up_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id::text, created_at`, string(userID), nullableRecordParentID(record.ParentID), record.Student, record.Channel, record.Reason, record.Summary, record.Result, record.RiskLevel, nullableTime(record.FollowUpAt)).
+		INSERT INTO communication_records (user_id, parent_id, student, channel, reason, summary, result, risk_level, follow_up_at, follow_up_status, followed_up_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		RETURNING id::text, created_at`, string(userID), fromDomainID(record.ParentID), record.Student, record.Channel, record.Reason, record.Summary, record.Result, record.RiskLevel, nullableTime(record.FollowUpAt), record.FollowUpStatus, fromTimePtr(record.FollowedUpAt)).
 		Scan(&record.ID, &record.CreatedAt)
 	return record, err
 }
@@ -461,23 +816,65 @@ func (s *PostgresStore) UpdateCommunicationRecord(ctx context.Context, userID do
 	if record.RiskLevel == "" {
 		record.RiskLevel = "low"
 	}
+	if record.FollowUpStatus == "" {
+		current, err := s.CommunicationRecord(ctx, userID, id)
+		if err != nil {
+			return domain.CommunicationRecord{}, err
+		}
+		record.FollowUpStatus = current.FollowUpStatus
+		record.FollowedUpAt = current.FollowedUpAt
+	}
+	if record.FollowUpStatus == "done" && record.FollowedUpAt == nil {
+		now := time.Now()
+		record.FollowedUpAt = &now
+	}
+	if record.FollowUpStatus != "done" {
+		record.FollowedUpAt = nil
+	}
 	var parent sql.NullString
-	var followUp sql.NullTime
+	var followUp, followedUp sql.NullTime
 	err := s.pool.QueryRow(ctx, `
 		UPDATE communication_records
-		SET parent_id = $3, student = $4, channel = $5, reason = $6, summary = $7, result = $8, risk_level = $9, follow_up_at = $10, updated_at = now()
+		SET parent_id = $3, student = $4, channel = $5, reason = $6, summary = $7, result = $8, risk_level = $9, follow_up_at = $10, follow_up_status = $11, followed_up_at = $12, updated_at = now()
 		WHERE user_id = $1 AND id = $2
-		RETURNING id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, created_at`,
-		string(userID), string(id), nullableRecordParentID(record.ParentID), record.Student, record.Channel, record.Reason, record.Summary, record.Result, record.RiskLevel, nullableTime(record.FollowUpAt)).
-		Scan(&record.ID, &parent, &record.Student, &record.Channel, &record.Reason, &record.Summary, &record.Result, &record.RiskLevel, &followUp, &record.CreatedAt)
+		RETURNING id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, follow_up_status, followed_up_at, created_at`,
+		string(userID), string(id), fromDomainID(record.ParentID), record.Student, record.Channel, record.Reason, record.Summary, record.Result, record.RiskLevel, nullableTime(record.FollowUpAt), record.FollowUpStatus, fromTimePtr(record.FollowedUpAt)).
+		Scan(&record.ID, &parent, &record.Student, &record.Channel, &record.Reason, &record.Summary, &record.Result, &record.RiskLevel, &followUp, &record.FollowUpStatus, &followedUp, &record.CreatedAt)
 	if isNoRows(err) {
 		return domain.CommunicationRecord{}, notFound("communication record", id)
 	}
-	if parent.Valid {
-		record.ParentID = domain.ID(parent.String)
-	}
+	record.ParentID = nullableDomainID(parent)
 	if followUp.Valid {
 		record.FollowUpAt = followUp.Time
+	}
+	if followedUp.Valid {
+		record.FollowedUpAt = &followedUp.Time
+	} else {
+		record.FollowedUpAt = nil
+	}
+	return record, err
+}
+
+func (s *PostgresStore) CompleteCommunicationFollowUp(ctx context.Context, userID domain.ID, id domain.ID) (domain.CommunicationRecord, error) {
+	var record domain.CommunicationRecord
+	var parent sql.NullString
+	var followUp, followedUp sql.NullTime
+	err := s.pool.QueryRow(ctx, `
+		UPDATE communication_records
+		SET follow_up_status = 'done', followed_up_at = now(), updated_at = now()
+		WHERE user_id = $1 AND id = $2
+		RETURNING id::text, parent_id::text, student, channel, reason, summary, COALESCE(result, ''), risk_level, follow_up_at, follow_up_status, followed_up_at, created_at`,
+		string(userID), string(id)).
+		Scan(&record.ID, &parent, &record.Student, &record.Channel, &record.Reason, &record.Summary, &record.Result, &record.RiskLevel, &followUp, &record.FollowUpStatus, &followedUp, &record.CreatedAt)
+	if isNoRows(err) {
+		return domain.CommunicationRecord{}, notFound("communication record", id)
+	}
+	record.ParentID = nullableDomainID(parent)
+	if followUp.Valid {
+		record.FollowUpAt = followUp.Time
+	}
+	if followedUp.Valid {
+		record.FollowedUpAt = &followedUp.Time
 	}
 	return record, err
 }
@@ -493,18 +890,45 @@ func (s *PostgresStore) DeleteCommunicationRecord(ctx context.Context, userID do
 	return nil
 }
 
-func (s *PostgresStore) HealingEntries(ctx context.Context, userID domain.ID, entryType string) ([]domain.HealingEntry, error) {
+func (s *PostgresStore) HealingEntries(ctx context.Context, userID domain.ID, entryType string, options ListOptions) ([]domain.HealingEntry, error) {
+	options = normalizeListOptions(options)
 	query := `
 		SELECT id::text, type, COALESCE(mood, ''), COALESCE(content, ''), COALESCE(ai_reply, ''), created_at
 		FROM healing_entries
 		WHERE user_id = $1`
 	args := []any{string(userID)}
 	if entryType != "" {
-		query += " AND type = $2"
+		query += fmt.Sprintf(" AND type = $%d", len(args)+1)
 		args = append(args, entryType)
 	}
-	query += " ORDER BY created_at DESC LIMIT 50"
+	if options.Query != "" {
+		query += fmt.Sprintf(" AND (type ILIKE $%d OR COALESCE(mood, '') ILIKE $%d OR COALESCE(content, '') ILIKE $%d OR COALESCE(ai_reply, '') ILIKE $%d)", len(args)+1, len(args)+1, len(args)+1, len(args)+1)
+		args = append(args, "%"+options.Query+"%")
+	}
+	query += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
+	args = append(args, options.Limit, options.Offset)
 	rows, err := s.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.HealingEntry, 0)
+	for rows.Next() {
+		var item domain.HealingEntry
+		if err := rows.Scan(&item.ID, &item.Type, &item.Mood, &item.Content, &item.AIReply, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) allHealingEntries(ctx context.Context, userID domain.ID) ([]domain.HealingEntry, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, type, COALESCE(mood, ''), COALESCE(content, ''), COALESCE(ai_reply, ''), created_at
+		FROM healing_entries
+		WHERE user_id = $1
+		ORDER BY created_at DESC`, string(userID))
 	if err != nil {
 		return nil, err
 	}
@@ -553,18 +977,45 @@ func (s *PostgresStore) DeleteHealingEntry(ctx context.Context, userID domain.ID
 	return nil
 }
 
-func (s *PostgresStore) AIGenerations(ctx context.Context, userID domain.ID, scenario string) ([]domain.AIGeneration, error) {
+func (s *PostgresStore) AIGenerations(ctx context.Context, userID domain.ID, scenario string, options ListOptions) ([]domain.AIGeneration, error) {
+	options = normalizeListOptions(options)
 	query := `
 		SELECT id::text, scenario, input, output, safety_label, token_usage, created_at
 		FROM ai_generations
 		WHERE user_id = $1`
 	args := []any{string(userID)}
 	if scenario != "" {
-		query += " AND scenario = $2"
+		query += fmt.Sprintf(" AND scenario = $%d", len(args)+1)
 		args = append(args, scenario)
 	}
-	query += " ORDER BY created_at DESC LIMIT 50"
+	if options.Query != "" {
+		query += fmt.Sprintf(" AND (scenario ILIKE $%d OR safety_label ILIKE $%d OR input::text ILIKE $%d OR output::text ILIKE $%d)", len(args)+1, len(args)+1, len(args)+1, len(args)+1)
+		args = append(args, "%"+options.Query+"%")
+	}
+	query += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
+	args = append(args, options.Limit, options.Offset)
 	rows, err := s.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.AIGeneration, 0)
+	for rows.Next() {
+		item, err := scanAIGeneration(rows)
+		if err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) allAIGenerations(ctx context.Context, userID domain.ID) ([]domain.AIGeneration, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, scenario, input, output, safety_label, token_usage, created_at
+		FROM ai_generations
+		WHERE user_id = $1
+		ORDER BY created_at DESC`, string(userID))
 	if err != nil {
 		return nil, err
 	}
@@ -589,6 +1040,14 @@ func (s *PostgresStore) AIGeneration(ctx context.Context, userID domain.ID, id d
 	if isNoRows(err) {
 		return domain.AIGeneration{}, notFound("ai generation", id)
 	}
+	if err != nil {
+		return domain.AIGeneration{}, err
+	}
+	actions, err := s.AIActions(ctx, userID, id)
+	if err != nil {
+		return domain.AIGeneration{}, err
+	}
+	item.Actions = actions
 	return item, err
 }
 
@@ -618,18 +1077,136 @@ func (s *PostgresStore) CreateAIGeneration(ctx context.Context, userID domain.ID
 	return generation, err
 }
 
-func (s *PostgresStore) Favorites(ctx context.Context, userID domain.ID, favoriteType string) ([]domain.Favorite, error) {
+func (s *PostgresStore) UpdateAIGenerationOutput(ctx context.Context, userID domain.ID, id domain.ID, output map[string]any) error {
+	if output == nil {
+		output = map[string]any{}
+	}
+	data, err := json.Marshal(output)
+	if err != nil {
+		return err
+	}
+	tag, err := s.pool.Exec(ctx, `
+		UPDATE ai_generations
+		SET output = $3::jsonb
+		WHERE user_id = $1 AND id = $2`, string(userID), string(id), string(data))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return notFound("ai generation", id)
+	}
+	return nil
+}
+
+func (s *PostgresStore) DeleteAIGeneration(ctx context.Context, userID domain.ID, id domain.ID) error {
+	tag, err := s.pool.Exec(ctx, `DELETE FROM ai_generations WHERE user_id = $1 AND id = $2`, string(userID), string(id))
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return notFound("ai generation", id)
+	}
+	return nil
+}
+
+func (s *PostgresStore) CreateAIAction(ctx context.Context, userID domain.ID, action domain.AIAction) (domain.AIAction, error) {
+	if _, err := s.AIGeneration(ctx, userID, action.GenerationID); err != nil {
+		return domain.AIAction{}, err
+	}
+	if action.Metadata == nil {
+		action.Metadata = map[string]any{}
+	}
+	metadata, err := json.Marshal(action.Metadata)
+	if err != nil {
+		return domain.AIAction{}, err
+	}
+	err = s.pool.QueryRow(ctx, `
+		INSERT INTO ai_generation_actions (user_id, generation_id, action, draft_id, note, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+		RETURNING id::text, generation_id::text, action, COALESCE(draft_id, ''), COALESCE(note, ''), metadata, created_at`,
+		string(userID), string(action.GenerationID), action.Action, nullableString(action.DraftID), nullableString(action.Note), string(metadata)).
+		Scan(&action.ID, &action.GenerationID, &action.Action, &action.DraftID, &action.Note, &metadata, &action.CreatedAt)
+	if err != nil {
+		return domain.AIAction{}, err
+	}
+	action.Metadata = map[string]any{}
+	if len(metadata) > 0 {
+		if err := json.Unmarshal(metadata, &action.Metadata); err != nil {
+			return domain.AIAction{}, err
+		}
+	}
+	return action, nil
+}
+
+func (s *PostgresStore) AIActions(ctx context.Context, userID domain.ID, generationID domain.ID) ([]domain.AIAction, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, generation_id::text, action, COALESCE(draft_id, ''), COALESCE(note, ''), metadata, created_at
+		FROM ai_generation_actions
+		WHERE user_id = $1 AND generation_id = $2
+		ORDER BY created_at ASC`, string(userID), string(generationID))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.AIAction, 0)
+	for rows.Next() {
+		var item domain.AIAction
+		var metadata []byte
+		if err := rows.Scan(&item.ID, &item.GenerationID, &item.Action, &item.DraftID, &item.Note, &metadata, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		item.Metadata = map[string]any{}
+		if len(metadata) > 0 {
+			if err := json.Unmarshal(metadata, &item.Metadata); err != nil {
+				return nil, err
+			}
+		}
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) Favorites(ctx context.Context, userID domain.ID, favoriteType string, options ListOptions) ([]domain.Favorite, error) {
+	options = normalizeListOptions(options)
 	query := `
 		SELECT id::text, type, title, content, source_id::text, created_at
 		FROM favorites
 		WHERE user_id = $1`
 	args := []any{string(userID)}
 	if favoriteType != "" {
-		query += " AND type = $2"
+		query += fmt.Sprintf(" AND type = $%d", len(args)+1)
 		args = append(args, favoriteType)
 	}
-	query += " ORDER BY created_at DESC"
+	if options.Query != "" {
+		query += fmt.Sprintf(" AND (type ILIKE $%d OR title ILIKE $%d OR content ILIKE $%d)", len(args)+1, len(args)+1, len(args)+1)
+		args = append(args, "%"+options.Query+"%")
+	}
+	query += fmt.Sprintf(" ORDER BY created_at DESC LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
+	args = append(args, options.Limit, options.Offset)
 	rows, err := s.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]domain.Favorite, 0)
+	for rows.Next() {
+		var item domain.Favorite
+		var sourceID sql.NullString
+		if err := rows.Scan(&item.ID, &item.Type, &item.Title, &item.Content, &sourceID, &item.CreatedAt); err != nil {
+			return nil, err
+		}
+		item.SourceID = nullableDomainID(sourceID)
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *PostgresStore) allFavorites(ctx context.Context, userID domain.ID) ([]domain.Favorite, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, type, title, content, source_id::text, created_at
+		FROM favorites
+		WHERE user_id = $1
+		ORDER BY created_at DESC`, string(userID))
 	if err != nil {
 		return nil, err
 	}
@@ -689,11 +1266,12 @@ func fromTimePtr(value *time.Time) any {
 	return *value
 }
 
-func nullableRecordParentID(value domain.ID) any {
+func nullableString(value string) any {
+	value = strings.TrimSpace(value)
 	if value == "" {
 		return nil
 	}
-	return string(value)
+	return value
 }
 
 func nullableTime(value time.Time) any {
@@ -701,6 +1279,17 @@ func nullableTime(value time.Time) any {
 		return nil
 	}
 	return value
+}
+
+func normalizeListOptions(options ListOptions) ListOptions {
+	options.Query = strings.TrimSpace(options.Query)
+	if options.Limit <= 0 || options.Limit > MaxListProbeLimit {
+		options.Limit = DefaultListLimit
+	}
+	if options.Offset < 0 {
+		options.Offset = 0
+	}
+	return options
 }
 
 func isNoRows(err error) bool {
@@ -733,4 +1322,3 @@ func scanAIGeneration(row aiGenerationScanner) (domain.AIGeneration, error) {
 }
 
 var _ Store = (*PostgresStore)(nil)
-
