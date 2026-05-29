@@ -63,10 +63,36 @@
       </view>
     </view>
 
-    <view class="card" v-if="summary.nextCourse">
-      <view class="row between"><text class="section-title">下一项</text><text class="tag">{{ summary.nextCourse.startTime }}</text></view>
-      <view class="course-title">{{ summary.nextCourse.className }} · {{ summary.nextCourse.title }}</view>
-      <text class="body">{{ summary.nextCourse.note }} · {{ summary.nextCourse.location }}</text>
+    <view class="next-course-card" v-if="summary.nextCourse" data-testid="home-next-course-card" @tap="goSchedule">
+      <view class="next-glow"></view>
+      <view class="next-course-main">
+        <view class="next-course-mark">
+          <AppIcon name="calendarCheck" />
+        </view>
+        <view class="next-course-copy">
+          <view class="next-kicker-row">
+            <text class="next-kicker">下一项</text>
+            <text class="next-range">{{ nextCourseTimeRange }}</text>
+          </view>
+          <text class="next-course-title">{{ nextCourseTitle }}</text>
+        </view>
+        <view class="next-time-pill">
+          <text class="next-time">{{ nextCourseStartTime }}</text>
+        </view>
+      </view>
+      <view v-if="nextCourseMeta.length" class="next-meta-row">
+        <view v-for="item in nextCourseMeta" :key="item.label" class="next-meta-chip">
+          <AppIcon :name="item.icon" />
+          <text>{{ item.label }}</text>
+        </view>
+      </view>
+      <view class="next-course-foot">
+        <text class="caption">{{ nextCourseFootnote }}</text>
+        <view class="next-link">
+          <text>查看安排</text>
+          <AppIcon name="chevronRight" />
+        </view>
+      </view>
     </view>
     <AppState
       v-else-if="!loading && !error"
@@ -187,6 +213,36 @@ const heroRhythm = computed(() => {
 })
 const visibleReminders = computed(() => (summary.value.reminders || []).slice(0, 3))
 const visibleFocusParents = computed(() => (summary.value.focusParents || []).slice(0, 3))
+const nextCourse = computed(() => summary.value.nextCourse || null)
+const nextCourseTitle = computed(() => compactJoin([nextCourse.value?.className, nextCourse.value?.title], ' · ') || '待安排课程')
+const nextCourseStartTime = computed(() => nextCourse.value?.startTime || '待定')
+const nextCourseTimeRange = computed(() => {
+  const start = nextCourse.value?.startTime
+  const end = nextCourse.value?.endTime
+  if (start && end) return `${start} - ${end}`
+  return start || '时间待定'
+})
+const nextCourseMeta = computed(() => {
+  const items = []
+  if (nextCourse.value?.location) items.push({ icon: 'mapPin', label: nextCourse.value.location })
+  if (nextCourse.value?.note) items.push({ icon: 'bookmark', label: nextCourse.value.note })
+  return items
+})
+const nextCourseFootnote = computed(() => {
+  const start = clockMinutes(nextCourse.value?.startTime)
+  const end = clockMinutes(nextCourse.value?.endTime)
+  if (start == null) return '打开日程页可以补充地点和备注。'
+  const now = currentMinutes()
+  if (end != null && now >= start && now < end) return '这节课正在进行中。'
+  if (now < start) {
+    const diff = start - now
+    if (diff < 60) return `${diff} 分钟后开始，先留一点准备时间。`
+    const hours = Math.floor(diff / 60)
+    const minutes = diff % 60
+    return minutes > 0 ? `${hours} 小时 ${minutes} 分钟后开始。` : `${hours} 小时后开始。`
+  }
+  return '下一项课程信息已同步到日程。'
+})
 
 onShow(load)
 
@@ -240,6 +296,21 @@ function reminderStatusText(status) {
   return ({ pending: '待处理', done: '已完成', snoozed: '已延后' })[status] || '待处理'
 }
 
+function compactJoin(values, separator = ' · ') {
+  return values.map((value) => String(value || '').trim()).filter(Boolean).join(separator)
+}
+
+function clockMinutes(value) {
+  const match = String(value || '').match(/^(\d{2}):(\d{2})$/)
+  if (!match) return null
+  return Number(match[1]) * 60 + Number(match[2])
+}
+
+function currentMinutes() {
+  const now = new Date()
+  return now.getHours() * 60 + now.getMinutes()
+}
+
 function riskText(value) {
   return ({ low: '低风险', medium: '中风险', high: '高风险' })[value] || '低风险'
 }
@@ -281,6 +352,25 @@ function riskText(value) {
 .tile.peach { background: linear-gradient(145deg, rgba(255,239,184,.82), rgba(255,214,202,.72)); }
 .num { display: block; font-size: 58rpx; line-height: 1; font-weight: 950; color: #182033; }
 .tile-title, .course-title { display: block; font-size: 32rpx; line-height: 1.26; font-weight: 930; color: #182033; }
+.next-course-card { position: relative; margin: 24rpx 0 6rpx; padding: 28rpx; border-radius: 32rpx; color: #172039; background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(243,248,255,.78)); border: 1px solid rgba(97,116,166,.11); box-shadow: 0 16rpx 34rpx rgba(73,91,146,.09), inset 0 1px 0 rgba(255,255,255,.96); overflow: hidden; }
+.next-glow { position: absolute; right: -44rpx; top: -52rpx; width: 180rpx; height: 180rpx; border-radius: 999rpx; background: radial-gradient(circle, rgba(98,103,233,.15), rgba(82,184,207,.06) 58%, transparent 72%); pointer-events: none; }
+.next-course-main { position: relative; display: grid; grid-template-columns: 72rpx minmax(0,1fr) auto; gap: 18rpx; align-items: center; }
+.next-course-mark { width: 72rpx; height: 72rpx; border-radius: 24rpx; color: #fff; background: linear-gradient(145deg, #6f86df, #52b8cf); display: flex; align-items: center; justify-content: center; font-size: 35rpx; box-shadow: 0 12rpx 24rpx rgba(82,111,190,.18), inset 0 1px 0 rgba(255,255,255,.26); }
+.next-course-copy { min-width: 0; display: flex; flex-direction: column; gap: 9rpx; }
+.next-kicker-row { min-width: 0; display: flex; align-items: center; gap: 12rpx; flex-wrap: wrap; }
+.next-kicker { color: #6267e9; font-size: 23rpx; line-height: 1.2; font-weight: 950; }
+.next-range { color: #8790a8; font-size: 22rpx; line-height: 1.2; font-weight: 850; font-variant-numeric: tabular-nums; }
+.next-course-title { color: #172039; font-size: 34rpx; line-height: 1.24; font-weight: 950; overflow-wrap: anywhere; }
+.next-time-pill { min-width: 112rpx; min-height: 64rpx; padding: 0 20rpx; border-radius: 999rpx; color: #43517b; background: rgba(255,255,255,.76); border: 1rpx solid rgba(97,116,166,.10); display: flex; align-items: center; justify-content: center; box-shadow: 0 8rpx 18rpx rgba(73,91,146,.06), inset 0 1px 0 rgba(255,255,255,.92); box-sizing: border-box; }
+.next-time { font-size: 29rpx; line-height: 1; font-weight: 950; font-variant-numeric: tabular-nums; }
+.next-meta-row { position: relative; display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 22rpx; }
+.next-meta-chip { max-width: 100%; padding: 12rpx 16rpx; border-radius: 18rpx; color: #5e6983; background: rgba(245,249,255,.86); border: 1rpx solid rgba(97,116,166,.08); display: flex; align-items: center; gap: 8rpx; font-size: 23rpx; line-height: 1.3; font-weight: 800; box-sizing: border-box; }
+.next-meta-chip .app-icon { flex: 0 0 auto; width: 25rpx; height: 25rpx; color: #6f86df; }
+.next-meta-chip text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.next-course-foot { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin-top: 22rpx; padding-top: 20rpx; border-top: 1rpx solid rgba(97,116,166,.08); }
+.next-course-foot .caption { flex: 1; min-width: 0; margin: 0; }
+.next-link { flex: 0 0 auto; color: #5263a2; display: flex; align-items: center; gap: 6rpx; font-size: 22rpx; line-height: 1.2; font-weight: 950; }
+.next-link .app-icon { width: 24rpx; height: 24rpx; }
 .task-list { margin: 14rpx 0 8rpx; display: flex; flex-direction: column; gap: 18rpx; }
 .task-card { padding: 26rpx; border-radius: 28rpx; display: flex; align-items: center; gap: 18rpx; }
 .reminder-card { align-items: stretch; flex-direction: column; gap: 18rpx; }

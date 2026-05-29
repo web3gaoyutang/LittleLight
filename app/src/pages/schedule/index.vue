@@ -11,9 +11,16 @@
     </view>
 
     <view class="week-row">
-      <view v-for="day in days" :key="day.iso" class="day" :class="{ active: selectedDay === day.iso }" @tap="selectDay(day)">
+      <view
+        v-for="day in days"
+        :key="day.iso"
+        class="day"
+        :class="{ active: selectedDay === day.iso, today: day.iso === todayISO }"
+        @tap="selectDay(day)"
+      >
         <text>{{ day.label }}</text>
         <text>{{ day.date }}</text>
+        <view v-if="day.iso === todayISO" class="today-dot"></view>
       </view>
     </view>
 
@@ -26,24 +33,51 @@
         </button>
       </view>
     </view>
-    <view class="section-head row between compact">
-      <text class="caption">当日课程</text>
-      <button class="primary-btn small" data-testid="course-add-button" @tap="openCourseForm"><text class="btn-icon"><AppIcon name="calendar" /></text>添加日程</button>
+    <view class="section-head row between compact daily-head">
+      <view class="daily-title">
+        <text class="section-title">当日课程</text>
+        <text class="course-count">{{ courseCountText }}</text>
+      </view>
+      <button class="primary-btn add-course-btn" data-testid="course-add-button" @tap="openCourseForm"><text class="btn-icon"><AppIcon name="calendar" /></text>添加日程</button>
     </view>
     <AppState v-if="loading" type="loading" message="正在加载日程..." />
     <AppState v-if="error" type="error" :message="error" action-text="重试" @action="load" />
-    <view v-for="course in courses" :key="course.id" class="card schedule-card course-card">
-      <view class="row between">
-        <text class="tag">{{ course.startTime }} - {{ course.endTime }}</text>
-        <view class="row action-row">
-          <button class="ghost-btn mini" :disabled="hasPendingAction" @tap="editCourse(course)"><text class="btn-icon"><AppIcon name="edit" /></text>编辑</button>
-          <button class="ghost-btn mini danger" :disabled="isActionPending(`delete-course:${course.id}`)" @tap="removeCourse(course.id)">
-            <text class="btn-icon"><AppIcon name="trash" /></text>{{ isActionPending(`delete-course:${course.id}`) ? '删除中...' : '删除' }}
-          </button>
+    <view v-if="courses.length" class="course-timeline">
+      <view v-for="course in courses" :key="course.id" class="timeline-item" :class="[courseStatusClass(course), { featured: isFeaturedCourse(course) }]">
+        <view class="timeline-axis">
+          <view class="timeline-dot"></view>
+        </view>
+        <view class="course-card">
+          <view class="course-top row between">
+            <view class="course-time">
+              <text class="course-time-main">{{ course.startTime }}</text>
+              <text class="course-time-period">{{ coursePeriod(course.startTime) }}</text>
+            </view>
+            <view class="course-meta">
+              <text class="course-class-chip">{{ course.className || '课程' }}</text>
+              <text class="course-status-chip">{{ courseStatusText(course) }}</text>
+            </view>
+          </view>
+          <text class="course-name">{{ course.title }}</text>
+          <view v-if="course.location" class="course-location">
+            <AppIcon name="mapPin" />
+            <text>{{ course.location }}</text>
+          </view>
+          <view v-if="course.note" class="course-note">
+            <view class="note-accent"></view>
+            <view class="note-copy">
+              <text class="note-title">{{ courseTimeRange(course) }}</text>
+              <text class="note-body">{{ course.note }}</text>
+            </view>
+          </view>
+          <view class="row action-row course-actions">
+            <button class="ghost-btn mini" :disabled="hasPendingAction" @tap="editCourse(course)"><text class="btn-icon"><AppIcon name="edit" /></text>编辑</button>
+            <button class="ghost-btn mini danger" :disabled="isActionPending(`delete-course:${course.id}`)" @tap="removeCourse(course.id)">
+              <text class="btn-icon"><AppIcon name="trash" /></text>{{ isActionPending(`delete-course:${course.id}`) ? '删除中...' : '删除' }}
+            </button>
+          </view>
         </view>
       </view>
-      <text class="section-title">{{ course.className }} · {{ course.title }}</text>
-      <text class="body">{{ course.note }} · {{ course.location }}</text>
     </view>
     <AppState
       v-if="!loading && !error && courses.length === 0"
@@ -159,15 +193,17 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onHide, onShow, onUnload } from '@dcloudio/uni-app'
 import { api } from '../../api/client'
 import { chooseImportFile, clockBefore, confirmAction, ensureLoggedIn, errorMessage, hasText, showToast, trimmed, validClock, withinLength } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
 import AppIcon from '../../components/AppIcon.vue'
 
 const today = new Date()
-const selectedDay = ref(toISODate(today))
+const todayISO = ref(toISODate(today))
+const selectedDay = ref(todayISO.value)
 const weekday = ref(today.getDay())
+const currentMinutes = ref(todayMinutes())
 const courses = ref([])
 const reminders = ref([])
 const loading = ref(false)
@@ -195,8 +231,30 @@ const importReadyCount = ref(0)
 const importSummary = ref('')
 const pendingAction = ref('')
 const hasPendingAction = computed(() => !!pendingAction.value)
+const completedCourseCount = computed(() => courses.value.filter((course) => courseStatusCode(course) === 'done').length)
+const courseCountText = computed(() => {
+  const total = courses.value.length
+  const done = completedCourseCount.value
+  return done > 0 ? `共 ${total} 节课 · ${done} 已完成` : `共 ${total} 节课`
+})
+const featuredCourseId = computed(() => {
+  if (selectedDay.value !== todayISO.value) return ''
+  const sortedCourses = [...courses.value].sort((a, b) => (clockMinutes(a.startTime) ?? 0) - (clockMinutes(b.startTime) ?? 0))
+  const active = sortedCourses.find((course) => courseStatusCode(course) === 'active')
+  if (active?.id) return active.id
+  const upcoming = sortedCourses.find((course) => courseStatusCode(course) === 'upcoming')
+  return upcoming?.id || ''
+})
+let clockTimer = null
 
-onShow(load)
+onShow(() => {
+  refreshClock()
+  startClockTimer()
+  load()
+})
+
+onHide(stopClockTimer)
+onUnload(stopClockTimer)
 
 async function load() {
   if (!ensureLoggedIn(api)) return
@@ -546,6 +604,82 @@ function formatTime(value) {
   return new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
 }
 
+function coursePeriod(value) {
+  const hour = Number(String(value || '').split(':')[0])
+  if (Number.isNaN(hour)) return ''
+  return hour < 12 ? 'AM' : 'PM'
+}
+
+function courseTimeRange(course) {
+  return `${course.startTime || '--:--'} - ${course.endTime || '--:--'}`
+}
+
+function isFeaturedCourse(course) {
+  return !!course?.id && course.id === featuredCourseId.value
+}
+
+function courseStatus(course) {
+  const code = courseStatusCode(course)
+  return {
+    code,
+    text: ({ done: '已完成', active: '进行中', upcoming: '待开始' })[code] || '待开始'
+  }
+}
+
+function courseStatusCode(course) {
+  const relation = selectedDateRelation()
+  if (relation < 0) return 'done'
+  if (relation > 0) return 'upcoming'
+
+  const start = clockMinutes(course?.startTime)
+  const end = clockMinutes(course?.endTime)
+  if (start == null || end == null) return 'upcoming'
+  if (currentMinutes.value >= end) return 'done'
+  if (currentMinutes.value >= start) return 'active'
+  return 'upcoming'
+}
+
+function courseStatusText(course) {
+  return courseStatus(course).text
+}
+
+function courseStatusClass(course) {
+  return `status-${courseStatus(course).code}`
+}
+
+function selectedDateRelation() {
+  if (selectedDay.value < todayISO.value) return -1
+  if (selectedDay.value > todayISO.value) return 1
+  return 0
+}
+
+function refreshClock() {
+  todayISO.value = toISODate(new Date())
+  currentMinutes.value = todayMinutes()
+}
+
+function startClockTimer() {
+  stopClockTimer()
+  clockTimer = setInterval(refreshClock, 60 * 1000)
+}
+
+function stopClockTimer() {
+  if (!clockTimer) return
+  clearInterval(clockTimer)
+  clockTimer = null
+}
+
+function clockMinutes(value) {
+  const match = String(value || '').match(/^(\d{2}):(\d{2})$/)
+  if (!match) return null
+  return Number(match[1]) * 60 + Number(match[2])
+}
+
+function todayMinutes() {
+  const now = new Date()
+  return now.getHours() * 60 + now.getMinutes()
+}
+
 function timeInputValue(value) {
   if (!value) return ''
   const date = new Date(value)
@@ -653,14 +787,57 @@ function validISODate(value) {
 .compact { padding-top: 10rpx; }
 .week-row { display: flex; gap: 14rpx; margin-right: -32rpx; padding: 12rpx 32rpx 20rpx 0; overflow-x: auto; scrollbar-width: none; }
 .week-row::-webkit-scrollbar { display: none; }
-.day { flex: 0 0 94rpx; height: 118rpx; border-radius: 26rpx; background: rgba(255,255,255,.62); border: 1rpx solid rgba(255,255,255,.78); box-shadow: inset 0 1rpx 0 rgba(255,255,255,.86); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8rpx; color: #585b77; font-size: 23rpx; font-weight: 900; }
+.day { position: relative; flex: 0 0 94rpx; height: 118rpx; border-radius: 26rpx; background: rgba(255,255,255,.62); border: 1rpx solid rgba(255,255,255,.78); box-shadow: inset 0 1rpx 0 rgba(255,255,255,.86); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8rpx; color: #585b77; font-size: 23rpx; font-weight: 900; }
+.day.today { color: #46577f; border-color: rgba(98,103,233,.20); box-shadow: 0 10rpx 22rpx rgba(98,103,233,.08), inset 0 1rpx 0 rgba(255,255,255,.90); }
 .day.active { color: #fff; background: linear-gradient(145deg, #6f86df, #52b8cf); box-shadow: 0 12rpx 24rpx rgba(89,102,209,.20); }
+.today-dot { position: absolute; left: 50%; bottom: 12rpx; width: 10rpx; height: 10rpx; margin-left: -5rpx; border-radius: 999rpx; background: #6267e9; box-shadow: 0 0 0 5rpx rgba(98,103,233,.11); }
+.day.active .today-dot { background: rgba(255,255,255,.96); box-shadow: 0 0 0 5rpx rgba(255,255,255,.18); }
 .small { min-height: 62rpx; padding: 0 22rpx; font-size: 24rpx; }
 .mini { min-height: 54rpx; padding: 0 16rpx; font-size: 22rpx; }
 .btn-icon { width: 32rpx; height: 32rpx; background: rgba(255,255,255,.46); font-size: 19rpx; }
 .action-row { gap: 10rpx; flex-wrap: wrap; justify-content: flex-end; }
-.schedule-card { display: flex; flex-direction: column; gap: 14rpx; margin: 16rpx 0; }
-.course-card { background: linear-gradient(145deg, rgba(255,255,255,.76), rgba(237,247,255,.58)); }
+.daily-head { align-items: center; }
+.daily-title { display: flex; align-items: center; gap: 16rpx; min-width: 0; }
+.course-count { flex: 0 0 auto; padding: 7rpx 18rpx; border-radius: 999rpx; color: #9aa1b4; background: rgba(255,255,255,.66); font-size: 21rpx; font-weight: 900; }
+.add-course-btn { min-height: 66rpx; padding: 0 26rpx; border-radius: 999rpx; font-size: 26rpx; box-shadow: 0 12rpx 24rpx rgba(74,111,190,.20), inset 0 1px 0 rgba(255,255,255,.32); }
+.course-timeline { position: relative; display: flex; flex-direction: column; gap: 18rpx; margin: 16rpx 0 8rpx; }
+.course-timeline::before { content: ""; position: absolute; left: 13rpx; top: 22rpx; bottom: 22rpx; width: 2rpx; border-radius: 999rpx; background: rgba(111,134,223,.15); }
+.timeline-item { position: relative; display: grid; grid-template-columns: 34rpx minmax(0,1fr); gap: 16rpx; align-items: start; }
+.timeline-axis { position: relative; min-height: 44rpx; display: flex; justify-content: center; padding-top: 28rpx; }
+.timeline-dot { width: 14rpx; height: 14rpx; border-radius: 999rpx; background: #d6dce8; border: 4rpx solid rgba(255,255,255,.92); box-shadow: 0 0 0 1px rgba(99,113,152,.12); box-sizing: content-box; }
+.timeline-item.featured .timeline-dot { width: 16rpx; height: 16rpx; background: #6267e9; box-shadow: 0 0 0 12rpx rgba(98,103,233,.10); }
+.timeline-item.status-active .timeline-dot { background: #6267e9; box-shadow: 0 0 0 12rpx rgba(98,103,233,.10); }
+.timeline-item.status-done .timeline-dot { background: #75b99d; box-shadow: 0 0 0 8rpx rgba(117,185,157,.10); }
+.course-card { position: relative; display: flex; flex-direction: column; gap: 16rpx; padding: 28rpx; border-radius: 28rpx; background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(255,255,255,.74)); border: 1px solid rgba(97,116,166,.10); box-shadow: 0 14rpx 34rpx rgba(73,91,146,.08), inset 0 1px 0 rgba(255,255,255,.96); overflow: hidden; }
+.timeline-item.featured .course-card { border-color: rgba(98,103,233,.24); background: linear-gradient(145deg, rgba(255,255,255,.96), rgba(245,247,255,.86)); box-shadow: 0 18rpx 42rpx rgba(98,103,233,.12), inset 0 1px 0 rgba(255,255,255,.96); }
+.timeline-item.featured .course-card::before { content: ""; position: absolute; left: 0; top: 24rpx; bottom: 24rpx; width: 8rpx; border-radius: 0 999rpx 999rpx 0; background: linear-gradient(180deg,#6267e9,#6f86df); }
+.timeline-item.status-done .course-card { background: linear-gradient(145deg, rgba(255,255,255,.78), rgba(244,251,248,.62)); border-color: rgba(117,185,157,.16); box-shadow: 0 10rpx 24rpx rgba(73,91,146,.05), inset 0 1px 0 rgba(255,255,255,.88); }
+.course-top { align-items: flex-start; gap: 16rpx; }
+.course-time { display: flex; align-items: baseline; gap: 8rpx; min-width: 0; color: #16223a; font-variant-numeric: tabular-nums; }
+.course-time-main { font-size: 36rpx; line-height: 1; font-weight: 950; letter-spacing: 0; }
+.course-time-period { color: #7d85a0; font-size: 20rpx; line-height: 1; font-weight: 900; }
+.timeline-item.featured .course-time { color: #525ce8; }
+.timeline-item.status-done .course-time { color: #78928b; }
+.course-meta { flex: 0 1 auto; min-width: 0; display: flex; align-items: center; justify-content: flex-end; gap: 8rpx; flex-wrap: wrap; }
+.course-class-chip { flex: 0 0 auto; max-width: 230rpx; padding: 8rpx 16rpx; border-radius: 12rpx; color: #7b7f95; background: rgba(249,250,252,.92); border: 1px solid rgba(97,116,166,.10); font-size: 22rpx; line-height: 1.2; font-weight: 850; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timeline-item.featured .course-class-chip { color: #6267e9; background: rgba(239,240,255,.92); border-color: rgba(98,103,233,.18); }
+.course-status-chip { flex: 0 0 auto; padding: 8rpx 15rpx; border-radius: 999rpx; color: #6d7894; background: rgba(245,249,255,.88); border: 1px solid rgba(97,116,166,.10); font-size: 21rpx; line-height: 1.2; font-weight: 900; white-space: nowrap; }
+.timeline-item.status-active .course-status-chip { color: #fff; background: linear-gradient(135deg,#6267e9,#52b8cf); border-color: rgba(98,103,233,.20); box-shadow: 0 8rpx 18rpx rgba(98,103,233,.16); }
+.timeline-item.status-upcoming .course-status-chip { color: #52627d; background: rgba(245,249,255,.92); }
+.timeline-item.status-done .course-class-chip { color: #5d8176; background: rgba(238,250,245,.88); border-color: rgba(117,185,157,.16); }
+.timeline-item.status-done .course-status-chip { color: #2f7f6e; background: rgba(235,250,243,.92); border-color: rgba(117,185,157,.18); }
+.course-name { display: block; color: #172039; font-size: 34rpx; line-height: 1.22; font-weight: 950; overflow-wrap: anywhere; }
+.timeline-item.status-done .course-name { color: #506963; }
+.course-location { display: flex; align-items: center; gap: 10rpx; color: #7b8195; font-size: 25rpx; line-height: 1.35; font-weight: 750; }
+.course-location .app-icon { flex: 0 0 auto; width: 27rpx; height: 27rpx; color: #6f86df; }
+.timeline-item.status-done .course-location .app-icon { color: #75b99d; }
+.course-note { position: relative; display: flex; gap: 16rpx; margin-top: 4rpx; padding: 20rpx 22rpx; border-radius: 18rpx; background: rgba(255,255,255,.82); border: 1px solid rgba(97,116,166,.10); box-shadow: 0 8rpx 20rpx rgba(73,91,146,.06); overflow: hidden; }
+.note-accent { flex: 0 0 6rpx; align-self: stretch; border-radius: 999rpx; background: linear-gradient(180deg,#6267e9,#6f86df); }
+.timeline-item.status-done .note-accent { background: linear-gradient(180deg,#75b99d,#4ea489); }
+.note-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
+.note-title { color: #46577f; font-size: 23rpx; line-height: 1.2; font-weight: 950; }
+.note-body { color: #7b8195; font-size: 24rpx; line-height: 1.45; overflow-wrap: anywhere; }
+.course-actions { justify-content: flex-end; margin-top: 2rpx; }
 .todo-card { background: linear-gradient(145deg, rgba(255,255,255,.78), rgba(255,248,224,.58)); }
 .todo-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16rpx; }
 .todo-head .action-row { flex: 1; min-width: 0; padding-top: 2rpx; }

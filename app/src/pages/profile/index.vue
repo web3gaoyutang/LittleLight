@@ -50,32 +50,48 @@
       </view>
     </view>
 
-    <view class="section-head row between">
-      <text class="section-title">我的收藏</text>
-      <text class="caption">{{ favorites.length }} 条</text>
-    </view>
-    <view class="search-bar">
-      <text class="search-icon"><AppIcon name="search" /></text>
-      <input class="input search-input" v-model="favoriteQuery" confirm-type="search" placeholder="搜索标题、内容或类型" aria-label="搜索收藏素材" data-testid="favorite-search-input" @confirm="searchFavorites" />
-      <button class="ghost-btn small" :disabled="loadingFavorites" @tap="searchFavorites">搜索</button>
-    </view>
-    <view v-for="item in favorites" :key="item.id" class="card">
-      <view class="row between">
-        <text class="tag">{{ favoriteTypeText(item.type) }}</text>
-        <button class="ghost-btn mini danger" @tap="removeFavorite(item.id)"><text class="btn-icon"><AppIcon name="trash" /></text>删除</button>
+    <view class="fold-section" :class="{ open: favoritesOpen }">
+      <view class="fold-head" hover-class="fold-head-hover" hover-stay-time="80" data-testid="favorite-section-toggle" @tap="toggleFavorites">
+        <view class="fold-title">
+          <text class="fold-icon"><AppIcon name="bookmark" /></text>
+          <view class="fold-copy">
+            <view class="fold-name-row">
+              <text class="section-title">我的收藏</text>
+              <text class="count-pill">{{ favorites.length }} 条</text>
+            </view>
+            <text class="caption fold-summary">{{ favoritesSummary }}</text>
+          </view>
+        </view>
+        <view class="fold-action">
+          <text>{{ favoritesOpen ? '收起' : '展开' }}</text>
+          <AppIcon name="chevronRight" />
+        </view>
       </view>
-      <text class="section-title">{{ item.title }}</text>
-      <text class="body">{{ item.content }}</text>
+      <view v-if="favoritesOpen" class="fold-body">
+        <view class="search-bar">
+          <text class="search-icon"><AppIcon name="search" /></text>
+          <input class="input search-input" v-model="favoriteQuery" confirm-type="search" placeholder="搜索标题、内容或类型" aria-label="搜索收藏素材" data-testid="favorite-search-input" @confirm="searchFavorites" />
+          <button class="ghost-btn small" :disabled="loadingFavorites" @tap="searchFavorites">搜索</button>
+        </view>
+        <view v-for="item in favorites" :key="item.id" class="card compact-record-card">
+          <view class="row between">
+            <text class="tag">{{ favoriteTypeText(item.type) }}</text>
+            <button class="ghost-btn mini danger" @tap="removeFavorite(item.id)"><text class="btn-icon"><AppIcon name="trash" /></text>删除</button>
+          </view>
+          <text class="section-title">{{ item.title }}</text>
+          <text class="body record-preview">{{ item.content }}</text>
+        </view>
+        <AppState
+          v-if="!loading && !error && favorites.length === 0"
+          type="empty"
+          title="还没有收藏"
+          message="可以把常用沟通模板和 AI 夸夸保存到这里。"
+        />
+        <button v-if="favoritesHasMore" class="ghost-btn load-more" :disabled="loadingFavorites" @tap="loadMoreFavorites">
+          {{ loadingFavorites ? '加载中...' : '加载更多收藏' }}
+        </button>
+      </view>
     </view>
-    <AppState
-      v-if="!loading && !error && favorites.length === 0"
-      type="empty"
-      title="还没有收藏"
-      message="可以把常用沟通模板和 AI 夸夸保存到这里。"
-    />
-    <button v-if="favoritesHasMore" class="ghost-btn load-more" :disabled="loadingFavorites" @tap="loadMoreFavorites">
-      {{ loadingFavorites ? '加载中...' : '加载更多收藏' }}
-    </button>
 
     <view v-if="favoriteFormOpen" class="modal-mask" @tap="closeFavoriteForm">
       <view class="modal-card" @tap.stop>
@@ -95,38 +111,54 @@
       </view>
     </view>
 
-    <view class="section-head row between">
-      <text class="section-title">AI 生成记录</text>
-      <text class="caption">{{ aiLogs.length }} 条</text>
-    </view>
-    <view class="search-bar">
-      <text class="search-icon"><AppIcon name="search" /></text>
-      <input class="input search-input" v-model="aiLogQuery" confirm-type="search" placeholder="搜索输入、输出或安全标记" aria-label="搜索 AI 生成记录" data-testid="ai-log-search-input" @confirm="searchAiLogs" />
-      <button class="ghost-btn small" :disabled="loadingAiLogs" @tap="searchAiLogs">搜索</button>
-    </view>
-    <view v-for="log in aiLogs" :key="log.id" class="card ai-log-card" @tap="openAiLog(log)">
-      <view class="row between">
-        <text class="tag">{{ scenarioText(log.scenario) }}</text>
-        <text class="caption">{{ formatTime(log.createdAt) }}</text>
-      </view>
-      <text class="body">{{ outputPreview(log) }}</text>
-      <view class="row between ai-log-foot">
-        <text class="caption block">安全标记：{{ safetyText(log.safetyLabel) }}</text>
-        <view class="row action-row">
-          <button class="ghost-btn mini" @tap.stop="openAiLog(log)"><text class="btn-icon"><AppIcon name="file" /></text>详情</button>
-          <button class="ghost-btn mini danger" @tap.stop="removeAiLog(log)"><text class="btn-icon"><AppIcon name="trash" /></text>删除</button>
+    <view class="fold-section" :class="{ open: aiLogsOpen }">
+      <view class="fold-head" hover-class="fold-head-hover" hover-stay-time="80" data-testid="ai-log-section-toggle" @tap="toggleAiLogs">
+        <view class="fold-title">
+          <text class="fold-icon ai"><AppIcon name="sparkles" /></text>
+          <view class="fold-copy">
+            <view class="fold-name-row">
+              <text class="section-title">AI 生成记录</text>
+              <text class="count-pill">{{ aiLogs.length }} 条</text>
+            </view>
+            <text class="caption fold-summary">{{ aiLogsSummary }}</text>
+          </view>
+        </view>
+        <view class="fold-action">
+          <text>{{ aiLogsOpen ? '收起' : '展开' }}</text>
+          <AppIcon name="chevronRight" />
         </view>
       </view>
+      <view v-if="aiLogsOpen" class="fold-body">
+        <view class="search-bar">
+          <text class="search-icon"><AppIcon name="search" /></text>
+          <input class="input search-input" v-model="aiLogQuery" confirm-type="search" placeholder="搜索输入、输出或安全标记" aria-label="搜索 AI 生成记录" data-testid="ai-log-search-input" @confirm="searchAiLogs" />
+          <button class="ghost-btn small" :disabled="loadingAiLogs" @tap="searchAiLogs">搜索</button>
+        </view>
+        <view v-for="log in aiLogs" :key="log.id" class="card ai-log-card compact-record-card" @tap="openAiLog(log)">
+          <view class="row between">
+            <text class="tag">{{ scenarioText(log.scenario) }}</text>
+            <text class="caption">{{ formatTime(log.createdAt) }}</text>
+          </view>
+          <text class="body record-preview ai-preview">{{ outputPreview(log) }}</text>
+          <view class="row between ai-log-foot">
+            <text class="caption block">安全标记：{{ safetyText(log.safetyLabel) }}</text>
+            <view class="row action-row">
+              <button class="ghost-btn mini" @tap.stop="openAiLog(log)"><text class="btn-icon"><AppIcon name="file" /></text>详情</button>
+              <button class="ghost-btn mini danger" @tap.stop="removeAiLog(log)"><text class="btn-icon"><AppIcon name="trash" /></text>删除</button>
+            </view>
+          </view>
+        </view>
+        <AppState
+          v-if="!loading && !error && aiLogs.length === 0"
+          type="empty"
+          title="暂无 AI 生成记录"
+          message="生成家校草稿或 AI 夸夸后，会在这里留下复盘记录。"
+        />
+        <button v-if="aiLogsHasMore" class="ghost-btn load-more" :disabled="loadingAiLogs" @tap="loadMoreAiLogs">
+          {{ loadingAiLogs ? '加载中...' : '加载更多 AI 记录' }}
+        </button>
+      </view>
     </view>
-    <AppState
-      v-if="!loading && !error && aiLogs.length === 0"
-      type="empty"
-      title="暂无 AI 生成记录"
-      message="生成家校草稿或 AI 夸夸后，会在这里留下复盘记录。"
-    />
-    <button v-if="aiLogsHasMore" class="ghost-btn load-more" :disabled="loadingAiLogs" @tap="loadMoreAiLogs">
-      {{ loadingAiLogs ? '加载中...' : '加载更多 AI 记录' }}
-    </button>
 
     <view class="section-head row between">
       <text class="section-title">数据与权益</text>
@@ -256,6 +288,8 @@ const profileFormError = ref('')
 const favoriteFormError = ref('')
 const favoriteQuery = ref('')
 const aiLogQuery = ref('')
+const favoritesOpen = ref(false)
+const aiLogsOpen = ref(false)
 const favoritesOffset = ref(0)
 const favoritesHasMore = ref(false)
 const favoritesPageSize = 20
@@ -290,6 +324,18 @@ const syncMessage = computed(() => sync.value.message || '点击刷新云同步�
 const checkoutReady = computed(() => entitlements.value.checkoutStatus === 'ready')
 const notificationReady = computed(() => notificationSettings.value.providerStatus === 'ready')
 const objectStorageReady = computed(() => sync.value.objectStorageStatus === 'ready')
+const favoritesSummary = computed(() => {
+  if (loadingFavorites.value && favorites.value.length === 0) return '正在整理收藏素材'
+  if (favorites.value.length === 0) return '常用模板、夸夸句和班级反馈会收在这里'
+  const item = favorites.value[0]
+  return `${favoriteTypeText(item.type)} · ${item.title || trimPreview(item.content, 18)}`
+})
+const aiLogsSummary = computed(() => {
+  if (loadingAiLogs.value && aiLogs.value.length === 0) return '正在读取最近生成记录'
+  if (aiLogs.value.length === 0) return '生成家校草稿或 AI 夸夸后会自动留痕'
+  const item = aiLogs.value[0]
+  return `${scenarioText(item.scenario)} · ${formatTime(item.createdAt) || trimPreview(outputPreview(item), 18)}`
+})
 const favoriteTypeOptions = [
   { value: 'communication_template', label: '沟通模板' },
   { value: 'ai_praise', label: 'AI夸夸' },
@@ -376,6 +422,14 @@ async function loadMoreAiLogs() {
   } catch (err) {
     showToast(errorMessage(err, 'AI 记录加载失败'))
   }
+}
+
+function toggleFavorites() {
+  favoritesOpen.value = !favoritesOpen.value
+}
+
+function toggleAiLogs() {
+  aiLogsOpen.value = !aiLogsOpen.value
 }
 
 async function mockWechatLogin() {
@@ -749,6 +803,12 @@ function outputPreview(log) {
   return '已生成内容，进入详情后可做质量复盘。'
 }
 
+function trimPreview(value, max = 28) {
+  const text = String(value || '').trim()
+  if (text.length <= max) return text
+  return `${text.slice(0, max)}...`
+}
+
 function formatTime(value) {
   if (!value) return ''
   const date = new Date(value)
@@ -768,6 +828,23 @@ function formatTime(value) {
 .tag-row { flex-wrap: wrap; }
 .material { margin: 20rpx 0; padding: 32rpx; border-radius: 32rpx; background: linear-gradient(145deg,rgba(255,210,229,.82),rgba(255,232,185,.72)); display: flex; flex-direction: column; gap: 22rpx; }
 .material-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
+.fold-section { margin: 20rpx 0; border-radius: 30rpx; background: rgba(255,255,255,.56); border: 1rpx solid rgba(255,255,255,.78); box-shadow: 0 12rpx 28rpx rgba(73,91,146,.06), inset 0 1px 0 rgba(255,255,255,.86); overflow: hidden; }
+.fold-head { min-height: 116rpx; padding: 24rpx 26rpx; display: flex; align-items: center; justify-content: space-between; gap: 18rpx; transition: background-color .2s ease; }
+.fold-head-hover { background: rgba(245,249,255,.72); }
+.fold-title { flex: 1; min-width: 0; display: flex; align-items: center; gap: 18rpx; }
+.fold-icon { flex: 0 0 auto; width: 58rpx; height: 58rpx; border-radius: 20rpx; color: #5263a2; background: rgba(245,249,255,.94); border: 1px solid rgba(97,116,166,.10); display: flex; align-items: center; justify-content: center; font-size: 29rpx; box-shadow: inset 0 1px 0 rgba(255,255,255,.90); }
+.fold-icon.ai { color: #6267e9; background: rgba(241,243,255,.94); }
+.fold-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
+.fold-name-row { display: flex; align-items: center; gap: 12rpx; min-width: 0; }
+.count-pill { flex: 0 0 auto; padding: 6rpx 14rpx; border-radius: 999rpx; color: #7d86a0; background: rgba(255,255,255,.76); border: 1rpx solid rgba(97,116,166,.08); font-size: 21rpx; line-height: 1.2; font-weight: 900; }
+.fold-summary { margin: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fold-action { flex: 0 0 auto; min-width: 116rpx; height: 58rpx; padding: 0 18rpx; border-radius: 999rpx; color: #52627d; background: rgba(255,255,255,.74); border: 1px solid rgba(97,116,166,.10); display: flex; align-items: center; justify-content: center; gap: 8rpx; font-size: 22rpx; font-weight: 900; box-sizing: border-box; }
+.fold-action .app-icon { width: 26rpx; height: 26rpx; transition: transform .2s ease; }
+.fold-section.open .fold-action .app-icon { transform: rotate(90deg); }
+.fold-body { padding: 0 20rpx 22rpx; display: flex; flex-direction: column; gap: 16rpx; }
+.compact-record-card { margin: 0; padding: 26rpx; border-radius: 24rpx; box-shadow: 0 10rpx 24rpx rgba(73,91,146,.06), inset 0 1px 0 rgba(255,255,255,.92); }
+.record-preview { display: -webkit-box; overflow: hidden; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.ai-preview { -webkit-line-clamp: 4; }
 	.boundary-card { display: flex; flex-direction: column; gap: 16rpx; }
 	.danger-zone { background: rgba(255,241,242,.9); }
 	.boundary-meta { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; padding-top: 14rpx; border-top: 1px solid rgba(8,145,178,.12); }
@@ -780,7 +857,7 @@ function formatTime(value) {
 .action-row { gap: 10rpx; flex-wrap: wrap; justify-content: flex-end; }
 .search-bar { display: flex; gap: 12rpx; align-items: center; }
 .search-input { flex: 1; min-width: 0; }
-.load-more { margin: 8rpx 0 28rpx; }
+.load-more { margin: 2rpx 0 4rpx; }
 .form-grid { display: flex; flex-direction: column; gap: 18rpx; }
 .boundary-dialog { gap: 26rpx; }
 .boundary-list { display: flex; flex-direction: column; gap: 16rpx; }
@@ -790,4 +867,8 @@ function formatTime(value) {
 .textarea.short { min-height: 140rpx; }
 .role-toggle { min-height: 78rpx; border-radius: 999rpx; background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(250,253,255,.84)); color: #506075; font-weight: 900; border: 1px solid rgba(97,116,166,.16); box-shadow: 0 8rpx 18rpx rgba(73,91,146,.08), inset 0 1px 0 rgba(255,255,255,.96); }
 .role-toggle.active { color: #fff; border-color: rgba(255,255,255,.42); background: linear-gradient(135deg,#6f86df,#52b8cf); box-shadow: 0 12rpx 22rpx rgba(74,111,190,.18), inset 0 1px 0 rgba(255,255,255,.30); }
+@media (max-width: 380px) {
+  .fold-head { align-items: flex-start; }
+  .fold-action { min-width: 96rpx; padding: 0 14rpx; }
+}
 </style>
