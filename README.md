@@ -107,6 +107,6 @@ npm run test:h5-smoke
 
 ## 当前边界
 
-- 后端已提供 `/api/v1/auth/wechat` 做微信 code 换 openid，并按 openid 查找或创建用户；小程序端会优先走真实微信登录，H5/本地调试可通过显式“开发登录”按钮调用 `/api/v1/auth/wechat/mock`。业务接口默认要求 Bearer session，session 会写入服务端 `auth_sessions` 并可通过 `/api/v1/auth/logout` 撤销；仅显式开启 `AUTH_ALLOW_DEV_USER=true` 时可用非空且已存在的 `X-User-ID` 做本地开发鉴权。`APP_ENV=prod/production` 启动时会强制要求 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`、至少 32 字符的 `SESSION_SECRET` 与具体的 `CORS_ALLOWED_ORIGINS`，并拒绝 `AUTH_ALLOW_DEV_USER=true`、`AUTH_ALLOW_MOCK_LOGIN=true` 或通配 CORS；生产前端不要设置 `VITE_ENABLE_MOCK_LOGIN=true`。
+- 后端已提供 `/api/v1/auth/wechat` 做 App 微信授权 code 换 openid，并按 openid 查找或创建用户；App 端会优先走真实微信登录，H5/本地调试可通过显式“开发登录”按钮调用 `/api/v1/auth/wechat/mock`。业务接口默认要求 Bearer session，session 会写入服务端 `auth_sessions` 并可通过 `/api/v1/auth/logout` 撤销；仅显式开启 `AUTH_ALLOW_DEV_USER=true` 时可用非空且已存在的 `X-User-ID` 做本地开发鉴权。`APP_ENV=prod/production` 启动时会强制要求 `WECHAT_APP_ID`、`WECHAT_APP_SECRET`、至少 32 字符的 `SESSION_SECRET` 与具体的 `CORS_ALLOWED_ORIGINS`，并拒绝 `AUTH_ALLOW_DEV_USER=true`、`AUTH_ALLOW_MOCK_LOGIN=true` 或通配 CORS；生产前端不要设置 `VITE_ENABLE_MOCK_LOGIN=true`。
 - 推送通知、支付、对象存储和真实生产多副本部署尚未进入当前工程阶段。
 - 完整 Docker 镜像构建依赖基础镜像可拉取；如果本机 Docker Hub 不可用，可先跑 `verify-all.ps1 -IncludeDockerLogic` 验证 PostgreSQL/Redis/API 主业务逻辑，镜像构建由 CI 兜底。

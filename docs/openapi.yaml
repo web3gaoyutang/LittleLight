@@ -60,8 +60,8 @@ paths:
     post:
       tags: [Auth]
       security: []
-      summary: WeChat Mini Program login
-      description: 使用微信小程序登录 code 换取 openid，按 openid 查找或创建用户，并返回服务端 session token。
+      summary: WeChat App login
+      description: 使用 App 微信授权 code 换取 openid，按 openid 查找或创建用户，并返回服务端 session token。
       requestBody:
         required: true
         content:
@@ -1007,7 +1007,7 @@ components:
         code:
           type: string
           maxLength: 512
-          description: 微信小程序登录 code；mock 端点中会用于生成稳定模拟 openid。
+          description: App 微信授权 code；mock 端点中会用于生成稳定模拟 openid。
         nickName:
           type: string
           maxLength: 80

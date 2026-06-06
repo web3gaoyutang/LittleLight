@@ -328,10 +328,10 @@ func (s *Server) exchangeWechatCode(ctx context.Context, code string) (string, e
 	if appID == "" || secret == "" {
 		return "", errWechatNotConfigured
 	}
-	endpoint := "https://api.weixin.qq.com/sns/jscode2session?" + url.Values{
+	endpoint := "https://api.weixin.qq.com/sns/oauth2/access_token?" + url.Values{
 		"appid":      []string{appID},
 		"secret":     []string{secret},
-		"js_code":    []string{code},
+		"code":       []string{code},
 		"grant_type": []string{"authorization_code"},
 	}.Encode()
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)

@@ -317,7 +317,7 @@ AI 生成记录。
 
 基础路径：`/api/v1`
 
-鉴权：当前提供 `POST /api/v1/auth/wechat` 作为真实微信小程序 code 登录入口，后端用 code 换取 openid，按 openid 查找或创建用户，并返回服务端签名的 `sessionToken`。session 明文只返回给客户端，服务端保存 token hash、过期时间和撤销状态；业务请求会同时校验签名、过期时间和服务端 session 状态，前端退出时调用 `POST /api/v1/auth/logout` 撤销当前 session。前端后续请求优先携带 `Authorization: Bearer <sessionToken>`，遇到 401 会清理本地登录态并回到登录页。本地/H5 调试可通过显式开发登录入口调用 `POST /api/v1/auth/wechat/mock` 生成稳定模拟 openid；只有显式开启 `AUTH_ALLOW_DEV_USER=true` 时才允许 `X-User-ID` 开发鉴权，且请求必须携带非空、已存在的用户 ID，不再自动落到默认种子用户或为任意 header 创建账号空间。`APP_ENV=prod/production` 启动时会强制关闭开发鉴权和模拟登录，并要求真实微信配置、强 session secret 与具体 CORS 白名单；`APP_ENV=docker` 是本地容器开发环境，默认关闭 `X-User-ID` 但保留模拟登录。
+鉴权：当前提供 `POST /api/v1/auth/wechat` 作为真实 App 微信授权 code 登录入口，后端用 code 换取 openid，按 openid 查找或创建用户，并返回服务端签名的 `sessionToken`。session 明文只返回给客户端，服务端保存 token hash、过期时间和撤销状态；业务请求会同时校验签名、过期时间和服务端 session 状态，前端退出时调用 `POST /api/v1/auth/logout` 撤销当前 session。前端后续请求优先携带 `Authorization: Bearer <sessionToken>`，遇到 401 会清理本地登录态并回到登录页。本地/H5 调试可通过显式开发登录入口调用 `POST /api/v1/auth/wechat/mock` 生成稳定模拟 openid；只有显式开启 `AUTH_ALLOW_DEV_USER=true` 时才允许 `X-User-ID` 开发鉴权，且请求必须携带非空、已存在的用户 ID，不再自动落到默认种子用户或为任意 header 创建账号空间。`APP_ENV=prod/production` 启动时会强制关闭开发鉴权和模拟登录，并要求真实微信配置、强 session secret 与具体 CORS 白名单；`APP_ENV=docker` 是本地容器开发环境，默认关闭 `X-User-ID` 但保留模拟登录。
 
 机器可读契约：`docs/openapi.yaml`。后端路由、前端 `app/src/api/client.js` 和手工检查清单应以该文件保持一致。
 

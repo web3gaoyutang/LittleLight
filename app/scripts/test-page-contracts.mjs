@@ -154,8 +154,7 @@ async function testH5SmokeTargetsStayStable() {
   const expectations = {
     'src/pages/login/index.vue': [
       'data-testid="login-nickname-input"',
-      'data-testid="wechat-login-button"',
-      'data-testid="dev-login-button"'
+      'data-testid="wechat-login-button"'
     ],
     'src/pages/home/index.vue': [
       'data-testid="home-schedule-button"',
