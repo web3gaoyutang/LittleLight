@@ -24,6 +24,24 @@ type Entitlements struct {
 	CheckoutMessage string   `json:"checkoutMessage"`
 }
 
+type BillingCheckoutRequest struct {
+	Plan     string `json:"plan"`
+	Provider string `json:"provider"`
+	Mock     bool   `json:"mock"`
+}
+
+type BillingCheckoutResult struct {
+	OrderID      string       `json:"orderId"`
+	Plan         string       `json:"plan"`
+	Provider     string       `json:"provider"`
+	AmountCents  int          `json:"amountCents"`
+	Currency     string       `json:"currency"`
+	Status       string       `json:"status"`
+	Message      string       `json:"message"`
+	Profile      UserProfile  `json:"profile"`
+	Entitlements Entitlements `json:"entitlements"`
+}
+
 type NotificationSettings struct {
 	ReminderPolicy     string `json:"reminderPolicy"`
 	ProviderStatus     string `json:"providerStatus"`

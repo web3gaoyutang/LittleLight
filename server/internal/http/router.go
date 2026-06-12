@@ -440,15 +440,51 @@ func (s *Server) billingEntitlements(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) billingCheckout(w http.ResponseWriter, r *http.Request) {
-	profile, err := s.store.UserProfile(r.Context(), currentUserID(r))
+	var payload domain.BillingCheckoutRequest
+	if !decodeJSON(w, r, &payload) {
+		return
+	}
+	plan := strings.TrimSpace(payload.Plan)
+	if !oneOf(plan, "monthly", "yearly") {
+		validationError(w, "plan must be monthly or yearly")
+		return
+	}
+	provider := strings.TrimSpace(payload.Provider)
+	if provider == "" {
+		provider = "wechat"
+	}
+	if provider != "wechat" {
+		validationError(w, "provider must be wechat")
+		return
+	}
+	if !payload.Mock {
+		validationError(w, "mock must be true until real WeChat Pay is configured")
+		return
+	}
+	userID := currentUserID(r)
+	profile, err := s.store.UserProfile(r.Context(), userID)
 	if err != nil {
 		writeResult(w, nil, err)
 		return
 	}
-	entitlements := entitlementsForProfile(profile)
-	entitlements.CheckoutStatus = "unavailable"
-	entitlements.CheckoutMessage = "支付通道尚未配置，当前不会创建真实订单或变更会员状态。"
-	writeJSON(w, http.StatusOK, entitlements)
+	profile.ProStatus = "pro"
+	updated, err := s.store.UpdateUserProfile(r.Context(), userID, profile)
+	if err != nil {
+		writeResult(w, nil, err)
+		return
+	}
+	entitlements := entitlementsForProfile(updated)
+	writeJSON(w, http.StatusOK, domain.BillingCheckoutResult{
+		OrderID:      fmt.Sprintf("mock_wx_%s_%d", plan, time.Now().UnixMilli()),
+		Plan:         plan,
+		Provider:     provider,
+		AmountCents:  billingPlanAmountCents(plan),
+		Currency:     "CNY",
+		Status:       "paid",
+		Message:      "模拟微信支付成功，当前账号已开通微光 Pro。",
+		Profile:      updated,
+		Entitlements: entitlements,
+	})
 }
 
 func (s *Server) notificationSettings(w http.ResponseWriter, r *http.Request) {
@@ -506,10 +542,17 @@ func entitlementsForProfile(profile domain.UserProfile) domain.Entitlements {
 	return domain.Entitlements{
 		Plan:            plan,
 		Status:          status,
-		Features:        []string{"课程与待办管理", "家长档案与沟通记录", "AI 草稿审计记录", "Excel/CSV 导入预览"},
-		CheckoutStatus:  "not_configured",
-		CheckoutMessage: "支付通道尚未配置，续费入口只展示权益状态，不会创建订单。",
+		Features:        []string{"AI 助手高频使用", "课表与待办同步", "家校沟通素材库", "AI 生成记录审计", "账号数据导出", "优先体验新功能"},
+		CheckoutStatus:  "ready",
+		CheckoutMessage: "当前为模拟微信支付流程，不会发起真实扣款；接入正式商户号后可替换为真实微信支付。",
 	}
+}
+
+func billingPlanAmountCents(plan string) int {
+	if plan == "yearly" {
+		return 20000
+	}
+	return 2000
 }
 
 func notificationSettingsForProfile(profile domain.UserProfile) domain.NotificationSettings {

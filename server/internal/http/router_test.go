@@ -1087,11 +1087,58 @@ func TestRoutesProductBoundaryEndpoints(t *testing.T) {
 		t.Fatalf("unexpected entitlements: %+v", entitlements)
 	}
 
-	response = performRequestWithUser(t, server, http.MethodPost, "/api/v1/billing/checkout", nil, userID)
+	response = performRequestWithUser(t, server, http.MethodPost, "/api/v1/billing/checkout", map[string]any{
+		"plan":     "yearly",
+		"provider": "wechat",
+		"mock":     true,
+	}, userID)
+	assertStatus(t, response, http.StatusOK)
+	var checkout domain.BillingCheckoutResult
+	decodeResponse(t, response, &checkout)
+	if checkout.Status != "paid" || checkout.Plan != "yearly" || checkout.Provider != "wechat" || checkout.AmountCents != 20000 {
+		t.Fatalf("checkout should return a simulated paid WeChat order, got %+v", checkout)
+	}
+	if checkout.Profile.ProStatus != "pro" || checkout.Entitlements.Plan != "pro" {
+		t.Fatalf("checkout should activate Pro entitlements, got %+v", checkout)
+	}
+
+	monthlyLogin := performRequest(t, server, http.MethodPost, "/api/v1/auth/wechat/mock", map[string]any{
+		"code":     "monthly-checkout",
+		"nickName": "月费测试老师",
+	})
+	assertStatus(t, monthlyLogin, http.StatusOK)
+	var monthlySession domain.WechatSession
+	decodeResponse(t, monthlyLogin, &monthlySession)
+	response = performRequestWithUser(t, server, http.MethodPost, "/api/v1/billing/checkout", map[string]any{
+		"plan":     "monthly",
+		"provider": "wechat",
+		"mock":     true,
+	}, monthlySession.UserID)
+	assertStatus(t, response, http.StatusOK)
+	decodeResponse(t, response, &checkout)
+	if checkout.Plan != "monthly" || checkout.AmountCents != 2000 || checkout.Profile.ProStatus != "pro" {
+		t.Fatalf("monthly checkout should activate Pro at 20 yuan, got %+v", checkout)
+	}
+
+	response = performRequestWithUser(t, server, http.MethodPost, "/api/v1/billing/checkout", map[string]any{
+		"plan":     "weekly",
+		"provider": "wechat",
+		"mock":     true,
+	}, userID)
+	assertStatus(t, response, http.StatusBadRequest)
+
+	response = performRequestWithUser(t, server, http.MethodPost, "/api/v1/billing/checkout", map[string]any{
+		"plan":     "monthly",
+		"provider": "wechat",
+		"mock":     false,
+	}, userID)
+	assertStatus(t, response, http.StatusBadRequest)
+
+	response = performRequestWithUser(t, server, http.MethodGet, "/api/v1/billing/entitlements", nil, userID)
 	assertStatus(t, response, http.StatusOK)
 	decodeResponse(t, response, &entitlements)
-	if entitlements.CheckoutStatus != "unavailable" {
-		t.Fatalf("checkout should be an explicit unavailable boundary, got %+v", entitlements)
+	if entitlements.Plan != "pro" || entitlements.Status != "pro" {
+		t.Fatalf("entitlements should stay Pro after simulated checkout, got %+v", entitlements)
 	}
 
 	response = performRequestWithUser(t, server, http.MethodPut, "/api/v1/notifications/settings", map[string]any{

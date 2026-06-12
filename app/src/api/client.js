@@ -220,7 +220,7 @@ export const api = {
   createFavorite: (data) => request('/me/favorites', { method: 'POST', data }),
   deleteFavorite: (id) => request(`/me/favorites/${id}`, { method: 'DELETE' }),
   entitlements: () => request('/billing/entitlements'),
-  checkout: () => request('/billing/checkout', { method: 'POST' }),
+  checkout: (data = {}) => request('/billing/checkout', { method: 'POST', data }),
   notificationSettings: () => request('/notifications/settings'),
   updateNotificationSettings: (data) => request('/notifications/settings', { method: 'PUT', data }),
   syncStatus: () => request('/sync/status'),

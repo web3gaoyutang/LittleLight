@@ -188,8 +188,18 @@ func TestMemoryStoreExportUserDataIncludesOwnedDataAndAIActions(t *testing.T) {
 func TestMemoryStoreDashboardAndReminderCompletion(t *testing.T) {
 	store := NewMemoryStore()
 	ctx := context.Background()
+	day := time.Now().AddDate(0, 0, 1)
+	if _, err := store.CreateCourse(ctx, testUserID, domain.Course{Title: "稳定晚课", ClassName: "测试班", Weekday: int(day.Weekday()), StartTime: "23:30", EndTime: "23:59"}); err != nil {
+		t.Fatalf("create stable course: %v", err)
+	}
+	if _, err := store.CreateReminder(ctx, testUserID, domain.Reminder{Title: "稳定提醒一", Category: "测试", RemindAt: time.Date(day.Year(), day.Month(), day.Day(), 10, 0, 0, 0, time.Local), Note: "测试"}); err != nil {
+		t.Fatalf("create stable reminder: %v", err)
+	}
+	if _, err := store.CreateReminder(ctx, testUserID, domain.Reminder{Title: "稳定提醒二", Category: "测试", RemindAt: time.Date(day.Year(), day.Month(), day.Day(), 16, 0, 0, 0, time.Local), Note: "测试"}); err != nil {
+		t.Fatalf("create stable reminder: %v", err)
+	}
 
-	summary, err := store.Dashboard(ctx, testUserID, time.Now())
+	summary, err := store.Dashboard(ctx, testUserID, day)
 	if err != nil {
 		t.Fatalf("dashboard: %v", err)
 	}
@@ -206,7 +216,7 @@ func TestMemoryStoreDashboardAndReminderCompletion(t *testing.T) {
 		t.Fatalf("expected no due seeded follow-ups today, got %+v", summary)
 	}
 
-	reminder, err := store.CreateReminder(ctx, testUserID, domain.Reminder{Title: "测试提醒", Category: "个人事项", RemindAt: time.Now().Add(time.Hour), Note: "测试"})
+	reminder, err := store.CreateReminder(ctx, testUserID, domain.Reminder{Title: "测试提醒", Category: "个人事项", RemindAt: time.Date(day.Year(), day.Month(), day.Day(), 18, 0, 0, 0, time.Local), Note: "测试"})
 	if err != nil {
 		t.Fatalf("create reminder: %v", err)
 	}
@@ -216,7 +226,7 @@ func TestMemoryStoreDashboardAndReminderCompletion(t *testing.T) {
 	if err := store.CompleteReminder(ctx, testUserID, reminder.ID); err != nil {
 		t.Fatalf("complete reminder: %v", err)
 	}
-	summary, err = store.Dashboard(ctx, testUserID, time.Now())
+	summary, err = store.Dashboard(ctx, testUserID, day)
 	if err != nil {
 		t.Fatalf("dashboard after reminder completion: %v", err)
 	}
@@ -236,7 +246,7 @@ func TestMemoryStoreDashboardAndReminderCompletion(t *testing.T) {
 		t.Fatalf("expected completed reminder to be excluded from pending count, got %+v", summary)
 	}
 
-	updated, err := store.UpdateReminder(ctx, testUserID, reminder.ID, domain.Reminder{Title: "更新后的提醒", Category: "个人事项", RemindAt: time.Now().Add(2 * time.Hour), Status: "pending", Note: "已编辑"})
+	updated, err := store.UpdateReminder(ctx, testUserID, reminder.ID, domain.Reminder{Title: "更新后的提醒", Category: "个人事项", RemindAt: time.Date(day.Year(), day.Month(), day.Day(), 19, 0, 0, 0, time.Local), Status: "pending", Note: "已编辑"})
 	if err != nil {
 		t.Fatalf("update reminder: %v", err)
 	}

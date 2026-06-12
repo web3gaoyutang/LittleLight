@@ -418,7 +418,7 @@ async function testBoundaryEndpointHelpers() {
   nextRequest = { statusCode: 200, data: { ok: true } }
 
   await api.entitlements()
-  await api.checkout()
+  await api.checkout({ plan: 'monthly', provider: 'wechat', mock: true })
   await api.notificationSettings()
   await api.updateNotificationSettings({ reminderPolicy: 'normal' })
   await api.syncStatus()
@@ -427,6 +427,7 @@ async function testBoundaryEndpointHelpers() {
   assert.equal(calls[0].options.method, 'GET')
   assert.equal(calls[1].options.url, '/api/v1/billing/checkout')
   assert.equal(calls[1].options.method, 'POST')
+  assert.deepEqual(calls[1].options.data, { plan: 'monthly', provider: 'wechat', mock: true })
   assert.equal(calls[2].options.url, '/api/v1/notifications/settings')
   assert.equal(calls[3].options.url, '/api/v1/notifications/settings')
   assert.equal(calls[3].options.method, 'PUT')

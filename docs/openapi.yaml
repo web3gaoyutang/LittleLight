@@ -220,15 +220,21 @@ paths:
   /api/v1/billing/checkout:
     post:
       tags: [Billing]
-      summary: Request a billing checkout
-      description: Returns an explicit unavailable status until a real payment provider is configured.
+      summary: Request a simulated billing checkout
+      description: Simulates WeChat Pay for Pro membership during MVP; no real charge is created.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BillingCheckoutRequest"
       responses:
         "200":
-          description: Checkout boundary status
+          description: Simulated checkout result
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Entitlements"
+                $ref: "#/components/schemas/BillingCheckoutResult"
   /api/v1/notifications/settings:
     get:
       tags: [Notifications]
@@ -1079,6 +1085,44 @@ components:
           enum: [not_configured, unavailable, ready]
         checkoutMessage:
           type: string
+    BillingCheckoutRequest:
+      type: object
+      required: [plan, provider, mock]
+      properties:
+        plan:
+          type: string
+          enum: [monthly, yearly]
+        provider:
+          type: string
+          enum: [wechat]
+        mock:
+          type: boolean
+          description: Must be true until real WeChat Pay is configured.
+    BillingCheckoutResult:
+      type: object
+      properties:
+        orderId:
+          type: string
+        plan:
+          type: string
+          enum: [monthly, yearly]
+        provider:
+          type: string
+          enum: [wechat]
+        amountCents:
+          type: integer
+        currency:
+          type: string
+          example: CNY
+        status:
+          type: string
+          enum: [paid]
+        message:
+          type: string
+        profile:
+          $ref: "#/components/schemas/UserProfile"
+        entitlements:
+          $ref: "#/components/schemas/Entitlements"
     NotificationSettings:
       allOf:
         - $ref: "#/components/schemas/NotificationSettingsInput"

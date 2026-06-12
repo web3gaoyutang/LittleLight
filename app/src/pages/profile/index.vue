@@ -8,15 +8,43 @@
       <button class="ghost-btn small" @tap="openProfileForm"><text class="btn-icon"><AppIcon name="settings" /></text>编辑资料</button>
     </view>
 
-    <view class="card profile">
-      <view class="avatar">{{ avatarText }}</view>
+    <view class="card profile" :class="{ proProfile: isProMember }">
+      <view class="avatar" :class="{ proAvatar: isProMember }">
+        <text>{{ avatarText }}</text>
+        <text v-if="isProMember" class="avatar-crown"><AppIcon name="crown" /></text>
+      </view>
       <view class="profile-main">
-        <text class="section-title">{{ profile.name || '未设置姓名' }}</text>
+        <view class="profile-name-row">
+          <text class="section-title">{{ profile.name || '未设置姓名' }}</text>
+          <text v-if="isProMember" class="pro-badge"><AppIcon name="crown" />Pro</text>
+        </view>
         <text class="body block">{{ profile.school || '未设置学校' }} · {{ profile.subject || '学科' }} · {{ roleText }}</text>
         <view class="row tag-row">
           <text class="tag">{{ reminderText }}</text>
-          <text class="tag">{{ proText }}</text>
+          <text class="tag" :class="{ proTag: isProMember }">{{ proText }}</text>
         </view>
+      </view>
+    </view>
+
+    <view class="member-card" :class="{ pro: isProMember }" data-testid="profile-member-card" @tap="openBenefitsPage">
+      <view class="member-orbit" aria-hidden="true">
+        <view class="orbit-dot one"></view>
+        <view class="orbit-dot two"></view>
+      </view>
+      <view class="member-top row between">
+        <view class="member-title-block">
+          <text class="member-kicker">{{ isProMember ? '专属会员' : '会员中心' }}</text>
+          <text class="member-title">{{ isProMember ? '微光 Pro 已生效' : '开通微光 Pro' }}</text>
+        </view>
+        <text class="member-mark"><AppIcon name="crown" /></text>
+      </view>
+      <text class="member-copy">{{ isProMember ? 'AI 助手、课表同步、素材库和数据能力已为你解锁。' : '月费 20 元，年费 200 元，解锁 AI 助手、同步和高级权益。' }}</text>
+      <view class="member-foot row between">
+        <text class="member-price">{{ isProMember ? proText : '¥20/月 · ¥200/年' }}</text>
+        <button class="member-btn" @tap.stop="openBenefitsPage">
+          {{ isProMember ? '查看权益' : '立即开通' }}
+          <text class="member-btn-icon"><AppIcon name="chevronRight" /></text>
+        </button>
       </view>
     </view>
 
@@ -162,17 +190,17 @@
 
     <view class="section-head row between">
       <text class="section-title">数据与权益</text>
-      <button class="ghost-btn small" @tap="showBenefits"><text class="btn-icon"><AppIcon name="crown" /></text>查看权益</button>
+      <button class="ghost-btn small" @tap="openBenefitsPage"><text class="btn-icon"><AppIcon name="crown" /></text>会员权益</button>
     </view>
-    <view class="card boundary-card" @tap="showBenefits">
+    <view class="card boundary-card pro-boundary" @tap="openBenefitsPage">
       <view class="row between">
         <text class="section-title">微光 Pro</text>
-        <text class="tag" :class="{ mutedTag: !checkoutReady }">{{ entitlementText }}</text>
+        <text class="tag" :class="{ proTag: isProMember, mutedTag: !isProMember }">{{ entitlementText }}</text>
       </view>
       <text class="body">{{ entitlementMessage }}</text>
       <view class="boundary-meta">
-        <text class="caption">支付：{{ checkoutReady ? '已接入' : '未接入' }}</text>
-        <button class="ghost-btn mini" @tap.stop="showBenefits"><text class="btn-icon"><AppIcon name="info" /></text>查看状态</button>
+        <text class="caption">支付：模拟微信支付</text>
+        <button class="ghost-btn mini" @tap.stop="openBenefitsPage"><text class="btn-icon"><AppIcon name="arrowUpRight" /></text>{{ isProMember ? '查看权益' : '去开通' }}</button>
       </view>
     </view>
     <view class="card boundary-card" @tap="showNotificationStatus">
@@ -254,7 +282,7 @@
             </view>
           </view>
         </view>
-        <button class="primary-btn" @tap="closeBoundaryDialog">{{ boundaryDialogActionText }}</button>
+        <button class="primary-btn" @tap="handleBoundaryDialogAction">{{ boundaryDialogActionText }}</button>
       </view>
     </view>
   </view>
@@ -309,6 +337,7 @@ const showDevLogin = api.isDevAuthAvailable()
 const avatarText = computed(() => (profile.value.name || '微').slice(0, 1))
 const roleText = computed(() => profile.value.isHeadTeacher ? `${profile.value.stage || '学段'}班主任` : (profile.value.stage || '任课老师'))
 const proText = computed(() => ({ free: '免费版', trial: 'Pro 试用', pro: 'Pro 已开通', expired: 'Pro 已过期' })[profile.value.proStatus] || '免费版')
+const isProMember = computed(() => profile.value.proStatus === 'pro' || profile.value.proStatus === 'trial' || entitlements.value.plan === 'pro')
 const reminderText = computed(() => profile.value.reminderPolicy === 'low_interrupt' ? '低打扰提醒' : '普通提醒')
 const loginText = computed(() => {
   if (wechatSession.value?.openId) return `已登录：${wechatSession.value.openId}`
@@ -321,7 +350,6 @@ const notificationText = computed(() => notificationSettings.value.reminderPolic
 const notificationMessage = computed(() => notificationSettings.value.message || '点击切换普通提醒与低打扰提醒策略。')
 const syncText = computed(() => ({ local_persistence: '账号内保存', not_configured: '未配置' })[sync.value.cloudSyncStatus] || '待检查')
 const syncMessage = computed(() => sync.value.message || '点击刷新云同步、对象存储和账号数据状态。')
-const checkoutReady = computed(() => entitlements.value.checkoutStatus === 'ready')
 const notificationReady = computed(() => notificationSettings.value.providerStatus === 'ready')
 const objectStorageReady = computed(() => sync.value.objectStorageStatus === 'ready')
 const favoritesSummary = computed(() => {
@@ -608,10 +636,14 @@ async function showBenefits() {
   if (!entitlements.value.features?.length) await loadBoundaries()
   openBoundaryDialog({
     title: '微光 Pro 权益',
-    message: entitlements.value.checkoutMessage || '当前仅展示账号权益状态；支付通道接入前不会创建真实订单或变更会员状态。',
+    message: entitlements.value.checkoutMessage || '当前支持模拟微信支付，正式商户号接入后会替换为真实支付。',
     items: entitlementItems(),
-    actionText: '知道了'
+    actionText: '去权益页'
   })
+}
+
+function openBenefitsPage() {
+  uni.navigateTo({ url: '/pages/profile/pro-benefits' })
 }
 
 async function showSyncStatus() {
@@ -687,12 +719,18 @@ function closeBoundaryDialog() {
   boundaryDialogOpen.value = false
 }
 
+function handleBoundaryDialogAction() {
+  const shouldOpenBenefits = boundaryDialogTitle.value === '微光 Pro 权益' && boundaryDialogActionText.value === '去权益页'
+  closeBoundaryDialog()
+  if (shouldOpenBenefits) openBenefitsPage()
+}
+
 function entitlementItems() {
-  const features = entitlements.value.features?.length ? entitlements.value.features : ['AI 沟通与安全审计', '课表和名单导入预览', '家长档案与素材库']
+  const features = entitlements.value.features?.length ? entitlements.value.features : ['AI 助手高频使用', '课表与待办同步', '家校沟通素材库']
   return [
     { label: '当前方案', status: entitlementText.value, detail: entitlements.value.status ? `账号权益状态：${proText.value}` : '当前账号按免费版能力运行。' },
-    { label: '支付入口', status: checkoutStatusText(entitlements.value.checkoutStatus), detail: entitlements.value.checkoutMessage || '支付 provider 未配置前只展示状态，不会扣费。' },
-    ...features.map((feature) => ({ label: feature, status: 'MVP', detail: '已纳入当前账号能力或当前阶段范围，不代表付费闭环已接入。' }))
+    { label: '支付入口', status: checkoutStatusText(entitlements.value.checkoutStatus), detail: entitlements.value.checkoutMessage || '当前为模拟微信支付，不会真实扣款。' },
+    ...features.map((feature) => ({ label: feature, status: 'Pro', detail: '开通后纳入当前账号权益，模拟支付成功会立即生效。' }))
   ]
 }
 
@@ -820,12 +858,52 @@ function formatTime(value) {
 <style src="../../static/common.css"></style>
 <style scoped>
 .header, .section-head { padding: 0 4rpx 14rpx; }
-.profile { display: flex; gap: 24rpx; align-items: center; }
+.profile { display: flex; gap: 24rpx; align-items: center; position: relative; overflow: hidden; }
+.profile.proProfile {
+  border-color: rgba(255,255,255,.86);
+  background:
+    radial-gradient(70% 90% at 100% 0%, rgba(255, 207, 108, .34), transparent 52%),
+    linear-gradient(145deg, rgba(255,255,255,.86), rgba(246,251,255,.56));
+}
 .profile-main { flex: 1; min-width: 0; }
+.profile-name-row { min-width: 0; display: flex; align-items: center; gap: 12rpx; flex-wrap: wrap; }
 .login-card { background: rgba(255,255,255,.72); }
-.avatar { width: 112rpx; height: 112rpx; border-radius: 32rpx; background: linear-gradient(145deg,#758ce7,#64bfd1); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 44rpx; font-weight: 950; box-shadow: 0 18rpx 34rpx rgba(89,102,209,.20); }
+.avatar { width: 112rpx; height: 112rpx; border-radius: 32rpx; background: linear-gradient(145deg,#758ce7,#64bfd1); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 44rpx; font-weight: 950; box-shadow: 0 18rpx 34rpx rgba(89,102,209,.20); position: relative; }
+.avatar.proAvatar { background: linear-gradient(145deg,#22305c 0%, #5b6fe6 52%, #26c890 100%); box-shadow: 0 18rpx 36rpx rgba(52, 79, 166, .22), 0 0 0 8rpx rgba(255, 209, 102, .16); }
+.avatar-crown { position: absolute; right: -8rpx; top: -10rpx; width: 42rpx; height: 42rpx; border-radius: 16rpx; color: #573f13; background: linear-gradient(135deg,#ffe8a3,#ffc84f); display: flex; align-items: center; justify-content: center; font-size: 24rpx; box-shadow: 0 8rpx 18rpx rgba(142, 96, 18, .18); }
+.pro-badge { min-height: 42rpx; padding: 6rpx 14rpx; border-radius: 999rpx; display: inline-flex; align-items: center; gap: 6rpx; color: #573f13; font-size: 20rpx; font-weight: 950; line-height: 1; background: linear-gradient(135deg,#fff1b9,#ffc95a); border: 1rpx solid rgba(255,255,255,.78); box-shadow: 0 8rpx 16rpx rgba(180, 118, 20, .12), inset 0 1rpx 0 rgba(255,255,255,.9); }
+.pro-badge .app-icon { width: 22rpx; height: 22rpx; }
+.proTag { color: #4d360e; background: linear-gradient(135deg, rgba(255,241,185,.96), rgba(255,210,106,.86)); border-color: rgba(255,255,255,.8); }
 .block { display: block; margin: 8rpx 0 16rpx; }
 .tag-row { flex-wrap: wrap; }
+.member-card { margin: 20rpx 0; padding: 30rpx; border-radius: 30rpx; box-sizing: border-box; position: relative; overflow: hidden; color: #1c2640; background:
+  radial-gradient(72% 86% at 92% 0%, rgba(255, 209, 102, .42), transparent 54%),
+  linear-gradient(135deg, rgba(39, 55, 112, .96), rgba(82, 105, 226, .92) 54%, rgba(48, 192, 142, .9));
+  border: 1rpx solid rgba(255,255,255,.82);
+  box-shadow: 0 22rpx 48rpx rgba(66, 82, 156, .18), inset 0 1rpx 0 rgba(255,255,255,.28);
+}
+.member-card.pro { background:
+  radial-gradient(78% 88% at 92% 0%, rgba(255, 214, 109, .5), transparent 56%),
+  linear-gradient(135deg, #1b2447 0%, #4f61d8 52%, #1fc489 100%);
+}
+.member-orbit { position: absolute; inset: 0; pointer-events: none; }
+.orbit-dot { position: absolute; border-radius: 50%; background: rgba(255,255,255,.22); filter: blur(.2rpx); animation: memberFloat 4.8s ease-in-out infinite; }
+.orbit-dot.one { width: 88rpx; height: 88rpx; right: 28rpx; top: 30rpx; }
+.orbit-dot.two { width: 34rpx; height: 34rpx; left: 30rpx; bottom: 38rpx; animation-delay: -1.8s; }
+.member-top, .member-foot, .member-copy { position: relative; z-index: 1; }
+.member-title-block { min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
+.member-kicker { color: rgba(255,255,255,.72); font-size: 22rpx; line-height: 1.2; font-weight: 900; }
+.member-title { color: #fff; font-size: 38rpx; line-height: 1.14; font-weight: 950; letter-spacing: 0; }
+.member-mark { width: 68rpx; height: 68rpx; border-radius: 24rpx; color: #51390c; background: linear-gradient(135deg,#fff2bd,#ffc64f); display: flex; align-items: center; justify-content: center; font-size: 34rpx; box-shadow: 0 12rpx 24rpx rgba(35, 44, 86, .18), inset 0 1rpx 0 rgba(255,255,255,.75); }
+.member-copy { display: block; margin-top: 18rpx; color: rgba(255,255,255,.86); font-size: 25rpx; line-height: 1.5; font-weight: 780; }
+.member-foot { margin-top: 24rpx; align-items: center; gap: 16rpx; }
+.member-price { color: #fff6cd; font-size: 28rpx; line-height: 1.2; font-weight: 950; }
+.member-btn { min-height: 64rpx; padding: 0 20rpx 0 24rpx; border-radius: 999rpx; color: #25315a; background: rgba(255,255,255,.94); border: 1rpx solid rgba(255,255,255,.72); font-size: 24rpx; font-weight: 950; display: flex; align-items: center; gap: 4rpx; box-shadow: 0 10rpx 22rpx rgba(22, 31, 66, .14), inset 0 1rpx 0 rgba(255,255,255,.95); }
+.member-btn-icon { width: 28rpx; height: 28rpx; display: flex; align-items: center; justify-content: center; }
+.pro-boundary { background:
+  radial-gradient(72% 90% at 100% 0%, rgba(255, 210, 106, .22), transparent 52%),
+  linear-gradient(145deg, rgba(255,255,255,.82), rgba(255,255,255,.48));
+}
 .material { margin: 20rpx 0; padding: 32rpx; border-radius: 32rpx; background: linear-gradient(145deg,rgba(255,210,229,.82),rgba(255,232,185,.72)); display: flex; flex-direction: column; gap: 22rpx; }
 .material-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8rpx; }
 .fold-section { margin: 20rpx 0; border-radius: 30rpx; background: rgba(255,255,255,.56); border: 1rpx solid rgba(255,255,255,.78); box-shadow: 0 12rpx 28rpx rgba(73,91,146,.06), inset 0 1px 0 rgba(255,255,255,.86); overflow: hidden; }
@@ -867,8 +945,17 @@ function formatTime(value) {
 .textarea.short { min-height: 140rpx; }
 .role-toggle { min-height: 78rpx; border-radius: 999rpx; background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(250,253,255,.84)); color: #506075; font-weight: 900; border: 1px solid rgba(97,116,166,.16); box-shadow: 0 8rpx 18rpx rgba(73,91,146,.08), inset 0 1px 0 rgba(255,255,255,.96); }
 .role-toggle.active { color: #fff; border-color: rgba(255,255,255,.42); background: linear-gradient(135deg,#6f86df,#52b8cf); box-shadow: 0 12rpx 22rpx rgba(74,111,190,.18), inset 0 1px 0 rgba(255,255,255,.30); }
+@keyframes memberFloat {
+  0%, 100% { transform: translateY(0); opacity: .72; }
+  50% { transform: translateY(-12rpx); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbit-dot { animation: none; }
+}
 @media (max-width: 380px) {
   .fold-head { align-items: flex-start; }
   .fold-action { min-width: 96rpx; padding: 0 14rpx; }
+  .member-foot { align-items: flex-start; flex-direction: column; }
+  .member-btn { width: 100%; }
 }
 </style>

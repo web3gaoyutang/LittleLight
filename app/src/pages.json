@@ -10,6 +10,8 @@
     { "path": "pages/communication/parent-detail", "style": { "navigationBarTitleText": "家长档案" } },
     { "path": "pages/schedule/index", "style": { "navigationBarTitleText": "日程" } },
     { "path": "pages/profile/index", "style": { "navigationBarTitleText": "我的" } },
+    { "path": "pages/profile/pro-benefits", "style": { "navigationBarTitleText": "微光 Pro" } },
+    { "path": "pages/profile/pro-pay", "style": { "navigationBarTitleText": "微信支付" } },
     { "path": "pages/profile/ai-log-detail", "style": { "navigationBarTitleText": "AI 记录详情" } }
   ],
   "tabBar": {

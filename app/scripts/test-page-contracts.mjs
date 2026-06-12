@@ -18,7 +18,7 @@ await testCommunicationRecordPayloadOmitsUIOnlyFields()
 await testHighTrafficActionsPreventDuplicateSubmits()
 await testImportPreviewAndConfirmFlowsAreWired()
 await testAIActionsKeepReviewGate()
-await testProfileDoesNotExposeFakeCheckout()
+await testProfileExposesMockMembershipCheckout()
 await testProfileExposesAccountDeletion()
 await testProfileExposesAccountExport()
 
@@ -52,6 +52,8 @@ async function testProtectedPagesUseStateAndAuthGuard() {
     'src/pages/communication/parent-detail.vue',
     'src/pages/heal/index.vue',
     'src/pages/profile/index.vue',
+    'src/pages/profile/pro-benefits.vue',
+    'src/pages/profile/pro-pay.vue',
     'src/pages/profile/ai-log-detail.vue'
   ]
   for (const page of protectedPages) {
@@ -310,12 +312,38 @@ async function testAIActionsKeepReviewGate() {
   assertIncludes(profile, 'api.deleteAIGeneration(', 'profile AI log list must let users delete sensitive AI records')
 }
 
-async function testProfileDoesNotExposeFakeCheckout() {
+async function testProfileExposesMockMembershipCheckout() {
   const source = await read('src/pages/profile/index.vue')
-  assert.doesNotMatch(source, /api\.checkout\s*\(/, 'profile page must not call checkout until a real provider exists')
-  assert.doesNotMatch(source, /\brenewPro\b/, 'profile page must not expose a fake renewPro flow')
-  assert.doesNotMatch(source, /去续费/, 'profile page must not present unavailable payment as a renewal CTA')
-  assertIncludes(source, '支付：{{ checkoutReady ? \'已接入\' : \'未接入\' }}', 'profile page must honestly show payment provider status')
+  assertIncludes(source, 'data-testid="profile-member-card"', 'profile page must show membership directly below personal info')
+  assertIncludes(source, 'openBenefitsPage()', 'profile page must navigate to the membership benefits page')
+  assertIncludes(source, 'pro-badge', 'profile page must render a dedicated Pro member badge')
+  assertIncludes(source, '支付：模拟微信支付', 'profile page must clearly label the current mock payment flow')
+
+  assert.equal(
+    pagesJSON.pages.some((page) => page.path === 'pages/profile/pro-benefits'),
+    true,
+    'pages.json must register the Pro benefits page'
+  )
+  assert.equal(
+    pagesJSON.pages.some((page) => page.path === 'pages/profile/pro-pay'),
+    true,
+    'pages.json must register the Pro payment page'
+  )
+
+  const benefits = await read('src/pages/profile/pro-benefits.vue')
+  assertIncludes(benefits, 'price: 20', 'Pro benefits page must show the 20 yuan monthly plan')
+  assertIncludes(benefits, 'price: 200', 'Pro benefits page must show the 200 yuan yearly plan')
+  assertIncludes(benefits, '模拟微信支付', 'Pro benefits page must label the payment as simulated')
+  assertIncludes(benefits, 'data-testid="pro-open-pay-button"', 'Pro benefits page must expose a stable pay button target')
+  assertIncludes(benefits, '/pages/profile/pro-pay?plan=', 'Pro benefits page must navigate into payment with the selected plan')
+
+  const pay = await read('src/pages/profile/pro-pay.vue')
+  assertIncludes(pay, 'api.checkout({', 'Pro payment page must call the checkout endpoint')
+  assertIncludes(pay, "provider: 'wechat'", 'Pro payment page must use WeChat as the payment provider')
+  assertIncludes(pay, 'mock: true', 'Pro payment page must explicitly mark simulated payment')
+  assertIncludes(pay, 'data-testid="mock-wechat-pay-button"', 'Pro payment page must expose a stable mock WeChat pay target')
+  assertIncludes(pay, "uni.switchTab({ url: '/pages/profile/index' })", 'Pro payment page must return to profile after success')
+
   assertIncludes(source, '推送：{{ notificationReady ? \'已接入\' : \'未接入\' }}', 'profile page must honestly show notification provider status')
   assertIncludes(source, '对象存储：{{ objectStorageReady ? \'已接入\' : \'未接入\' }}', 'profile page must honestly show object storage status')
 }
