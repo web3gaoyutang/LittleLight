@@ -1,4 +1,5 @@
 const BASE_URL = import.meta.env?.VITE_API_BASE_URL || '/api/v1'
+const APP_BASE_URL = import.meta.env?.VITE_APP_API_BASE_URL || BASE_URL
 const USER_ID_KEY = 'littlelight_user_id'
 const WECHAT_SESSION_KEY = 'littlelight_wechat_session'
 const LOGIN_PAGE = '/pages/login/index'
@@ -150,6 +151,26 @@ export function apiURL(path) {
   return BASE_URL + path
 }
 
+export function apiWSURL(path, params = {}) {
+  const query = queryString(params)
+  // #ifdef H5
+  const httpURL = apiURL(path) + query
+  const absolute = new URL(httpURL, window.location.origin)
+  absolute.protocol = absolute.protocol === 'https:' ? 'wss:' : 'ws:'
+  return absolute.toString()
+  // #endif
+  // #ifndef H5
+  const httpURL = normalizeAbsoluteAppAPIURL(APP_BASE_URL) + path + query
+  return httpURL.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:')
+  // #endif
+}
+
+function normalizeAbsoluteAppAPIURL(baseURL) {
+  const value = String(baseURL || '').replace(/\/$/, '')
+  if (/^https?:\/\//.test(value)) return value
+  throw new Error('App 端需要配置 VITE_APP_API_BASE_URL 为后端绝对地址')
+}
+
 export function isLoggedIn() {
   const session = currentWechatSession()
   return !!session?.sessionToken
@@ -207,6 +228,7 @@ export const api = {
   wechatLogin: (data = {}) => request('/auth/wechat', { method: 'POST', data }).then(saveWechatSession),
   wechatMockLogin: (data = {}) => request('/auth/wechat/mock', { method: 'POST', data }).then(saveWechatSession),
   currentWechatSession,
+  apiWSURL,
   isLoggedIn,
   isDevAuthAvailable,
   resetAuthRedirect,

@@ -192,9 +192,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { onHide, onShow, onUnload } from '@dcloudio/uni-app'
 import { api } from '../../api/client'
+import { appendDictationText, onDictationText } from '../../utils/dictation'
 import { chooseImportFile, clockBefore, confirmAction, ensureLoggedIn, errorMessage, hasText, showToast, trimmed, validClock, withinLength } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
 import AppIcon from '../../components/AppIcon.vue'
@@ -237,6 +238,7 @@ const courseCountText = computed(() => {
   const done = completedCourseCount.value
   return done > 0 ? `共 ${total} 节课 · ${done} 已完成` : `共 ${total} 节课`
 })
+const offDictationText = onDictationText(handleDictationText)
 const featuredCourseId = computed(() => {
   if (selectedDay.value !== todayISO.value) return ''
   const sortedCourses = [...courses.value].sort((a, b) => (clockMinutes(a.startTime) ?? 0) - (clockMinutes(b.startTime) ?? 0))
@@ -255,6 +257,7 @@ onShow(() => {
 
 onHide(stopClockTimer)
 onUnload(stopClockTimer)
+onBeforeUnmount(() => offDictationText?.())
 
 async function load() {
   if (!ensureLoggedIn(api)) return
@@ -294,6 +297,17 @@ function openReminderForm() {
   editingReminderId.value = ''
   reminderFormOpen.value = true
   courseFormOpen.value = false
+}
+
+function handleDictationText(payload) {
+  if (payload?.target !== 'schedule') return
+  if (!reminderFormOpen.value) openReminderForm()
+  if (!reminderForm.value.title) {
+    const firstLine = String(payload.text || '').split(/\n|。|\.|！|!|？|\?/)[0].trim()
+    reminderForm.value.title = firstLine.slice(0, 120) || '语音待办'
+  }
+  reminderForm.value.note = appendDictationText(reminderForm.value.note, payload.text)
+  showToast('已插入待办草稿')
 }
 
 function closeForms() {

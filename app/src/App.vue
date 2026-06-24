@@ -1,5 +1,13 @@
+<template>
+  <VoiceDictation />
+</template>
+
 <script>
-export default {}
+import VoiceDictation from './components/VoiceDictation.vue'
+
+export default {
+  components: { VoiceDictation }
+}
 </script>
 
 <style>

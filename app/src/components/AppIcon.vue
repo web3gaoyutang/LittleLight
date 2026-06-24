@@ -176,6 +176,10 @@ const icons = {
   message: {
     paths: ['M5 6.5A4.5 4.5 0 0 1 9.5 2h5A4.5 4.5 0 0 1 19 6.5v4A4.5 4.5 0 0 1 14.5 15H11l-5 4v-4.8A4.5 4.5 0 0 1 5 10.5v-4Z']
   },
+  mic: {
+    rects: [{ x: 9, y: 3, width: 6, height: 11, rx: 3 }],
+    paths: ['M5 11a7 7 0 0 0 14 0', 'M12 18v3', 'M9 21h6']
+  },
   mapPin: {
     paths: ['M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z'],
     circles: [{ cx: 12, cy: 10, r: 2.2 }]
@@ -221,6 +225,9 @@ const icons = {
   sparkles: {
     paths: ['M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9L12 3Z', 'M5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15Z']
   },
+  square: {
+    rects: [{ x: 7, y: 7, width: 10, height: 10, rx: 2 }]
+  },
   table: {
     rects: [{ x: 4, y: 5, width: 16, height: 14, rx: 3 }],
     lines: [
@@ -259,6 +266,9 @@ const icons = {
   },
   wind: {
     paths: ['M4 8h9a3 3 0 1 0-3-3', 'M4 13h13a3 3 0 1 1-3 3', 'M4 18h6']
+  },
+  x: {
+    paths: ['M6 6l12 12', 'M18 6 6 18']
   }
 }
 

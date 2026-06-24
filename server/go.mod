@@ -17,4 +17,5 @@ require (
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
+	nhooyr.io/websocket v1.8.11 // indirect
 )

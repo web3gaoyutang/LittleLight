@@ -75,22 +75,16 @@ func currentSessionTokenHash(r *http.Request) string {
 
 func authenticatedUserID(r *http.Request, store repository.Store, secret string, allowDevUser bool) (domain.ID, string, error) {
 	if token := bearerToken(r.Header.Get("Authorization")); token != "" {
-		userID, err := verifySessionToken(token, secret)
-		if err != nil {
-			return "", "", err
-		}
-		tokenHash := sessionTokenHash(token)
-		session, err := store.AuthSessionByTokenHash(r.Context(), tokenHash)
-		if err != nil {
-			return "", "", errInvalidAuth
-		}
-		if session.UserID != userID {
-			return "", "", errInvalidAuth
-		}
-		return userID, tokenHash, nil
+		return authenticatedSessionToken(r, store, secret, token)
+	}
+	if token := strings.TrimSpace(r.URL.Query().Get("token")); token != "" {
+		return authenticatedSessionToken(r, store, secret, token)
 	}
 	if allowDevUser {
 		userID := domain.ID(strings.TrimSpace(r.Header.Get("X-User-ID")))
+		if userID == "" {
+			userID = domain.ID(strings.TrimSpace(r.URL.Query().Get("userId")))
+		}
 		if userID != "" {
 			if _, err := store.UserProfile(r.Context(), userID); err != nil {
 				return "", "", errInvalidAuth
@@ -99,6 +93,22 @@ func authenticatedUserID(r *http.Request, store repository.Store, secret string,
 		}
 	}
 	return "", "", errMissingAuth
+}
+
+func authenticatedSessionToken(r *http.Request, store repository.Store, secret string, token string) (domain.ID, string, error) {
+	userID, err := verifySessionToken(token, secret)
+	if err != nil {
+		return "", "", err
+	}
+	tokenHash := sessionTokenHash(token)
+	session, err := store.AuthSessionByTokenHash(r.Context(), tokenHash)
+	if err != nil {
+		return "", "", errInvalidAuth
+	}
+	if session.UserID != userID {
+		return "", "", errInvalidAuth
+	}
+	return userID, tokenHash, nil
 }
 
 func bearerToken(value string) string {

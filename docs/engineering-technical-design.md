@@ -139,7 +139,7 @@ npm ci
 npm run dev:h5
 ```
 
-H5 默认端口为 `5173`，客户端默认请求同源 `/api/v1`。本地开发时 Vite 会把 `/api` 代理到 `VITE_DEV_API_TARGET`，未配置时默认为 `http://localhost:8080`；Docker H5 产物则通过 nginx 同源反向代理访问 API 容器，避免把本机 `localhost` 写进生产包。
+H5 默认端口为 `5173`，客户端默认请求同源 `/api/v1`。本地开发时 Vite 会把 `/api` 代理到 `VITE_DEV_API_TARGET`，未配置时默认为 `http://localhost:8080`；Docker H5 产物则通过 nginx 同源反向代理访问 API 容器，避免把本机 `localhost` 写进生产包。App 端没有浏览器同源上下文，打包前必须配置 `VITE_APP_API_BASE_URL` 为后端 HTTPS 绝对地址，例如 `https://api.example.com/api/v1`，语音听写的 `uni.connectSocket` 会由该地址生成 `wss://` 连接。
 
 ### 4.3 后端本地开发
 
@@ -171,6 +171,13 @@ go run ./cmd/api
 | LLM_API_KEY | sk-xxx | OpenAI-compatible LLM API Key；只放本地 `.env` 或部署密钥，不提交仓库 |
 | LLM_BASE_URL | https://llmapi.example.com | OpenAI-compatible Base URL；服务会请求 `{LLM_BASE_URL}/v1/chat/completions` |
 | LLM_MODEL | gpt-4o-mini | LLM 模型名；未设置时使用默认值 |
+| XF_ASR_APP_ID | xxxxx | 讯飞语音听写（流式版）AppID；用于实时语音听写 |
+| XF_ASR_API_KEY | xxxxx | 讯飞语音听写 APIKey；只放本地 `.env` 或部署密钥 |
+| XF_ASR_API_SECRET | xxxxx | 讯飞语音听写 APISecret；仅服务端使用，不下发客户端 |
+| XF_ASR_ENDPOINT | wss://iat-api.xfyun.cn/v2/iat | 讯飞语音听写 WebSocket 地址，默认使用中英文推荐域名 |
+| XF_ASR_MAX_SESSION_SECONDS | 55 | 单次听写服务端时长上限，低于讯飞 60 秒硬上限 |
+| XF_ASR_MAX_CONCURRENT_PER_USER | 1 | 单用户同时听写会话上限 |
+| XF_ASR_DAILY_LIMIT_PER_USER | 80 | 单用户听写调用频控上限 |
 | VITE_ENABLE_MOCK_LOGIN | true / false | H5 是否显示开发登录入口；生产环境不要启用 |
 | GO_IMAGE | golang:1.22-alpine | Go API 构建阶段基础镜像，可替换为镜像代理或内网镜像 |
 | ALPINE_IMAGE | alpine:3.20 | Go API 运行阶段基础镜像 |

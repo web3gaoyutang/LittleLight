@@ -67,7 +67,7 @@ globalThis.uni = {
 }
 
 const modulePath = await buildLoadableClientModule()
-const { api, request, upload, currentWechatSession, listItems, listPageInfo } = await import(pathToFileURL(modulePath))
+const { api, request, upload, currentWechatSession, listItems, listPageInfo, apiWSURL } = await import(pathToFileURL(modulePath))
 const uiModulePath = await buildLoadableUIModule()
 const { chooseImportFile, confirmAction, isHighRiskSafety } = await import(pathToFileURL(uiModulePath))
 
@@ -76,6 +76,7 @@ await testConfirmActionHelper()
 await testChooseImportFileUsesWechatMessageFileFirst()
 await testChooseImportFileFallsBackToChooseFile()
 await testRequestUsesBaseURLAndAuthHeader()
+await testAPIWSURLBuildsWebSocketURL()
 await testRequestDoesNotUseDevHeaderInProduction()
 await testExpiredSessionIsClearedBeforeRequest()
 await testDevAuthAvailabilityFollowsEnvFlags()
@@ -111,14 +112,61 @@ async function buildLoadableClientModule() {
     "const BASE_URL = import.meta.env?.VITE_API_BASE_URL || '/api/v1'",
     "const BASE_URL = globalThis.__VITE_API_BASE_URL__ || '/api/v1'"
   )
+  source = source.replace(
+    "const APP_BASE_URL = import.meta.env?.VITE_APP_API_BASE_URL || BASE_URL",
+    "const APP_BASE_URL = globalThis.__VITE_APP_API_BASE_URL__ || BASE_URL"
+  )
   source = source.replaceAll('import.meta.env?.DEV', 'globalThis.__VITE_DEV__')
   source = source.replaceAll(
     "import.meta.env?.VITE_ENABLE_MOCK_LOGIN === 'true'",
     "globalThis.__VITE_ENABLE_MOCK_LOGIN__ === 'true'"
   )
+  source = source.replace(
+    "const absolute = new URL(httpURL, window.location.origin)",
+    "const absolute = new URL(httpURL, globalThis.__WINDOW_ORIGIN__ || 'http://localhost:5173')"
+  )
+  source = rewriteAPIWSURLForNodeTest(source)
   const outputPath = join(tmpdir(), `littlelight-api-client-${Date.now()}.mjs`)
   await writeFile(outputPath, source, 'utf8')
   return outputPath
+}
+
+function rewriteAPIWSURLForNodeTest(source) {
+  const start = source.indexOf('export function apiWSURL(path, params = {}) {')
+  const end = source.indexOf('\nfunction normalizeAbsoluteAppAPIURL', start)
+  assert.notEqual(start, -1, 'client module must expose apiWSURL')
+  assert.notEqual(end, -1, 'client module must keep normalizeAbsoluteAppAPIURL after apiWSURL')
+  const replacement = `export function apiWSURL(path, params = {}) {
+  const query = queryString(params)
+  if (globalThis.__UNI_PLATFORM__ === 'app') {
+    const httpURL = normalizeAbsoluteAppAPIURL(globalThis.__VITE_APP_API_BASE_URL__ || BASE_URL) + path + query
+    return httpURL.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:')
+  }
+  const httpURL = apiURL(path) + query
+  const absolute = new URL(httpURL, globalThis.__WINDOW_ORIGIN__ || 'http://localhost:5173')
+  absolute.protocol = absolute.protocol === 'https:' ? 'wss:' : 'ws:'
+  return absolute.toString()
+}
+`
+  return source.slice(0, start) + replacement + source.slice(end + 1)
+}
+
+async function testAPIWSURLBuildsWebSocketURL() {
+  reset()
+  globalThis.__WINDOW_ORIGIN__ = 'http://localhost:5173'
+  globalThis.__UNI_PLATFORM__ = 'h5'
+
+  const url = apiWSURL('/dictation/stream', { token: 'session-token', language: 'zh_cn', sampleRate: 16000 })
+
+  assert.equal(url, 'ws://localhost:5173/api/v1/dictation/stream?token=session-token&language=zh_cn&sampleRate=16000')
+
+  globalThis.__UNI_PLATFORM__ = 'app'
+  globalThis.__VITE_APP_API_BASE_URL__ = 'https://api.example.com/api/v1'
+  const appURL = apiWSURL('/dictation/stream', { token: 'session-token' })
+  assert.equal(appURL, 'wss://api.example.com/api/v1/dictation/stream?token=session-token')
+
+  globalThis.__VITE_APP_API_BASE_URL__ = '/api/v1'
+  assert.throws(() => apiWSURL('/dictation/stream'), /VITE_APP_API_BASE_URL/)
 }
 
 async function buildLoadableUIModule() {

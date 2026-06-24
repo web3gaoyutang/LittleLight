@@ -29,6 +29,7 @@ CHECKS = {
     ],
     "app/.env.example": [
         "VITE_API_BASE_URL=/api/v1",
+        "VITE_APP_API_BASE_URL=https://api.example.com/api/v1",
         "VITE_DEV_API_TARGET=http://localhost:8080",
     ],
     ".env.example": [
@@ -42,6 +43,9 @@ CHECKS = {
         "LLM_API_KEY=",
         "LLM_BASE_URL=",
         "LLM_MODEL=",
+        "XF_ASR_APP_ID=",
+        "XF_ASR_API_KEY=",
+        "XF_ASR_API_SECRET=",
     ],
     "README.md": [
         "uni-app + Vue 3",

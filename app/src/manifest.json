@@ -9,7 +9,20 @@
   "app-plus": {
     "usingComponents": true,
     "nvueStyleCompiler": "uni-app",
-    "compilerVersion": 3
+    "compilerVersion": 3,
+    "distribute": {
+      "android": {
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.RECORD_AUDIO\"/>",
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>"
+        ]
+      },
+      "ios": {
+        "privacyDescription": {
+          "NSMicrophoneUsageDescription": "用于实时语音听写，把老师口述内容转写为文字。"
+        }
+      }
+    }
   },
   "h5": {
     "title": "微光老师",

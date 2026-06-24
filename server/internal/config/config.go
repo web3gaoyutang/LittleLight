@@ -27,6 +27,17 @@ type Config struct {
 	LLMAPIKey     string
 	LLMBaseURL    string
 	LLMModel      string
+	XFASR         XFASRConfig
+}
+
+type XFASRConfig struct {
+	AppID                string
+	APIKey               string
+	APISecret            string
+	Endpoint             string
+	MaxSessionSeconds    int
+	MaxConcurrentPerUser int
+	DailyLimitPerUser    int
 }
 
 func Load() Config {
@@ -61,6 +72,15 @@ func Load() Config {
 		LLMAPIKey:     llmAPIKey,
 		LLMBaseURL:    llmBaseURL,
 		LLMModel:      env("LLM_MODEL", "gpt-4o-mini"),
+		XFASR: XFASRConfig{
+			AppID:                env("XF_ASR_APP_ID", ""),
+			APIKey:               env("XF_ASR_API_KEY", ""),
+			APISecret:            env("XF_ASR_API_SECRET", ""),
+			Endpoint:             env("XF_ASR_ENDPOINT", "wss://iat-api.xfyun.cn/v2/iat"),
+			MaxSessionSeconds:    envInt("XF_ASR_MAX_SESSION_SECONDS", 55),
+			MaxConcurrentPerUser: envInt("XF_ASR_MAX_CONCURRENT_PER_USER", 1),
+			DailyLimitPerUser:    envInt("XF_ASR_DAILY_LIMIT_PER_USER", 80),
+		},
 	}
 }
 

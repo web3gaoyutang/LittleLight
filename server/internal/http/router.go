@@ -36,10 +36,13 @@ const rateLimitWindow = time.Minute
 type Server struct {
 	store          repository.Store
 	ai             *service.AIService
+	dictation      *service.DictationService
 	dashboardCache dashboardCache
 	readiness      []DependencyCheck
 	auth           AuthConfig
 	rateLimiter    *fixedWindowLimiter
+	dictationMu    sync.Mutex
+	dictationUsers map[domain.ID]int
 }
 
 type fixedWindowLimiter struct {
@@ -85,11 +88,16 @@ func NewServer(store repository.Store, ai *service.AIService, dashboardCache *ca
 		dashboardCache: dashboardCache,
 		readiness:      readiness,
 		rateLimiter:    newFixedWindowLimiter(time.Now),
+		dictationUsers: map[domain.ID]int{},
 	}
 }
 
 func (s *Server) ConfigureAuth(config AuthConfig) {
 	s.auth = config
+}
+
+func (s *Server) ConfigureDictation(dictation *service.DictationService) {
+	s.dictation = dictation
 }
 
 func newFixedWindowLimiter(now func() time.Time) *fixedWindowLimiter {
@@ -139,6 +147,7 @@ func (s *Server) Routes() http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/wechat", s.wechatLogin)
 		r.Post("/auth/wechat/mock", s.wechatMockLogin)
+		r.Get("/dictation/stream", s.dictationStream)
 		r.Group(func(r chi.Router) {
 			r.Use(withUser(s.store, s.auth))
 			r.Post("/auth/logout", s.logout)

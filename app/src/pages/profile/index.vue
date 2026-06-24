@@ -121,6 +121,43 @@
       </view>
     </view>
 
+    <view class="fold-section" :class="{ open: dictationDraftsOpen }">
+      <view class="fold-head" hover-class="fold-head-hover" hover-stay-time="80" data-testid="dictation-draft-section-toggle" @tap="toggleDictationDrafts">
+        <view class="fold-title">
+          <text class="fold-icon"><AppIcon name="mic" /></text>
+          <view class="fold-copy">
+            <view class="fold-name-row">
+              <text class="section-title">语音草稿</text>
+              <text class="count-pill">{{ dictationDrafts.length }} 条</text>
+            </view>
+            <text class="caption fold-summary">{{ dictationDraftsSummary }}</text>
+          </view>
+        </view>
+        <view class="fold-action">
+          <text>{{ dictationDraftsOpen ? '收起' : '展开' }}</text>
+          <AppIcon name="chevronRight" />
+        </view>
+      </view>
+      <view v-if="dictationDraftsOpen" class="fold-body">
+        <view v-for="item in dictationDrafts" :key="item.id" class="card compact-record-card">
+          <view class="row between">
+            <text class="tag">{{ formatTime(item.createdAt) || '语音草稿' }}</text>
+            <view class="row action-row">
+              <button class="ghost-btn mini" @tap="copyDictationDraft(item)"><text class="btn-icon"><AppIcon name="copy" /></text>复制</button>
+              <button class="ghost-btn mini danger" @tap="removeDictationDraft(item.id)"><text class="btn-icon"><AppIcon name="trash" /></text>删除</button>
+            </view>
+          </view>
+          <text class="body record-preview">{{ item.text }}</text>
+        </view>
+        <AppState
+          v-if="dictationDrafts.length === 0"
+          type="empty"
+          title="还没有语音草稿"
+          message="在其他页面之外插入听写文字时，会暂存在这里。"
+        />
+      </view>
+    </view>
+
     <view v-if="favoriteFormOpen" class="modal-mask" @tap="closeFavoriteForm">
       <view class="modal-card" @tap.stop>
         <view class="row between">
@@ -299,6 +336,7 @@ import AppIcon from '../../components/AppIcon.vue'
 const profile = ref({})
 const favorites = ref([])
 const aiLogs = ref([])
+const dictationDrafts = ref([])
 const wechatSession = ref(null)
 const loading = ref(false)
 const loadingFavorites = ref(false)
@@ -318,6 +356,7 @@ const favoriteQuery = ref('')
 const aiLogQuery = ref('')
 const favoritesOpen = ref(false)
 const aiLogsOpen = ref(false)
+const dictationDraftsOpen = ref(false)
 const favoritesOffset = ref(0)
 const favoritesHasMore = ref(false)
 const favoritesPageSize = 20
@@ -333,6 +372,7 @@ const boundaryDialogMessage = ref('')
 const boundaryDialogItems = ref([])
 const boundaryDialogActionText = ref('知道了')
 const showDevLogin = api.isDevAuthAvailable()
+const dictationDraftKey = 'littlelight_dictation_drafts'
 
 const avatarText = computed(() => (profile.value.name || '微').slice(0, 1))
 const roleText = computed(() => profile.value.isHeadTeacher ? `${profile.value.stage || '学段'}班主任` : (profile.value.stage || '任课老师'))
@@ -358,6 +398,10 @@ const favoritesSummary = computed(() => {
   const item = favorites.value[0]
   return `${favoriteTypeText(item.type)} · ${item.title || trimPreview(item.content, 18)}`
 })
+const dictationDraftsSummary = computed(() => {
+  if (dictationDrafts.value.length === 0) return '临时语音记录会收在这里'
+  return trimPreview(dictationDrafts.value[0].text, 24)
+})
 const aiLogsSummary = computed(() => {
   if (loadingAiLogs.value && aiLogs.value.length === 0) return '正在读取最近生成记录'
   if (aiLogs.value.length === 0) return '生成家校草稿或 AI 夸夸后会自动留痕'
@@ -380,6 +424,7 @@ async function load() {
   try {
     wechatSession.value = api.currentWechatSession()
     profile.value = await api.me()
+    loadDictationDrafts()
     await Promise.all([fetchFavorites({ reset: true }), fetchAiLogs({ reset: true }), loadBoundaries()])
   } catch (err) {
     error.value = errorMessage(err, '账号数据加载失败')
@@ -456,8 +501,29 @@ function toggleFavorites() {
   favoritesOpen.value = !favoritesOpen.value
 }
 
+function toggleDictationDrafts() {
+  dictationDraftsOpen.value = !dictationDraftsOpen.value
+  loadDictationDrafts()
+}
+
 function toggleAiLogs() {
   aiLogsOpen.value = !aiLogsOpen.value
+}
+
+function loadDictationDrafts() {
+  dictationDrafts.value = uni.getStorageSync(dictationDraftKey) || []
+}
+
+function copyDictationDraft(item) {
+  if (!item?.text) return
+  uni.setClipboardData({ data: item.text })
+  showToast('已复制语音草稿')
+}
+
+function removeDictationDraft(id) {
+  dictationDrafts.value = dictationDrafts.value.filter((item) => item.id !== id)
+  uni.setStorageSync(dictationDraftKey, dictationDrafts.value)
+  showToast('已删除语音草稿')
 }
 
 async function mockWechatLogin() {

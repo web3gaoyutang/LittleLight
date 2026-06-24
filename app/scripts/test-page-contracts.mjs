@@ -21,6 +21,7 @@ await testAIActionsKeepReviewGate()
 await testProfileExposesMockMembershipCheckout()
 await testProfileExposesAccountDeletion()
 await testProfileExposesAccountExport()
+await testVoiceDictationSupportsH5AndApp()
 
 console.log('page contract tests passed')
 
@@ -363,6 +364,32 @@ async function testProfileExposesAccountExport() {
   assertIncludes(source, 'JSON.stringify(data, null, 2)', 'profile export must serialize a readable JSON export')
   assertIncludes(source, 'new Blob([text]', 'H5 profile export must download JSON as a file')
   assertIncludes(source, 'uni.setClipboardData({ data: text })', 'non-H5 profile export must preserve JSON through clipboard fallback')
+}
+
+async function testVoiceDictationSupportsH5AndApp() {
+  const app = await read('src/App.vue')
+  assertIncludes(app, '<VoiceDictation />', 'the global app shell must render realtime voice dictation')
+
+  const component = await read('src/components/VoiceDictation.vue')
+  assertIncludes(component, 'createDictationSocket(', 'voice dictation must use the cross-platform WebSocket factory')
+  assertIncludes(component, 'createPCMRecorder({', 'voice dictation must use the cross-platform PCM recorder factory')
+  assertIncludes(component, 'duration: 280', 'App dictation must use short chunks for near realtime feedback')
+
+  const util = await read('src/utils/dictation.js')
+  assertIncludes(util, 'class H5PCMRecorder', 'H5 voice dictation must keep Web Audio PCM capture')
+  assertIncludes(util, 'class UniAppPCMChunkRecorder', 'App voice dictation must keep a native recorder implementation')
+  assertIncludes(util, 'uni.connectSocket({ url', 'App voice dictation must use uni.connectSocket instead of browser-only WebSocket')
+  assertIncludes(util, 'uni.getRecorderManager()', 'App voice dictation must use the native RecorderManager')
+  assertIncludes(util, "format: 'PCM'", 'App recorder must request raw PCM output')
+  assertIncludes(util, 'frameBytes = 1280', 'App PCM chunks must be split to Xfyun-sized 40ms frames')
+  assertIncludes(util, 'readPlusFileAsArrayBuffer', 'App recorder must keep an HTML5+ file read fallback')
+
+  const manifest = await read('src/manifest.json')
+  assertIncludes(manifest, 'android.permission.RECORD_AUDIO', 'App package must request Android microphone permission')
+  assertIncludes(manifest, 'NSMicrophoneUsageDescription', 'App package must explain iOS microphone usage')
+
+  const envExample = await read('.env.example')
+  assertIncludes(envExample, 'VITE_APP_API_BASE_URL=https://api.example.com/api/v1', 'App builds must document an absolute API base URL for WebSocket support')
 }
 
 async function read(path) {

@@ -46,7 +46,7 @@ npm ci
 npm run dev:h5
 ```
 
-前端默认请求同源 `/api/v1`；本地 H5 开发时可通过 `app/.env` 覆盖 `VITE_DEV_API_TARGET`，默认代理到 `http://localhost:8080`。
+前端 H5 默认请求同源 `/api/v1`；本地 H5 开发时可通过 `app/.env` 覆盖 `VITE_DEV_API_TARGET`，默认代理到 `http://localhost:8080`。打包 App 时需配置 `VITE_APP_API_BASE_URL` 为后端 HTTPS 绝对地址，例如 `https://api.example.com/api/v1`，语音听写 WebSocket 会基于该地址连接。
 
 ## 验证命令
 

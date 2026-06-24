@@ -85,6 +85,15 @@ func main() {
 		AllowMockAuth: cfg.AllowMockAuth,
 		CORSOrigins:   cfg.CORSOrigins,
 	})
+	server.ConfigureDictation(service.NewDictationService(service.DictationOptions{
+		AppID:                cfg.XFASR.AppID,
+		APIKey:               cfg.XFASR.APIKey,
+		APISecret:            cfg.XFASR.APISecret,
+		Endpoint:             cfg.XFASR.Endpoint,
+		MaxSessionSeconds:    cfg.XFASR.MaxSessionSeconds,
+		MaxConcurrentPerUser: cfg.XFASR.MaxConcurrentPerUser,
+		DailyLimitPerUser:    cfg.XFASR.DailyLimitPerUser,
+	}))
 	httpServer := newHTTPServer(cfg.HTTPAddr, server.Routes())
 	log.Printf("littlelight api listening on %s", cfg.HTTPAddr)
 	if err := httpServer.ListenAndServe(); err != nil {

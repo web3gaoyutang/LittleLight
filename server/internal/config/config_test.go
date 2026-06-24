@@ -19,6 +19,13 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("LLM_API_KEY", "")
 	t.Setenv("LLM_BASE_URL", "")
 	t.Setenv("LLM_MODEL", "")
+	t.Setenv("XF_ASR_APP_ID", "")
+	t.Setenv("XF_ASR_API_KEY", "")
+	t.Setenv("XF_ASR_API_SECRET", "")
+	t.Setenv("XF_ASR_ENDPOINT", "")
+	t.Setenv("XF_ASR_MAX_SESSION_SECONDS", "")
+	t.Setenv("XF_ASR_MAX_CONCURRENT_PER_USER", "")
+	t.Setenv("XF_ASR_DAILY_LIMIT_PER_USER", "")
 	t.Setenv("CORS_ALLOWED_ORIGINS", "")
 
 	cfg := Load()
@@ -35,11 +42,33 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.AIProvider != "mock" || cfg.LLMModel != "gpt-4o-mini" {
 		t.Fatalf("unexpected default AI config: %+v", cfg)
 	}
+	if cfg.XFASR.Endpoint != "wss://iat-api.xfyun.cn/v2/iat" || cfg.XFASR.MaxSessionSeconds != 55 || cfg.XFASR.MaxConcurrentPerUser != 1 {
+		t.Fatalf("unexpected default xfyun ASR config: %+v", cfg.XFASR)
+	}
 	if len(cfg.CORSOrigins) != 0 {
 		t.Fatalf("expected empty default CORS origins, got %+v", cfg.CORSOrigins)
 	}
 	if !cfg.AllowDevUser || !cfg.AllowMockAuth {
 		t.Fatalf("local defaults should allow explicit development auth, got %+v", cfg)
+	}
+}
+
+func TestLoadXFASRConfig(t *testing.T) {
+	t.Setenv("XF_ASR_APP_ID", "xf-app")
+	t.Setenv("XF_ASR_API_KEY", "xf-key")
+	t.Setenv("XF_ASR_API_SECRET", "xf-secret")
+	t.Setenv("XF_ASR_ENDPOINT", "wss://example.com/v2/iat")
+	t.Setenv("XF_ASR_MAX_SESSION_SECONDS", "45")
+	t.Setenv("XF_ASR_MAX_CONCURRENT_PER_USER", "2")
+	t.Setenv("XF_ASR_DAILY_LIMIT_PER_USER", "20")
+
+	cfg := Load()
+
+	if cfg.XFASR.AppID != "xf-app" || cfg.XFASR.APIKey != "xf-key" || cfg.XFASR.APISecret != "xf-secret" {
+		t.Fatalf("unexpected xfyun credentials: %+v", cfg.XFASR)
+	}
+	if cfg.XFASR.Endpoint != "wss://example.com/v2/iat" || cfg.XFASR.MaxSessionSeconds != 45 || cfg.XFASR.MaxConcurrentPerUser != 2 || cfg.XFASR.DailyLimitPerUser != 20 {
+		t.Fatalf("unexpected xfyun ASR config: %+v", cfg.XFASR)
 	}
 }
 

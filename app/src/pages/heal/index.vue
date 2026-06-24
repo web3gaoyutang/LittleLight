@@ -60,9 +60,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { api, listItems, listPageInfo } from '../../api/client'
+import { appendDictationText, onDictationText } from '../../utils/dictation'
 import { confirmAction, ensureLoggedIn, errorMessage, isHighRiskSafety, showToast, trimmed } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
 import AppIcon from '../../components/AppIcon.vue'
@@ -90,8 +91,16 @@ const praiseSafetyText = computed(() => safetyText(praiseSafety.value))
 const praiseSafetyNote = computed(() => praiseMeta.value.safetyReason || praiseMeta.value.safetyNote || safetyNote(praiseSafety.value, praiseMeta.value))
 const praiseSafetySignals = computed(() => Array.isArray(praiseMeta.value.safetySignals) ? praiseMeta.value.safetySignals.join('、') : '')
 const praiseSourceText = computed(() => aiSourceText(praiseMeta.value))
+const offDictationText = onDictationText(handleDictationText)
 
 onShow(loadEntries)
+onBeforeUnmount(() => offDictationText?.())
+
+function handleDictationText(payload) {
+  if (payload?.target !== 'healing') return
+  content.value = appendDictationText(content.value, payload.text)
+  showToast('已插入疗愈文本')
+}
 
 async function loadEntries() {
   if (!ensureLoggedIn(api)) return

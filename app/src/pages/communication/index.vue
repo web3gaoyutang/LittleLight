@@ -208,9 +208,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { api, listItems, listPageInfo } from '../../api/client'
+import { appendDictationText, onDictationText } from '../../utils/dictation'
 import { chooseImportFile, confirmAction, ensureLoggedIn, errorMessage, hasText, isHighRiskSafety, showToast, trimmed, validClock, withinLength } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
 import AppIcon from '../../components/AppIcon.vue'
@@ -260,6 +261,7 @@ const risks = [
   { value: 'medium', label: '中风险' },
   { value: 'high', label: '高风险' }
 ]
+const offDictationText = onDictationText(handleDictationText)
 const parentNames = computed(() => parents.value.map((item) => `${item.studentName} · ${item.parentName}`))
 const hasPendingAction = computed(() => !!pendingAction.value)
 
@@ -267,6 +269,7 @@ onShow(async () => {
   if (!ensureLoggedIn(api)) return
   await load()
 })
+onBeforeUnmount(() => offDictationText?.())
 
 async function load() {
   loading.value = true
@@ -392,6 +395,16 @@ function openRecordForm(record = null) {
   recordFormError.value = ''
   recordFormOpen.value = true
   parentFormOpen.value = false
+}
+
+function handleDictationText(payload) {
+  if (payload?.target !== 'communication') return
+  if (!recordFormOpen.value) openRecordForm()
+  recordForm.value.summary = appendDictationText(recordForm.value.summary, payload.text)
+  if (!recordForm.value.reason) {
+    recordForm.value.reason = '语音记录'
+  }
+  showToast('已插入沟通记录摘要')
 }
 
 function closeForms() {
