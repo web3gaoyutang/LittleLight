@@ -14,31 +14,37 @@
     <view v-if="panelOpen" class="voice-mask" @tap="closePanel">
       <view class="voice-panel" @tap.stop>
         <view class="voice-panel-head">
-          <view>
-            <text class="caption">{{ statusText }}</text>
-            <view class="voice-title">{{ timerText }}</view>
+          <view class="voice-head-main">
+            <view class="voice-panel-icon" :class="{ active: recording, failed: status === 'error' }">
+              <AppIcon :name="recording ? 'square' : 'mic'" />
+            </view>
+            <view>
+              <text class="caption">{{ statusText }}</text>
+              <view class="voice-title">{{ timerText }}</view>
+            </view>
           </view>
-          <button class="ghost-btn mini" @tap="closePanel"><AppIcon name="x" /></button>
+          <button class="voice-close-btn" aria-label="关闭听写" @tap="closePanel"><AppIcon name="x" /></button>
         </view>
 
         <view class="language-tabs">
-          <button
+          <view
             v-for="item in languages"
             :key="item.value"
             class="language-tab"
-            :class="{ active: language === item.value }"
-            :disabled="recording || status === 'connecting'"
-            @tap="language = item.value"
+            :class="{ active: language === item.value, disabled: recording || status === 'connecting' }"
+            role="button"
+            :aria-label="item.label"
+            @tap="selectLanguage(item.value)"
           >
-            {{ item.label }}
-          </button>
+            <text class="language-tab-label">{{ item.label }}</text>
+          </view>
         </view>
 
         <view class="transcript-box" :class="{ empty: !displayText }">
           <textarea
             class="transcript-textarea"
             v-model="editableText"
-            maxlength="4000"
+            maxlength="20000"
             placeholder="点击下方按钮，说出来。识别结果会实时出现在这里。"
             aria-label="语音听写识别文本"
             data-testid="voice-dictation-textarea"
@@ -50,12 +56,21 @@
 
         <view class="voice-actions">
           <button class="primary-btn voice-main-action" :disabled="status === 'ending'" @tap="toggleRecording">
-            <text class="btn-icon"><AppIcon :name="recording ? 'square' : 'mic'" /></text>
+            <view class="btn-icon"><AppIcon :name="recording ? 'square' : 'mic'" /></view>
             {{ recording ? '结束听写' : '开始听写' }}
           </button>
-          <button class="ghost-btn voice-action" :disabled="!editableText" @tap="copyText"><AppIcon name="copy" /></button>
-          <button class="ghost-btn voice-action" :disabled="!editableText" @tap="clearText"><AppIcon name="trash" /></button>
-          <button class="ghost-btn voice-action" :disabled="!editableText" @tap="insertText"><AppIcon name="check" /></button>
+          <button class="voice-tool-btn" :disabled="!editableText" @tap="copyText">
+            <view class="tool-icon"><AppIcon name="copy" /></view>
+            <text>复制</text>
+          </button>
+          <button class="voice-tool-btn danger" :disabled="!editableText" @tap="clearText">
+            <view class="tool-icon"><AppIcon name="trash" /></view>
+            <text>清空</text>
+          </button>
+          <button class="voice-tool-btn success" :disabled="!editableText" @tap="insertText">
+            <view class="tool-icon"><AppIcon name="check" /></view>
+            <text>插入</text>
+          </button>
         </view>
       </view>
     </view>
@@ -71,6 +86,9 @@ import AppIcon from './AppIcon.vue'
 
 const languageKey = 'littlelight_dictation_language'
 const draftKey = 'littlelight_dictation_drafts'
+const maxDictationSeconds = 5 * 60
+const segmentSeconds = 50
+const segmentStopWaitMs = 1400
 const languages = [
   { value: 'zh_cn', label: '中文普通话' },
   { value: 'en_us', label: 'English' }
@@ -79,6 +97,7 @@ const languages = [
 const panelOpen = ref(false)
 const status = ref('idle')
 const language = ref(uni.getStorageSync(languageKey) || 'zh_cn')
+const committedText = ref('')
 const stableText = ref('')
 const unstableText = ref('')
 const editableText = ref('')
@@ -91,14 +110,19 @@ let recorder = null
 let timer = null
 let routeTimer = null
 let seq = 0
+let nextSegmentAt = segmentSeconds
+let currentSegmentText = ''
+let segmentFinalCommitted = false
+let rotatingSegment = false
+let segmentDoneResolver = null
 
-const shouldShow = computed(() => loggedIn.value && !routePath.value.includes('/login/'))
+const shouldShow = computed(() => !routePath.value.includes('/login/'))
 const recording = computed(() => status.value === 'recording')
 const displayText = computed(() => editableText.value || stableText.value || unstableText.value)
 const statusText = computed(() => ({
   idle: '点一下，说出来',
   connecting: '正在连接听写服务',
-  recording: '正在听，你可以继续说',
+  recording: '正在听，可以连续说到 5 分钟',
   ending: '正在整理最后一句',
   error: '听写暂时不可用'
 })[status.value] || '语音听写')
@@ -124,6 +148,11 @@ onBeforeUnmount(() => {
 function refreshVisibility() {
   routePath.value = currentRoutePath()
   loggedIn.value = api.isLoggedIn()
+}
+
+function selectLanguage(value) {
+  if (recording.value || status.value === 'connecting') return
+  language.value = value
 }
 
 function togglePanel() {
@@ -159,26 +188,13 @@ async function startRecording() {
   stopEverything()
   status.value = 'connecting'
   error.value = ''
-  stableText.value = editableText.value.trim()
+  committedText.value = editableText.value.trim()
+  stableText.value = committedText.value
   unstableText.value = ''
   seq = 0
   try {
-    ws = createDictationSocket(api.apiWSURL('/dictation/stream', {
-      token: api.currentWechatSession()?.sessionToken || '',
-      language: language.value,
-      sampleRate: 16000
-    }))
-    ws.onMessage(handleSocketMessage)
-    ws.onError(() => {
-      fail('听写连接异常，请稍后重试')
-    })
-    ws.onClose(() => {
-      if (status.value === 'recording' || status.value === 'connecting') {
-        fail('听写连接已断开，已保留当前文字')
-      }
-    })
-    await waitForOpen(ws)
-    sendSocket({ type: 'start', language: language.value, sampleRate: 16000 })
+    await ensureMicrophoneAccess()
+    await openDictationSegment()
     recorder = createPCMRecorder({
       sampleRate: 16000,
       frameSamples: 640,
@@ -190,14 +206,62 @@ async function startRecording() {
     status.value = 'recording'
     startTimer()
   } catch (err) {
-    fail(err?.message || '无法启动语音听写')
+    fail(dictationErrorMessage(err, '无法启动语音听写'))
     stopEverything()
   }
+}
+
+async function openDictationSegment() {
+  currentSegmentText = ''
+  segmentFinalCommitted = false
+  const socket = createDictationSocket(api.apiWSURL('/dictation/stream', {
+    token: api.currentWechatSession()?.sessionToken || '',
+    language: language.value,
+    sampleRate: 16000
+  }))
+  ws = socket
+  socket.onMessage((event) => handleSocketMessage(event, socket))
+  socket.onError(() => {
+    if (ws === socket) fail('听写连接异常，请稍后重试')
+  })
+  socket.onClose(() => {
+    if (ws !== socket) return
+    if (status.value === 'recording' || status.value === 'connecting') {
+      fail('听写连接已断开，已保留当前文字')
+    }
+  })
+  await waitForOpen(socket)
+  if (ws !== socket) return
+  sendSocket({ type: 'start', language: language.value, sampleRate: 16000 }, socket)
+}
+
+async function ensureMicrophoneAccess() {
+  // #ifdef H5
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+    throw new Error('当前浏览器不支持麦克风录音')
+  }
+  let stream = null
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    })
+  } catch (err) {
+    throw new Error(dictationErrorMessage(err, '无法获取麦克风权限'))
+  } finally {
+    stream?.getTracks?.().forEach((track) => track.stop())
+  }
+  // #endif
 }
 
 async function stopRecording() {
   if (status.value !== 'recording' && status.value !== 'connecting') return
   status.value = 'ending'
+  rotatingSegment = false
   await stopRecorder()
   sendSocket({ type: 'stop' })
   stopTimer()
@@ -206,7 +270,7 @@ async function stopRecording() {
   }, 1800)
 }
 
-function handleSocketMessage(event) {
+function handleSocketMessage(event, socket = ws) {
   let data = null
   try {
     data = JSON.parse(event.data)
@@ -217,17 +281,22 @@ function handleSocketMessage(event) {
     return
   }
   if (data.type === 'partial') {
-    stableText.value = data.stableText || data.text || stableText.value
+    currentSegmentText = data.stableText || data.text || currentSegmentText
+    stableText.value = joinDictationParts(committedText.value, currentSegmentText)
     unstableText.value = data.unstableText || ''
     editableText.value = stableText.value
     return
   }
   if (data.type === 'final' || data.type === 'done') {
-    stableText.value = data.text || data.stableText || stableText.value
+    const finalText = data.text || data.stableText || currentSegmentText
+    commitSegmentText(finalText)
     unstableText.value = ''
-    editableText.value = stableText.value
-    status.value = 'idle'
-    stopTimer()
+    segmentDoneResolver?.()
+    if (rotatingSegment) return
+    if (socket === ws || status.value === 'ending') {
+      status.value = 'idle'
+      stopTimer()
+    }
     return
   }
   if (data.type === 'error') {
@@ -249,9 +318,9 @@ function waitForOpen(socket) {
   })
 }
 
-function sendSocket(payload) {
-  if (!ws) return
-  ws.send(JSON.stringify(payload))
+function sendSocket(payload, socket = ws) {
+  if (!socket) return false
+  return socket.send(JSON.stringify(payload))
 }
 
 function copyText() {
@@ -262,6 +331,7 @@ function copyText() {
 }
 
 function clearText() {
+  committedText.value = ''
   stableText.value = ''
   unstableText.value = ''
   editableText.value = ''
@@ -292,19 +362,103 @@ function saveDraft(text) {
 }
 
 function fail(message) {
-  error.value = message
+  error.value = dictationErrorMessage(message, '语音听写暂时不可用')
   status.value = 'error'
   stopRecorder()
   stopTimer()
 }
 
+function dictationErrorMessage(errorValue, fallback) {
+  const name = String(errorValue?.name || '')
+  const message = String(errorValue?.message || errorValue || '').trim()
+  const raw = `${name} ${message}`.toLowerCase()
+  if (/notallowed|permission denied|permissiondismissed|denied|权限/.test(raw)) {
+    return '麦克风权限被拒绝。请在浏览器地址栏或系统设置里允许此页面使用麦克风，然后重新开始听写。'
+  }
+  if (/notfound|devicesnotfound|no audio input|requested device not found/.test(raw)) {
+    return '没有找到可用麦克风。请连接或启用麦克风后再试。'
+  }
+  if (/notreadable|trackstart|could not start|device in use/.test(raw)) {
+    return '麦克风暂时无法使用，可能被其他应用占用。请关闭占用录音的软件后再试。'
+  }
+  if (/secure context|only secure origins|https/.test(raw)) {
+    return '浏览器要求在 localhost 或 HTTPS 页面中使用麦克风。'
+  }
+  return message || fallback
+}
+
 function startTimer() {
   stopTimer()
   seconds.value = 0
+  nextSegmentAt = segmentSeconds
   timer = setInterval(() => {
     seconds.value += 1
-    if (seconds.value >= 55) stopRecording()
+    if (seconds.value >= maxDictationSeconds) {
+      showToast('已达到单次 5 分钟听写上限')
+      stopRecording()
+      return
+    }
+    if (seconds.value >= nextSegmentAt) {
+      nextSegmentAt += segmentSeconds
+      rotateDictationSegment()
+    }
   }, 1000)
+}
+
+async function rotateDictationSegment() {
+  if (rotatingSegment || status.value !== 'recording' || !ws) return
+  rotatingSegment = true
+  const oldSocket = ws
+  ws = null
+  try {
+    await finishCurrentSegment(oldSocket)
+    oldSocket?.close?.()
+    if (status.value !== 'recording') return
+    seq = 0
+    await openDictationSegment()
+  } catch (err) {
+    if (status.value === 'recording') {
+      fail(dictationErrorMessage(err, '长听写续接失败，已保留当前文字'))
+    }
+  } finally {
+    rotatingSegment = false
+  }
+}
+
+function finishCurrentSegment(socket) {
+  return new Promise((resolve) => {
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      if (segmentDoneResolver === finish) segmentDoneResolver = null
+      if (!segmentFinalCommitted) commitSegmentText(currentSegmentText)
+      resolve()
+    }
+    segmentDoneResolver = finish
+    sendSocket({ type: 'stop' }, socket)
+    setTimeout(finish, segmentStopWaitMs)
+  })
+}
+
+function commitSegmentText(value) {
+  const text = String(value || '').trim()
+  if (!text || segmentFinalCommitted) return
+  committedText.value = joinDictationParts(committedText.value, text)
+  stableText.value = committedText.value
+  editableText.value = stableText.value
+  currentSegmentText = ''
+  segmentFinalCommitted = true
+}
+
+function joinDictationParts(base, next) {
+  const previous = String(base || '').trim()
+  const incoming = String(next || '').trim()
+  if (!previous) return incoming
+  if (!incoming) return previous
+  if (previous.endsWith(incoming)) return previous
+  const needsSpace = /[A-Za-z0-9,.;:!?]$/.test(previous) && /^[A-Za-z0-9]/.test(incoming)
+  return `${previous}${needsSpace ? ' ' : ''}${incoming}`
 }
 
 function stopTimer() {
@@ -320,6 +474,9 @@ async function stopRecorder() {
 }
 
 function stopEverything() {
+  rotatingSegment = false
+  segmentDoneResolver?.()
+  segmentDoneResolver = null
   stopRecorder()
   stopTimer()
   ws?.close()
@@ -338,27 +495,29 @@ function stopEverything() {
 .voice-fab {
   position: absolute;
   left: 50%;
-  bottom: calc(96rpx + env(safe-area-inset-bottom));
+  bottom: calc(23px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
-  width: 116rpx;
-  height: 116rpx;
+  width: 90rpx;
+  height: 90rpx;
   padding: 0;
   border-radius: 999rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
-  background: linear-gradient(135deg, #ffbd6b 0%, #65c8d9 100%);
-  box-shadow: 0 22rpx 46rpx rgba(75, 126, 169, .28), inset 0 1px 0 rgba(255,255,255,.45);
+  border: 1rpx solid rgba(255,255,255,.72);
+  background: linear-gradient(145deg, #6f86df 0%, #52b8cf 100%);
+  box-shadow: 0 14rpx 30rpx rgba(73,91,146,.18), 0 0 0 8rpx rgba(255,255,255,.78), inset 0 1rpx 0 rgba(255,255,255,.42);
+  backdrop-filter: blur(16rpx) saturate(1.12);
   pointer-events: auto;
 }
 
 .voice-fab.active {
-  background: linear-gradient(135deg, #ff9f75 0%, #6f86df 100%);
+  background: linear-gradient(145deg, #ef8f98 0%, #6f86df 100%);
 }
 
 .voice-fab.failed {
-  background: linear-gradient(135deg, #ef8f98 0%, #d85d73 100%);
+  background: linear-gradient(145deg, #ef8f98 0%, #d85d73 100%);
 }
 
 .voice-fab:active {
@@ -368,7 +527,7 @@ function stopEverything() {
 .voice-icon {
   position: relative;
   z-index: 2;
-  font-size: 48rpx;
+  font-size: 34rpx;
 }
 
 .pulse-ring {
@@ -414,6 +573,59 @@ function stopEverything() {
   gap: 18rpx;
 }
 
+.voice-head-main {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+}
+
+.voice-panel-icon {
+  flex: 0 0 auto;
+  width: 78rpx;
+  height: 78rpx;
+  border-radius: 26rpx;
+  color: #fff;
+  background: linear-gradient(145deg, #6f86df, #52b8cf);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 14rpx 26rpx rgba(82,111,190,.18), inset 0 1rpx 0 rgba(255,255,255,.32);
+}
+
+.voice-panel-icon.active {
+  background: linear-gradient(145deg, #ef8f98, #6f86df);
+}
+
+.voice-panel-icon.failed {
+  background: linear-gradient(145deg, #ef8f98, #d85d73);
+}
+
+.voice-panel-icon .app-icon {
+  width: 38rpx;
+  height: 38rpx;
+}
+
+.voice-close-btn {
+  flex: 0 0 auto;
+  width: 62rpx;
+  height: 62rpx;
+  padding: 0;
+  border-radius: 999rpx;
+  color: #52617f;
+  background: rgba(255,255,255,.72);
+  border: 1rpx solid rgba(97,116,166,.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 18rpx rgba(73,91,146,.07), inset 0 1rpx 0 rgba(255,255,255,.92);
+}
+
+.voice-close-btn .app-icon {
+  width: 30rpx;
+  height: 30rpx;
+}
+
 .voice-title {
   margin-top: 4rpx;
   font-size: 42rpx;
@@ -433,17 +645,50 @@ function stopEverything() {
 }
 
 .language-tab {
+  position: relative;
+  height: 70rpx;
   min-height: 70rpx;
+  padding: 0 12rpx;
   border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
   font-size: 24rpx;
+  line-height: 1;
   font-weight: 900;
   color: #687391;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .language-tab.active {
   color: #fff;
   background: linear-gradient(135deg, #6f86df, #56b9cf);
   box-shadow: 0 10rpx 18rpx rgba(74,111,190,.16);
+}
+
+.language-tab.disabled {
+  opacity: .62;
+}
+
+.language-tab-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 1em;
+  text-align: center;
+  line-height: 1;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  pointer-events: none;
 }
 
 .transcript-box {
@@ -478,20 +723,97 @@ function stopEverything() {
 
 .voice-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 78rpx 78rpx 78rpx;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12rpx;
   margin-top: 22rpx;
   align-items: center;
 }
 
 .voice-main-action {
+  position: relative;
+  grid-column: 1 / -1;
   min-width: 0;
+  min-height: 76rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  font-size: 26rpx;
+  color: #fff;
+  border-radius: 24rpx;
+  border: 1rpx solid rgba(255,255,255,.36);
+  background: linear-gradient(135deg, #6f86df 0%, #52b8cf 100%);
+  box-shadow: 0 8rpx 16rpx rgba(74,111,190,.12);
+  overflow: hidden;
 }
 
-.voice-action {
-  width: 78rpx;
+.voice-main-action::after {
+  display: none !important;
+  border: 0 !important;
+}
+
+.voice-main-action .btn-icon {
+  width: 28rpx;
+  height: 28rpx;
+  background: transparent;
+  position: static;
+  box-shadow: none;
+}
+
+.voice-main-action .btn-icon .app-icon {
+  width: 26rpx;
+  height: 26rpx;
+}
+
+.voice-tool-btn {
+  min-width: 0;
   min-height: 78rpx;
   padding: 0;
+  border-radius: 24rpx;
+  color: #586381;
+  background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(247,250,255,.72));
+  border: 1rpx solid rgba(97,116,166,.10);
+  box-shadow: 0 8rpx 16rpx rgba(73,91,146,.07), inset 0 1rpx 0 rgba(255,255,255,.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5rpx;
+  font-size: 20rpx;
+  line-height: 1.1;
+  font-weight: 900;
+  transition: transform .16s ease, opacity .16s ease, background .16s ease;
+}
+
+.voice-tool-btn:active {
+  transform: translateY(1px);
+}
+
+.voice-tool-btn[disabled] {
+  opacity: .42;
+}
+
+.voice-tool-btn.success {
+  color: #2f7f6e;
+  background: linear-gradient(180deg, rgba(245,255,250,.92), rgba(231,248,241,.74));
+}
+
+.voice-tool-btn.danger {
+  color: #a85c65;
+  background: linear-gradient(180deg, rgba(255,248,249,.92), rgba(255,241,243,.72));
+}
+
+.tool-icon {
+  width: 30rpx;
+  height: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tool-icon .app-icon {
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .mini {
@@ -503,5 +825,15 @@ function stopEverything() {
 @keyframes voicePulse {
   0% { transform: scale(.85); opacity: .72; }
   100% { transform: scale(1.28); opacity: 0; }
+}
+
+@media (max-width: 360px) {
+  .voice-panel {
+    padding: 28rpx;
+  }
+
+  .voice-tool-btn {
+    min-height: 74rpx;
+  }
 }
 </style>

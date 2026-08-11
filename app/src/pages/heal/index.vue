@@ -56,6 +56,8 @@
     <button v-if="hasMore" class="ghost-btn load-more" :disabled="loadingMore" @tap="loadMoreEntries">
       {{ loadingMore ? '加载中...' : '加载更多疗愈记录' }}
     </button>
+    <VoiceDictation />
+    <AppDock current="home" />
   </view>
 </template>
 
@@ -67,6 +69,8 @@ import { appendDictationText, onDictationText } from '../../utils/dictation'
 import { confirmAction, ensureLoggedIn, errorMessage, isHighRiskSafety, showToast, trimmed } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import AppDock from '../../components/AppDock.vue'
+import VoiceDictation from '../../components/VoiceDictation.vue'
 
 const breathing = ref(false)
 const left = ref(60)

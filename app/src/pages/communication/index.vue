@@ -204,6 +204,8 @@
         </button>
       </view>
     </view>
+    <VoiceDictation />
+    <AppDock current="communication" />
   </view>
 </template>
 
@@ -215,6 +217,8 @@ import { appendDictationText, onDictationText } from '../../utils/dictation'
 import { chooseImportFile, confirmAction, ensureLoggedIn, errorMessage, hasText, isHighRiskSafety, showToast, trimmed, validClock, withinLength } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import AppDock from '../../components/AppDock.vue'
+import VoiceDictation from '../../components/VoiceDictation.vue'
 
 const issue = ref('')
 const styles = ['容易焦虑', '比较敏感', '沟通积极', '关注成绩']

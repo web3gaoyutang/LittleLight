@@ -57,9 +57,67 @@
         <view class="row between"><text class="tag">AI</text><text class="icon-chip"><AppIcon name="bot" /></text></view>
         <view><text class="tile-title">生成家校回复</text><text class="caption block">多语气版本</text></view>
       </view>
-      <view class="tile peach" @tap="goHeal">
+      <view class="tile peach" @tap="goHealing">
         <view class="row between"><text class="tag">恢复</text><text class="icon-chip"><AppIcon name="heartHand" /></text></view>
-        <view><text class="tile-title">一分钟呼吸</text><text class="caption block">先收回注意力</text></view>
+        <view><text class="tile-title">一分钟呼吸</text><text class="caption block">就在首页完成</text></view>
+      </view>
+    </view>
+
+    <view id="home-healing" class="home-healing-card" data-testid="home-healing-section">
+      <view class="healing-intro row between">
+        <view class="healing-copy">
+          <text class="tag">短恢复</text>
+          <view class="healing-title">一分钟把自己接回来</view>
+          <text class="caption block">呼吸、写一句今天的事，都会保存到疗愈记录。</text>
+        </view>
+        <view class="healing-badge"><AppIcon name="heartHand" /></view>
+      </view>
+
+      <view class="healing-tools">
+        <view class="breath-console">
+          <view class="breath-orb-wrap">
+            <view class="home-breath-core" :class="{ active: healingBreathing }">
+              <view class="home-breath-inner"><AppIcon name="wind" /></view>
+            </view>
+          </view>
+          <view class="breath-copy">
+            <text class="breath-kicker">一轮呼吸</text>
+            <text class="caption block">吸气 4 秒，呼气 6 秒。先把节奏慢下来。</text>
+            <button class="primary-btn breath-mini-btn" @tap="toggleHealingBreath">
+              <view class="btn-icon"><AppIcon :name="healingBreathing ? 'pause' : 'play'" /></view>
+              {{ healingBreathing ? healingLeftText : '开始 01:00' }}
+            </button>
+          </view>
+        </view>
+
+        <view class="praise-console">
+          <view class="praise-head row between">
+            <view>
+              <text class="breath-kicker">AI 夸夸</text>
+              <text class="caption block">写一句今天的事，换一口气。</text>
+            </view>
+            <text class="tag" :class="{ dangerTag: homePraiseHighRisk }">{{ homePraiseSafetyText }}</text>
+          </view>
+          <textarea
+            class="textarea healing-textarea"
+            v-model="healingContent"
+            maxlength="1000"
+            placeholder="比如：今天课很多，但我还是把家长反馈处理完了..."
+            aria-label="首页 AI 夸夸内容"
+            data-testid="home-praise-content-input"
+          />
+          <view class="home-reply" :class="{ dangerReply: homePraiseNeedsReview }">
+            <view class="row between reply-meta">
+              <text class="caption">{{ homePraiseSourceText }}</text>
+            </view>
+            <text v-if="homePraiseNeedsReview" class="safety-inline">{{ homePraiseSafetyNote }}</text>
+            <text class="body">{{ healingReply }}</text>
+          </view>
+          <button class="primary-btn praise-mini-btn" :disabled="healingSaving" @tap="makeHomePraise">
+            <view class="btn-icon"><AppIcon name="sparkles" /></view>
+            {{ healingSaving ? '生成中...' : '生成抱抱' }}
+          </button>
+        </view>
       </view>
     </view>
 
@@ -149,16 +207,21 @@
       title="没有到期跟进"
       message="新的沟通记录设置跟进时间后，会在这里提醒。"
     />
+    <VoiceDictation />
+    <AppDock current="home" />
   </view>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { api } from '../../api/client'
-import { ensureLoggedIn, errorMessage, showToast } from '../../utils/ui'
+import { appendDictationText, onDictationText } from '../../utils/dictation'
+import { confirmAction, ensureLoggedIn, errorMessage, isHighRiskSafety, showToast, trimmed } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import AppDock from '../../components/AppDock.vue'
+import VoiceDictation from '../../components/VoiceDictation.vue'
 
 const summary = ref({ rhythm: {} })
 const profile = ref({})
@@ -166,6 +229,14 @@ const loading = ref(false)
 const error = ref('')
 const mood = ref('steady')
 const completingReminderId = ref('')
+const healingBreathing = ref(false)
+const healingLeft = ref(60)
+const healingContent = ref('')
+const healingReply = ref('先慢慢呼一口气。你已经在认真照顾很多人了，也把自己算进今天的照顾里。')
+const healingSaving = ref(false)
+const healingSafety = ref('self_care')
+const healingMeta = ref({})
+let healingTimer = null
 const moodRhythms = {
   steady: {
     tag: '今日教学心流',
@@ -213,6 +284,12 @@ const heroRhythm = computed(() => {
 })
 const visibleReminders = computed(() => (summary.value.reminders || []).slice(0, 3))
 const visibleFocusParents = computed(() => (summary.value.focusParents || []).slice(0, 3))
+const healingLeftText = computed(() => `00:${String(healingLeft.value).padStart(2, '0')}`)
+const homePraiseHighRisk = computed(() => isHighRiskSafety(healingSafety.value))
+const homePraiseNeedsReview = computed(() => homePraiseHighRisk.value || !!healingMeta.value.reviewRequired || !!healingMeta.value.fallback)
+const homePraiseSafetyText = computed(() => safetyText(healingSafety.value))
+const homePraiseSafetyNote = computed(() => healingMeta.value.safetyReason || healingMeta.value.safetyNote || safetyNote(healingSafety.value, healingMeta.value))
+const homePraiseSourceText = computed(() => aiSourceText(healingMeta.value))
 const nextCourse = computed(() => summary.value.nextCourse || null)
 const nextCourseTitle = computed(() => compactJoin([nextCourse.value?.className, nextCourse.value?.title], ' · ') || '待安排课程')
 const nextCourseStartTime = computed(() => nextCourse.value?.startTime || '待定')
@@ -245,6 +322,11 @@ const nextCourseFootnote = computed(() => {
 })
 
 onShow(load)
+const offDictationText = onDictationText(handleDictationText)
+onBeforeUnmount(() => {
+  clearHealingTimer()
+  offDictationText?.()
+})
 
 async function load() {
   if (!ensureLoggedIn(api)) return
@@ -261,7 +343,9 @@ async function load() {
   }
 }
 function goSchedule() { uni.switchTab({ url: '/pages/schedule/index' }) }
-function goHeal() { uni.switchTab({ url: '/pages/heal/index' }) }
+function goHealing() {
+  uni.pageScrollTo?.({ selector: '#home-healing', duration: 260 })
+}
 function goCommunication() { uni.switchTab({ url: '/pages/communication/index' }) }
 function openParent(parent) {
   if (!parent?.id) {
@@ -314,6 +398,154 @@ function currentMinutes() {
 function riskText(value) {
   return ({ low: '低风险', medium: '中风险', high: '高风险' })[value] || '低风险'
 }
+
+function handleDictationText(payload) {
+  if (payload?.target !== 'healing') return
+  healingContent.value = appendDictationText(healingContent.value, payload.text)
+  showToast('已插入短恢复文本')
+}
+
+function toggleHealingBreath() {
+  if (healingBreathing.value) {
+    resetHealingBreath()
+    return
+  }
+  if (!api.isLoggedIn()) {
+    showToast('请先登录后使用短恢复')
+    return
+  }
+  healingBreathing.value = true
+  healingLeft.value = 60
+  clearHealingTimer()
+  healingTimer = setInterval(() => {
+    healingLeft.value -= 1
+    if (healingLeft.value <= 0) completeHealingBreath()
+  }, 1000)
+}
+
+function resetHealingBreath() {
+  clearHealingTimer()
+  healingBreathing.value = false
+  healingLeft.value = 60
+}
+
+function clearHealingTimer() {
+  if (!healingTimer) return
+  clearInterval(healingTimer)
+  healingTimer = null
+}
+
+async function completeHealingBreath() {
+  resetHealingBreath()
+  try {
+    await api.healingEntry({
+      type: 'breath',
+      mood: 'calm',
+      content: '完成 1 分钟呼吸练习',
+      aiReply: '已完成一次短恢复。'
+    })
+    showToast('一分钟呼吸完成')
+  } catch (err) {
+    showToast(errorMessage(err, '呼吸记录保存失败'))
+  }
+}
+
+async function makeHomePraise() {
+  if (healingSaving.value) return
+  const input = trimmed(healingContent.value)
+  if (!input) {
+    showToast('先写一点今天发生的事')
+    return
+  }
+  healingSaving.value = true
+  try {
+    const data = await api.praise({ persona: '温柔前辈', content: input })
+    healingReply.value = data.content
+    healingSafety.value = data.safety || 'self_care'
+    healingMeta.value = data || {}
+    if (homePraiseNeedsReview.value) {
+      const confirmed = await confirmAction({
+        title: '需要优先保障安全',
+        content: homePraiseSafetyNote.value,
+        confirmText: '保存记录',
+        cancelText: '只查看'
+      })
+      await auditReviewAction(data, confirmed)
+      if (!confirmed) {
+        showToast('已生成安全提示，未保存记录')
+        return
+      }
+    }
+    const entry = await api.healingEntry({ type: 'praise', mood: 'warm', content: input, aiReply: data.content })
+    showToast(homePraiseHighRisk.value ? '已保存安全提示记录' : '已生成新的 AI 夸夸')
+    try {
+      await auditAIAction(data, 'save_healing', {
+        note: homePraiseHighRisk.value ? '首页保存安全提示记录' : '首页保存 AI 夸夸记录',
+        metadata: { entryId: entry.id, surface: 'home' }
+      })
+    } catch (err) {
+      showToast(errorMessage(err, '记录已保存，AI 审计写入失败'))
+    }
+  } catch (err) {
+    showToast(errorMessage(err, 'AI 夸夸生成失败'))
+  } finally {
+    healingSaving.value = false
+  }
+}
+
+function safetyText(value) {
+  return ({
+    self_care: '抱抱',
+    teacher_review_required: '需复核',
+    crisis_support_required: '安全优先',
+    student_safety_review_required: '安全优先',
+    medical_review_required: '专业支持'
+  })[value] || '抱抱'
+}
+
+function safetyNote(value, meta = {}) {
+  if (meta.fallback) return '模型服务暂不可用，当前内容来自本地降级模板。请只作为自我照护参考。'
+  return ({
+    crisis_support_required: '这已经超出普通情绪鼓励范围。请先确保自己安全，尽快联系身边可信任的人、学校负责人或当地紧急救助渠道。',
+    student_safety_review_required: '这涉及学生安全或暴力风险，请先按学校流程联系负责人或专业支持，再做后续处理。',
+    medical_review_required: '这涉及医学或心理专业边界，请避免自行判断诊断或用药，优先联系专业支持。'
+  })[value] || '这条内容需要先人工复核，再决定是否保存或继续使用。'
+}
+
+function aiSourceText(meta = {}) {
+  if (meta.source === 'risk_guardrail') return '安全提示'
+  if (meta.fallback) return '离线提示'
+  if (meta.provider === 'llm') return 'AI 生成'
+  return '轻量提示'
+}
+
+async function auditAIAction(draft, action, options = {}) {
+  if (!draft?.generationId) return null
+  return api.createAIAction(draft.generationId, {
+    action,
+    draftId: draft.id || '',
+    note: options.note || '',
+    metadata: options.metadata || {}
+  })
+}
+
+async function auditReviewAction(draft, confirmed) {
+  try {
+    await auditAIAction(draft, confirmed ? 'review_confirmed' : 'review_skipped', {
+      note: confirmed ? '首页教师确认复核后保存疗愈记录' : '首页教师只查看需复核内容',
+      metadata: {
+        surface: 'home',
+        safety: draft?.safety || '',
+        safetyLevel: draft?.safetyLevel || '',
+        safetyReason: draft?.safetyReason || draft?.safetyNote || '',
+        safetySignals: Array.isArray(draft?.safetySignals) ? draft.safetySignals : [],
+        source: draft?.source || ''
+      }
+    })
+  } catch (err) {
+    showToast(errorMessage(err, 'AI 复核审计写入失败'))
+  }
+}
 </script>
 
 <style src="../../static/common.css"></style>
@@ -352,6 +584,31 @@ function riskText(value) {
 .tile.peach { background: linear-gradient(145deg, rgba(255,239,184,.82), rgba(255,214,202,.72)); }
 .num { display: block; font-size: 58rpx; line-height: 1; font-weight: 950; color: #182033; }
 .tile-title, .course-title { display: block; font-size: 32rpx; line-height: 1.26; font-weight: 930; color: #182033; }
+.home-healing-card { position: relative; margin: 24rpx 0 8rpx; padding: 28rpx; border-radius: 34rpx; color: #172039; background: radial-gradient(90% 70% at 8% 0%, rgba(255,255,255,.74), transparent 54%), linear-gradient(145deg, rgba(232,247,244,.92), rgba(241,245,255,.86) 48%, rgba(255,241,221,.82)); border: 1rpx solid rgba(255,255,255,.78); box-shadow: 0 18rpx 36rpx rgba(73,91,146,.09), inset 0 1rpx 0 rgba(255,255,255,.88); box-sizing: border-box; overflow: hidden; }
+.healing-intro { align-items: flex-start; gap: 20rpx; }
+.healing-copy { min-width: 0; display: flex; flex-direction: column; gap: 10rpx; }
+.healing-title { font-size: 40rpx; line-height: 1.14; font-weight: 950; color: #172039; overflow-wrap: anywhere; }
+.healing-badge { flex: 0 0 auto; width: 74rpx; height: 74rpx; border-radius: 26rpx; color: #fff; background: linear-gradient(145deg, #6f86df, #52b8cf); display: flex; align-items: center; justify-content: center; box-shadow: 0 14rpx 26rpx rgba(82,111,190,.17), inset 0 1rpx 0 rgba(255,255,255,.32); }
+.healing-badge .app-icon { width: 36rpx; height: 36rpx; }
+.healing-tools { margin-top: 24rpx; display: flex; flex-direction: column; gap: 18rpx; }
+.breath-console { min-width: 0; padding: 22rpx; border-radius: 28rpx; background: rgba(255,255,255,.54); border: 1rpx solid rgba(255,255,255,.74); display: grid; grid-template-columns: 136rpx minmax(0,1fr); gap: 22rpx; align-items: center; box-sizing: border-box; }
+.breath-orb-wrap { min-width: 0; display: flex; align-items: center; justify-content: center; }
+.home-breath-core { width: 116rpx; height: 116rpx; border-radius: 999rpx; display: flex; align-items: center; justify-content: center; background: rgba(111,134,223,.10); box-shadow: 0 0 0 22rpx rgba(82,184,207,.09), 0 0 0 40rpx rgba(255,196,148,.08); }
+.home-breath-core.active { animation: homeBreathe 7.2s ease-in-out infinite; }
+.home-breath-inner { width: 70rpx; height: 70rpx; border-radius: 999rpx; color: #fff; background: linear-gradient(145deg, #6f86df, #52b8cf); display: flex; align-items: center; justify-content: center; box-shadow: 0 12rpx 22rpx rgba(82,111,190,.18); }
+.home-breath-inner .app-icon { width: 34rpx; height: 34rpx; }
+.breath-copy { min-width: 0; display: flex; flex-direction: column; gap: 10rpx; }
+.breath-kicker { color: #4f6192; font-size: 24rpx; line-height: 1.2; font-weight: 950; }
+.breath-mini-btn { width: fit-content; min-width: 196rpx; min-height: 64rpx; padding: 0 22rpx; font-size: 23rpx; box-shadow: 0 10rpx 18rpx rgba(74,111,190,.14), inset 0 1rpx 0 rgba(255,255,255,.32); }
+.praise-console { min-width: 0; padding: 22rpx; border-radius: 28rpx; background: rgba(255,255,255,.48); border: 1rpx solid rgba(255,255,255,.72); display: flex; flex-direction: column; gap: 16rpx; box-sizing: border-box; }
+.praise-head { align-items: flex-start; gap: 16rpx; }
+.praise-head .tag { flex: 0 0 auto; }
+.healing-textarea { min-height: 132rpx; border-radius: 24rpx; background: rgba(255,255,255,.72); }
+.home-reply { min-height: 96rpx; padding: 20rpx 22rpx; border-radius: 24rpx; background: rgba(248,251,255,.76); border: 1rpx solid rgba(255,255,255,.78); display: flex; flex-direction: column; gap: 10rpx; box-sizing: border-box; box-shadow: inset 0 1rpx 0 rgba(255,255,255,.88); }
+.reply-meta { gap: 12rpx; align-items: flex-start; }
+.reply-meta .caption { flex: 1; min-width: 0; }
+.safety-inline { display: block; padding: 14rpx 16rpx; border-radius: 18rpx; color: #9f4b52; background: rgba(255,255,255,.72); font-size: 22rpx; line-height: 1.45; font-weight: 850; }
+.praise-mini-btn { width: 100%; min-height: 70rpx; }
 .next-course-card { position: relative; margin: 24rpx 0 6rpx; padding: 28rpx; border-radius: 32rpx; color: #172039; background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(243,248,255,.78)); border: 1px solid rgba(97,116,166,.11); box-shadow: 0 16rpx 34rpx rgba(73,91,146,.09), inset 0 1px 0 rgba(255,255,255,.96); overflow: hidden; }
 .next-glow { position: absolute; right: -44rpx; top: -52rpx; width: 180rpx; height: 180rpx; border-radius: 999rpx; background: radial-gradient(circle, rgba(98,103,233,.15), rgba(82,184,207,.06) 58%, transparent 72%); pointer-events: none; }
 .next-course-main { position: relative; display: grid; grid-template-columns: 72rpx minmax(0,1fr) auto; gap: 18rpx; align-items: center; }
@@ -391,5 +648,9 @@ function riskText(value) {
 @media (max-width: 360px) {
   .hero { grid-template-columns: 1fr; }
   .teacher-art { min-height: 220rpx; }
+  .breath-console { grid-template-columns: 108rpx minmax(0,1fr); gap: 16rpx; }
+  .home-breath-core { width: 96rpx; height: 96rpx; box-shadow: 0 0 0 18rpx rgba(82,184,207,.08), 0 0 0 32rpx rgba(255,196,148,.07); }
+  .home-breath-inner { width: 62rpx; height: 62rpx; }
 }
+@keyframes homeBreathe { 0%,100% { transform: scale(.9); opacity: .96; } 50% { transform: scale(1.08); opacity: .66; } }
 </style>

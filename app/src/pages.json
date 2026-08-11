@@ -21,7 +21,6 @@
     "borderStyle": "white",
     "list": [
       { "pagePath": "pages/home/index", "text": "首页" },
-      { "pagePath": "pages/heal/index", "text": "疗愈" },
       { "pagePath": "pages/communication/index", "text": "沟通" },
       { "pagePath": "pages/schedule/index", "text": "日程" },
       { "pagePath": "pages/profile/index", "text": "我的" }

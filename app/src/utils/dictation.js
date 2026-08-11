@@ -9,7 +9,7 @@ export function currentRoutePath() {
 export function dictationTargetForRoute(route = currentRoutePath()) {
   if (route.includes('/communication/')) return 'communication'
   if (route.includes('/schedule/')) return 'schedule'
-  if (route.includes('/heal/')) return 'healing'
+  if (route.includes('/heal/') || route.includes('/home/')) return 'healing'
   return 'draft'
 }
 

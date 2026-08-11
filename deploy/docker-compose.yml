@@ -46,6 +46,13 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-}
       LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      XF_ASR_APP_ID: ${XF_ASR_APP_ID:-}
+      XF_ASR_API_KEY: ${XF_ASR_API_KEY:-}
+      XF_ASR_API_SECRET: ${XF_ASR_API_SECRET:-}
+      XF_ASR_ENDPOINT: ${XF_ASR_ENDPOINT:-wss://iat-api.xfyun.cn/v2/iat}
+      XF_ASR_MAX_SESSION_SECONDS: ${XF_ASR_MAX_SESSION_SECONDS:-55}
+      XF_ASR_MAX_CONCURRENT_PER_USER: ${XF_ASR_MAX_CONCURRENT_PER_USER:-1}
+      XF_ASR_DAILY_LIMIT_PER_USER: ${XF_ASR_DAILY_LIMIT_PER_USER:-80}
     ports:
       - "8080:8080"
     depends_on:

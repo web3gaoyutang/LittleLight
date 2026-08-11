@@ -322,6 +322,8 @@
         <button class="primary-btn" @tap="handleBoundaryDialogAction">{{ boundaryDialogActionText }}</button>
       </view>
     </view>
+    <VoiceDictation />
+    <AppDock current="profile" />
   </view>
 </template>
 
@@ -332,6 +334,8 @@ import { api, listItems, listPageInfo } from '../../api/client'
 import { confirmAction, ensureLoggedIn, errorMessage, hasText, showToast, trimmed, withinLength } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import AppDock from '../../components/AppDock.vue'
+import VoiceDictation from '../../components/VoiceDictation.vue'
 
 const profile = ref({})
 const favorites = ref([])

@@ -188,6 +188,8 @@
         </button>
       </view>
     </view>
+    <VoiceDictation />
+    <AppDock current="schedule" />
   </view>
 </template>
 
@@ -199,6 +201,8 @@ import { appendDictationText, onDictationText } from '../../utils/dictation'
 import { chooseImportFile, clockBefore, confirmAction, ensureLoggedIn, errorMessage, hasText, showToast, trimmed, validClock, withinLength } from '../../utils/ui'
 import AppState from '../../components/AppState.vue'
 import AppIcon from '../../components/AppIcon.vue'
+import AppDock from '../../components/AppDock.vue'
+import VoiceDictation from '../../components/VoiceDictation.vue'
 
 const today = new Date()
 const todayISO = ref(toISODate(today))

@@ -60,35 +60,36 @@ uni-page-head,
 }
 
 uni-tabbar.uni-tabbar-bottom {
+  display: none !important;
   left: 50% !important;
   right: auto !important;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
-  width: min(calc(100% - 24px), 370px) !important;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px)) !important;
+  width: min(calc(100% - 28px), 360px) !important;
   transform: translateX(-50%) !important;
-  border-radius: 30px !important;
+  border-radius: 28px !important;
   overflow: visible !important;
   background: transparent !important;
 }
 
 uni-tabbar .uni-tabbar {
-  height: 68px !important;
-  padding: 9px !important;
+  height: 72px !important;
+  padding: 8px 10px !important;
   box-sizing: border-box !important;
-  border-radius: 30px !important;
-  border: 1px solid rgba(255,255,255,.78) !important;
-  background: linear-gradient(145deg, rgba(255,255,255,.78), rgba(255,255,255,.50)) !important;
-  box-shadow: 0 1px 0 rgba(255,255,255,.86) inset, 0 18px 42px rgba(73,91,146,.15) !important;
-  backdrop-filter: blur(26px) saturate(1.22) !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(255,255,255,.72) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(246,250,255,.72)) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,.92) inset, 0 14px 34px rgba(73,91,146,.13) !important;
+  backdrop-filter: blur(24px) saturate(1.18) !important;
 }
 
 uni-tabbar .uni-tabbar::before {
   content: "";
   position: absolute;
-  inset: -22px -12px -14px;
+  inset: -14px 4px -10px;
   z-index: -1;
   pointer-events: none;
-  border-radius: 38px;
-  background: linear-gradient(180deg, rgba(250,250,255,0), rgba(250,250,255,.82) 48%, rgba(250,250,255,.96));
+  border-radius: 34px;
+  background: linear-gradient(180deg, rgba(250,250,255,0), rgba(250,250,255,.68) 54%, rgba(250,250,255,.92));
 }
 
 uni-tabbar .uni-tabbar-border {
@@ -97,18 +98,19 @@ uni-tabbar .uni-tabbar-border {
 
 uni-tabbar .uni-tabbar__item {
   min-width: 0 !important;
-  padding: 0 2px !important;
+  padding: 0 1px !important;
   -webkit-tap-highlight-color: transparent !important;
 }
 
 uni-tabbar .uni-tabbar__bd {
-  height: 50px !important;
+  height: 56px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   border-radius: 22px !important;
   background: transparent !important;
   box-shadow: none !important;
+  transition: background .18s ease, box-shadow .18s ease, transform .18s ease !important;
 }
 
 uni-tabbar .uni-tabbar__label {
@@ -118,10 +120,15 @@ uni-tabbar .uni-tabbar__label {
   align-items: center !important;
   justify-content: center !important;
   gap: 2px !important;
-  font-size: 11px !important;
+  font-size: 10.5px !important;
   line-height: 1.15 !important;
   font-weight: 900 !important;
   color: #767a96 !important;
+}
+
+uni-tabbar .uni-tabbar__item:has(.uni-tabbar__label[style*="63, 90, 148"]) .uni-tabbar__bd {
+  background: rgba(239,244,255,.86) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.92), 0 8px 18px rgba(73,91,146,.08) !important;
 }
 
 uni-tabbar .uni-tabbar__item:has(.uni-tabbar__label[style*="63, 90, 148"]) .uni-tabbar__label {
@@ -131,13 +138,12 @@ uni-tabbar .uni-tabbar__item:has(.uni-tabbar__label[style*="63, 90, 148"]) .uni-
 uni-tabbar .uni-tabbar__item:active .uni-tabbar__bd,
 uni-tabbar .uni-tabbar__item:focus .uni-tabbar__bd,
 uni-tabbar .uni-tabbar__item:hover .uni-tabbar__bd {
-  background: transparent !important;
-  box-shadow: none !important;
+  transform: translateY(1px) !important;
 }
 
 uni-tabbar .uni-tabbar__label::before {
-  width: 28px;
-  height: 28px;
+  width: 27px;
+  height: 27px;
   display: block;
   border-radius: 999px;
   padding: 4px;
@@ -146,10 +152,10 @@ uni-tabbar .uni-tabbar__label::before {
   background-image: none;
   mask-repeat: no-repeat;
   mask-position: center;
-  mask-size: 18px 18px;
+  mask-size: 17px 17px;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
-  -webkit-mask-size: 18px 18px;
+  -webkit-mask-size: 17px 17px;
   box-shadow: none;
   transition: transform .16s ease, background-color .16s ease;
 }
